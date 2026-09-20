@@ -1,0 +1,15 @@
+// Project-specific Zed settings for pacer-programmer.
+// Points the Claude Code agent at the same config dir as the
+// `claude-personal` shell alias (CLAUDE_CONFIG_DIR=~/.claude-personal).
+{
+  "agent_servers": {
+    "claude-acp": {
+      "type": "custom",
+      "command": "npx",
+      "args": ["@agentclientprotocol/claude-agent-acp@latest", "--acp"],
+      "env": {
+        "CLAUDE_CONFIG_DIR": "/Users/manish/.claude-personal"
+      }
+    }
+  }
+}

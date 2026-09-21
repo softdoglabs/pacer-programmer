@@ -20,8 +20,8 @@ const noUiInDomain = {
       message: "src/pacer is framework-free domain code.",
     },
     {
-      group: ["**/store/**", "**/ui/**", "@/components/**", "@/lib/**"],
-      message: "src/pacer must not depend on app/UI code.",
+      group: ["**/store/**", "**/ui/**", "**/midi/**", "@/components/**", "@/lib/**"],
+      message: "src/pacer must not depend on app, I/O, or UI code.",
     },
   ],
 };

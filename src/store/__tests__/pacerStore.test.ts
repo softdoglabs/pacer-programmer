@@ -3,6 +3,7 @@ import { PRESET_HOLD_MS } from "../../pacer/device";
 import { loadFactoryDefaults } from "../../pacer/factoryDefaults";
 import { ControlId, SwitchMessageType, userPresetIndex } from "../../pacer/protocol/constants";
 import { createEmptyPacerConfig, getOrCreateControl, getOrCreatePreset } from "../../pacer/protocol/types";
+import { FakeMidiAccess, FakeOutput } from "../../midi/__tests__/fakeMidi";
 import { usePacerStore } from "../pacerStore";
 
 const store = () => usePacerStore.getState();
@@ -172,5 +173,64 @@ describe("pacerStore: built-in Track/Transport presets", () => {
     tap(ControlId.StompswitchA);
     store().loadConfig(loadFactoryDefaults(), "Factory defaults");
     expect(store().deviceMode.mode).toBe("user");
+  });
+});
+
+describe("pacerStore: MIDI output", () => {
+  // Reset the MIDI slice between tests (the connection itself lives in the store's closure).
+  beforeEach(() => usePacerStore.setState({ midi: { status: "disconnected", outputs: [], sysexEnabled: false } }));
+
+  async function connect(ports: FakeOutput[], sysex = true) {
+    const access = new FakeMidiAccess(ports, sysex);
+    await store().connectMidi(async () => access);
+    return access;
+  }
+
+  it("lists outputs after connecting, but sends nothing until an output is chosen", async () => {
+    const port = new FakeOutput("p1", "Quad Cortex");
+    await connect([port]);
+    expect(store().midi).toMatchObject({ status: "connected", outputs: [{ id: "p1", name: "Quad Cortex" }] });
+    tap(ControlId.Stompswitch1);
+    expect(port.sent).toEqual([]);
+  });
+
+  it("sends each simulated message's bytes to the chosen output, and logs it", async () => {
+    const port = new FakeOutput("p1", "Quad Cortex");
+    await connect([port]);
+    store().selectMidiOutput("p1");
+    tap(ControlId.Stompswitch1); // factory A4, switch 1: Program Change 18, global channel -> MIDI channel 1
+    expect(port.sent).toEqual([[0xc0, 18]]);
+    expect(store().log.at(-1)?.lines).toContain("→ sent to Quad Cortex");
+  });
+
+  it("doesn't send SysEx (MMC) without the SysEx permission, and says so", async () => {
+    const port = new FakeOutput("p1", "DAW");
+    await connect([port], false);
+    store().selectMidiOutput("p1");
+    store().jumpToPreset(userPresetIndex(3, 5)); // D5 "MMC"
+    tap(ControlId.Stompswitch2);
+    expect(port.sent).toEqual([]);
+    expect(store().log.at(-1)?.lines.at(-1)).toMatch(/not sent to DAW: SysEx permission not granted/);
+  });
+
+  it("stops sending when the chosen output disappears", async () => {
+    const port = new FakeOutput("p1", "Quad Cortex");
+    const access = await connect([port]);
+    store().selectMidiOutput("p1");
+    access.changePorts([]);
+    expect(store().midi.outputId).toBeUndefined();
+    expect(store().midi.outputs).toEqual([]);
+    expect(store().log.at(-1)?.lines).toEqual(["Output disconnected; sending stopped"]);
+  });
+
+  it("reports unsupported and denied access", async () => {
+    await store().connectMidi(undefined);
+    // In Node there's no navigator.requestMIDIAccess, so the default requester is unavailable.
+    expect(store().midi.status).toBe("unsupported");
+    usePacerStore.setState({ midi: { status: "disconnected", outputs: [], sysexEnabled: false } });
+    await store().connectMidi(async () => {
+      throw new Error("nope");
+    });
+    expect(store().midi).toMatchObject({ status: "denied", error: "nope" });
   });
 });

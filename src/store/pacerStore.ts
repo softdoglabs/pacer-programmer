@@ -10,9 +10,18 @@ import {
   controlLabel,
   createBoardState,
   formatBoardEffect,
+  midiMessageToBytes,
   type BoardState,
   type ControlPhase,
+  type OutgoingMidiMessage,
 } from "../pacer/simulator";
+import {
+  browserMidiRequester,
+  connectMidi,
+  type MidiAccessRequester,
+  type MidiConnection,
+  type MidiOutputInfo,
+} from "../midi/webMidi";
 
 export interface LogEntry {
   id: number;
@@ -26,6 +35,18 @@ export interface DeviceModeView {
   /** Only meaningful in `presetSelect` mode. */
   pendingBank: number;
   presetButtonDown: boolean;
+}
+
+export type MidiStatus = "disconnected" | "connecting" | "connected" | "unsupported" | "denied";
+
+export interface MidiView {
+  status: MidiStatus;
+  /** Connected output ports (refreshed as devices come and go). */
+  outputs: MidiOutputInfo[];
+  /** Where simulated presses are sent. Undefined = don't send (the default, so nothing surprising hits real gear). */
+  outputId?: string;
+  sysexEnabled: boolean;
+  error?: string;
 }
 
 interface PacerStore {
@@ -55,6 +76,10 @@ interface PacerStore {
   selectControl: (controlId: number | undefined) => void;
   loadConfig: (config: PacerConfig, source: string, initialPresetIndex?: number) => void;
   clearLog: () => void;
+  midi: MidiView;
+  /** Requests Web MIDI access (`requester` is for tests; defaults to the browser's). */
+  connectMidi: (requester?: MidiAccessRequester) => Promise<void>;
+  selectMidiOutput: (outputId: string | undefined) => void;
 }
 
 const MAX_LOG_ENTRIES = 200;
@@ -135,14 +160,43 @@ export const usePacerStore = create<PacerStore>((set, get) => {
     set({ deviceMode: toDeviceModeView(deviceActor.getSnapshot()) });
   }
 
+  let midiConnection: MidiConnection | undefined;
+
+  /** Sends the engine's MIDI to the selected output. Returns a log line describing the outcome, if any. */
+  function sendMidi(messages: OutgoingMidiMessage[]): string | undefined {
+    const { outputId, outputs } = get().midi;
+    if (!midiConnection || outputId === undefined || messages.length === 0) return undefined;
+    const failures = messages
+      .map((m) => midiConnection!.send(outputId, midiMessageToBytes(m)))
+      .filter((r): r is { ok: false; reason: string } => !r.ok);
+    const name = outputs.find((o) => o.id === outputId)?.name ?? outputId;
+    if (failures.length === 0) return `→ sent to ${name}`;
+    const reasons = [...new Set(failures.map((f) => f.reason))].join("; ");
+    return `(warning) ${failures.length} of ${messages.length} message(s) not sent to ${name}: ${reasons}`;
+  }
+
+  function refreshMidiOutputs() {
+    if (!midiConnection) return;
+    const outputs = midiConnection.outputs();
+    const { outputId } = get().midi;
+    const lost = outputId !== undefined && !outputs.some((o) => o.id === outputId);
+    set((s) => ({
+      midi: { ...s.midi, outputs, outputId: lost ? undefined : outputId },
+      log: lost
+        ? appendLog(s.log, { kind: "app", title: "MIDI", lines: ["Output disconnected; sending stopped"] })
+        : s.log,
+    }));
+  }
+
   function runEngine(controlId: number, phase: ControlPhase) {
     const { board, effect } = applyBoardEvent(get().board, { controlId, phase });
+    const sentLine = sendMidi(effect.messages);
     set((s) => {
       // The engine drops a preset-changing press's matching release (runtime state resets on
       // preset change), so swallow it here rather than logging a spurious guard warning.
       const leavesPreset = effect.presetChanged !== undefined || effect.specialPresetRequested !== undefined;
       const swallowedReleases = leavesPreset ? [...s.swallowedReleases, controlId] : s.swallowedReleases;
-      const lines = formatBoardEffect(effect);
+      const lines = [...formatBoardEffect(effect), ...(sentLine ? [sentLine] : [])];
       if (lines.length === 0) return { board, swallowedReleases };
       return {
         board,
@@ -218,5 +272,35 @@ export const usePacerStore = create<PacerStore>((set, get) => {
     },
 
     clearLog: () => set({ log: [] }),
+
+    midi: { status: "disconnected", outputs: [], sysexEnabled: false },
+
+    connectMidi: async (requester) => {
+      const { status } = get().midi;
+      if (status === "connecting" || status === "connected") return;
+      set((s) => ({ midi: { ...s.midi, status: "connecting", error: undefined } }));
+      const result = await connectMidi(requester ?? browserMidiRequester());
+      switch (result.kind) {
+        case "unsupported":
+          set((s) => ({ midi: { ...s.midi, status: "unsupported" } }));
+          return;
+        case "denied":
+          set((s) => ({ midi: { ...s.midi, status: "denied", error: result.message } }));
+          return;
+        case "connected":
+          midiConnection = result.connection;
+          midiConnection.onPortsChanged(refreshMidiOutputs);
+          set((s) => ({
+            midi: {
+              ...s.midi,
+              status: "connected",
+              outputs: result.connection.outputs(),
+              sysexEnabled: result.connection.sysexEnabled,
+            },
+          }));
+      }
+    },
+
+    selectMidiOutput: (outputId) => set((s) => ({ midi: { ...s.midi, outputId } })),
   };
 });

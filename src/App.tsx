@@ -8,6 +8,7 @@ import { usePacerStore } from "./store/pacerStore";
 import { Faceplate } from "./ui/panel/Faceplate";
 import { Inspector } from "./ui/Inspector";
 import { MessageLog } from "./ui/MessageLog";
+import { MidiOutputControl } from "./ui/MidiOutputControl";
 import { PresetList } from "./ui/PresetList";
 import { RearJacks } from "./ui/RearJacks";
 
@@ -47,7 +48,8 @@ export function App() {
           <Badge variant="outline" className="font-mono">
             {configSource}
           </Badge>
-          <div className="ml-auto flex gap-2">
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <MidiOutputControl />
             <Button variant="ghost" size="sm" onClick={() => loadConfig(loadFactoryDefaults(), "Factory defaults")}>
               Factory defaults
             </Button>

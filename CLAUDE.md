@@ -334,6 +334,20 @@ components in `src/components/ui/`).
   jump that the hardware can't do; logged as an app action), a
   control/preset inspector (step table with LED colors and which light each
   step drives), and the output log.
+- **MIDI out** (`src/midi/webMidi.ts`): a thin Web MIDI wrapper, typed
+  structurally so tests use fakes (`src/midi/__tests__/fakeMidi.ts`).
+  - The header's "Connect MIDI" asks for SysEx access, falling back to
+    plain MIDI if that's refused, then lists output ports and tracks ports
+    being added and removed.
+  - Every MIDI message the simulator emits is sent to the chosen output.
+    The default is "Don't send", so nothing reaches real gear until you
+    pick a port.
+  - MMC is SysEx, so it's only sent with the SysEx permission.
+  - Step channels follow the manual: 0 = the config's global channel
+    (`protocol/globalSettings.ts`), 1-16 = MIDI channels 1-16.
+  - Not sent yet: DAW-preset commands (their bytes aren't modeled) and
+    preset load-time MIDI (not simulated).
+  - Receiving from the Pacer (dumps, live input) is the next step.
 - Not simulated yet: a preset's own load-time MIDI settings (shown in the
   inspector only), LED `midiController` input, and continuous expression
   pedal sweeps (press/release = max/min).

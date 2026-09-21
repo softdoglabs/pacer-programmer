@@ -179,7 +179,11 @@ client — a server buys nothing here).
 `fixtures/factory-presets.syx` — a real SysEx capture of the Pacer's
 factory-default configuration (all 24 presets + global settings). This is
 the first real input to build/test the SysEx decoder against, before any
-live hardware or Web MIDI involvement. See `fixtures/README.md` for
+live hardware or Web MIDI involvement. It's also what the app starts on:
+`src/pacer/factoryDefaults.ts` inlines it into the bundle (Vite `?inline`,
+with `.syx` in `assetsInclude`), and the header's "Factory defaults"
+button reloads it. Vitest 2 doesn't inline assets, so `src/test/setup.ts`
+mocks that import with the same data URL. See `fixtures/README.md` for
 provenance and an open licensing question to resolve before this repo is
 made public.
 

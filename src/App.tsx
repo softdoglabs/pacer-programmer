@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { decodeSysex } from "./pacer/protocol/decode";
-import { buildDemoConfig } from "./pacer/simulator";
+import { loadFactoryDefaults } from "./pacer/factoryDefaults";
 import { usePacerStore } from "./store/pacerStore";
 import { Faceplate } from "./ui/Faceplate";
 import { Inspector } from "./ui/Inspector";
@@ -48,8 +48,8 @@ export function App() {
             {configSource}
           </Badge>
           <div className="ml-auto flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => loadConfig(buildDemoConfig(), "Demo config")}>
-              Load demo
+            <Button variant="ghost" size="sm" onClick={() => loadConfig(loadFactoryDefaults(), "Factory defaults")}>
+              Factory defaults
             </Button>
             <Button size="sm" onClick={() => fileInputRef.current?.click()}>
               Load .syx

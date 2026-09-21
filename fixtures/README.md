@@ -28,7 +28,10 @@ support.nektartech.com, which appear to distribute the same factory
 defaults for legitimate reset purposes, or (b) capturing a fresh dump from
 real hardware once this project's own MIDI I/O + backup-request code
 exists. Tracked as an open item, not blocking early development/parser
-work.
+work. Note that the app now bundles this file as its startup config
+(`src/pacer/factoryDefaults.ts`), so it ships with any build, not just
+the test suite. That makes resolving this a prerequisite for publishing a
+build, not only the repo.
 
 ## What it's for
 

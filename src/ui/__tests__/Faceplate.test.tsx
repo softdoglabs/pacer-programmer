@@ -1,10 +1,8 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PRESET_HOLD_MS } from "../../pacer/device";
-import { decodeSysex } from "../../pacer/protocol/decode";
-import { buildDemoConfig } from "../../pacer/simulator";
+import { loadFactoryDefaults } from "../../pacer/factoryDefaults";
 import { usePacerStore } from "../../store/pacerStore";
 import { App } from "../../App";
 
@@ -15,6 +13,8 @@ function tap(el: Element) {
   fireEvent.keyDown(el, { key: " " });
   fireEvent.keyUp(el, { key: " " });
 }
+const display = () => screen.getByTestId("display-line2").textContent;
+const switchButton = (name: string) => screen.getByRole("button", { name: new RegExp(`^Switch ${name}:`) });
 
 beforeEach(() => {
   globalThis.ResizeObserver ??= class {
@@ -22,33 +22,44 @@ beforeEach(() => {
     unobserve() {}
     disconnect() {}
   };
-  act(() => usePacerStore.getState().loadConfig(buildDemoConfig(), "Demo config"));
+  act(() => usePacerStore.getState().loadConfig(loadFactoryDefaults(), "Factory defaults"));
 });
 afterEach(cleanup);
 
-describe("Faceplate", () => {
+describe("Faceplate (factory defaults)", () => {
   it("shows the active preset and each switch's configured action", () => {
     render(<App />);
-    expect(screen.getByTestId("display-line2").textContent).toBe("A1");
-    expect(screen.getByRole("button", { name: "Switch A: PC5 →B1" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Switch 6: —" })).toBeTruthy();
+    expect(display()).toBe("A1");
+    expect(screen.getByRole("button", { name: "Switch 1: PC0" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Switch A: →track" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Switch D: P+" })).toBeTruthy();
+  });
+
+  it("the Factory defaults button reloads the factory config", () => {
+    render(<App />);
+    tap(switchButton("D"));
+    expect(display()).toBe("A2");
+    fireEvent.click(screen.getByRole("button", { name: "Factory defaults" }));
+    expect(display()).toBe("A1");
   });
 
   it("pressing a switch logs its MIDI output and marks it held", () => {
     render(<App />);
-    const sw1 = screen.getByRole("button", { name: /^Switch 1:/ });
+    const sw1 = switchButton("1");
     hold(sw1);
     expect(sw1.getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByRole("log").textContent).toContain("CC#20 = 127");
+    expect(screen.getByRole("log").textContent).toContain("Program Change 0");
     fireEvent.keyUp(sw1, { key: " " });
     expect(sw1.getAttribute("aria-pressed")).toBe("false");
   });
 
-  it("follows a preset jump fired by a switch", () => {
+  it("C/D step through presets", () => {
     render(<App />);
-    tap(screen.getByRole("button", { name: /^Switch A:/ }));
-    expect(screen.getByTestId("display-line2").textContent).toBe("B1");
-    expect(screen.getByRole("log").textContent).toContain("Program Change 5");
+    tap(switchButton("C"));
+    expect(display()).toBe("D6");
+    tap(switchButton("D"));
+    tap(switchButton("D"));
+    expect(display()).toBe("A2");
   });
 
   it("holding Preset, then bank + number, selects a preset", () => {
@@ -59,29 +70,29 @@ describe("Faceplate", () => {
     act(() => vi.advanceTimersByTime(PRESET_HOLD_MS));
     fireEvent.keyUp(preset, { key: " " });
     vi.useRealTimers();
-    expect(screen.getByTestId("display-line2").textContent).toBe("A-");
-    tap(screen.getByRole("button", { name: /^Switch B:/ }));
-    expect(screen.getByTestId("display-line2").textContent).toBe("B-");
-    tap(screen.getByRole("button", { name: /^Switch 1:/ }));
-    expect(screen.getByTestId("display-line2").textContent).toBe("B1");
+    expect(display()).toBe("A-");
+    tap(switchButton("B"));
+    expect(display()).toBe("B-");
+    tap(switchButton("1"));
+    expect(display()).toBe("B1");
   });
 
   it("the inspector shows the pressed control's steps", () => {
     render(<App />);
-    tap(screen.getByRole("button", { name: /^Switch 2:/ }));
-    expect(screen.getByText("Sequence")).toBeTruthy();
+    tap(switchButton("2"));
+    expect(screen.getByRole("heading", { name: "Stomp 2" })).toBeTruthy();
+    expect(screen.getByText("All steps at once")).toBeTruthy();
   });
 
-  it("factory A enters the Track preset; [Preset] returns to the remembered preset", () => {
-    const config = decodeSysex(new Uint8Array(readFileSync("fixtures/factory-presets.syx")));
-    act(() => usePacerStore.getState().loadConfig(config, "factory", 7)); // B2
+  it("A enters the Track preset; a [Preset] tap returns to the remembered preset", () => {
+    act(() => usePacerStore.getState().jumpToPreset(7)); // B2
     render(<App />);
-    tap(screen.getByRole("button", { name: /^Switch A:/ }));
-    expect(screen.getByTestId("display-line2").textContent).toBe("↩B2");
+    tap(switchButton("A"));
+    expect(display()).toBe("↩B2");
     expect(screen.getByRole("button", { name: "Switch C: Trk ▼" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Switch 1: Solo" })).toBeTruthy();
     tap(screen.getByRole("button", { name: /^Preset button \(tap: back to B2/ }));
-    expect(screen.getByTestId("display-line2").textContent).toBe("B2");
+    expect(display()).toBe("B2");
     expect(screen.getByRole("button", { name: "Switch C: P−" })).toBeTruthy();
   });
 });

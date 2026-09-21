@@ -2,10 +2,10 @@ import { createActor, type SnapshotFrom } from "xstate";
 import { create } from "zustand";
 import { STOMPSWITCH_IDS, deviceModeMachine, type DeviceMode } from "../pacer/device";
 import { presetIndexToLabel } from "../pacer/protocol/constants";
+import { loadFactoryDefaults } from "../pacer/factoryDefaults";
 import type { PacerConfig } from "../pacer/protocol/types";
 import {
   applyBoardEvent,
-  buildDemoConfig,
   controlLabel,
   createBoardState,
   formatBoardEffect,
@@ -34,7 +34,7 @@ interface PacerStore {
    * [Preset] returns to.
    */
   board: BoardState;
-  /** Where the loaded config came from, for display ("Demo config", a file name, ...). */
+  /** Where the loaded config came from, for display ("Factory defaults", a file name, ...). */
   configSource: string;
   log: LogEntry[];
   deviceMode: DeviceModeView;
@@ -153,8 +153,8 @@ export const usePacerStore = create<PacerStore>((set, get) => {
   }
 
   return {
-    board: createBoardState(buildDemoConfig(), 0),
-    configSource: "Demo config",
+    board: createBoardState(loadFactoryDefaults(), 0),
+    configSource: "Factory defaults",
     log: [],
     deviceMode: toDeviceModeView(deviceActor.getSnapshot()),
     swallowedReleases: [],

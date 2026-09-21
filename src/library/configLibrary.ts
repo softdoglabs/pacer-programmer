@@ -1,4 +1,5 @@
 import { isUserPresetIndex } from "../pacer/protocol/constants";
+import type { DeviceIdentity } from "../pacer/protocol/identity";
 import { decodeSysex } from "../pacer/protocol/decode";
 import type { PacerConfig } from "../pacer/protocol/types";
 
@@ -21,6 +22,8 @@ export interface LibraryEntry {
   byteLength: number;
   /** User presets (A1-D6) present in the dump. */
   presetCount: number;
+  /** What the Pacer reported to a MIDI Device Inquiry when this was pulled, if it answered. */
+  device?: DeviceIdentity;
 }
 
 /** The subset of the Web Storage API the library needs (localStorage in the app; a Map in tests). */
@@ -106,7 +109,7 @@ export class ConfigLibrary {
   }
 
   /** Saves a snapshot. Throws if the bytes don't decode as a Pacer dump, or LibraryFullError if storage is full. */
-  add(name: string, source: ConfigSource, bytes: Uint8Array): LibraryEntry {
+  add(name: string, source: ConfigSource, bytes: Uint8Array, details: Pick<LibraryEntry, "device"> = {}): LibraryEntry {
     const config = decodeSysex(bytes); // validates before anything is stored
     if (Object.keys(config.presets).length === 0 && config.globalFields.length === 0) {
       throw new Error("That doesn't contain any Pacer configuration data");
@@ -118,6 +121,7 @@ export class ConfigLibrary {
       createdAt: this.now().toISOString(),
       byteLength: bytes.length,
       presetCount: Object.keys(config.presets).map(Number).filter(isUserPresetIndex).length,
+      ...details,
     };
     try {
       this.storage.setItem(dataKey(entry.id), toBase64(bytes));

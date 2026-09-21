@@ -18,11 +18,16 @@ function splitMessages(bytes: Uint8Array): Uint8Array[] {
   return out;
 }
 
-/** Connects MIDI to a fake Pacer that answers dump requests with `reply`. */
-async function connectFakePacer(reply: Uint8Array | "silent") {
+const IDENTITY_REPLY = [
+  0xf0, 0x7e, 0x7f, 0x06, 0x02, 0x00, 0x01, 0x77, 0x05, 0x01, 0x03, 0x00, 0x01, 0x01, 0x01, 0x02, 0xf7,
+];
+
+/** Connects MIDI to a fake Pacer that answers dump requests with `reply` (and, optionally, Device Inquiries). */
+async function connectFakePacer(reply: Uint8Array | "silent", { answersIdentity = false } = {}) {
   const input = new FakeInput("pacer-in", "PACER");
   const output = new FakeOutput("pacer-out", "PACER");
   output.onSend = (data) => {
+    if (answersIdentity && data[1] === 0x7e) queueMicrotask(() => input.receive(IDENTITY_REPLY));
     if (reply === "silent" || data[5] !== 0x02) return;
     queueMicrotask(() => splitMessages(reply).forEach((m) => input.receive(m)));
   };
@@ -38,6 +43,7 @@ beforeEach(() => {
     midi: { status: "disconnected", outputs: [], inputs: [], sysexEnabled: false },
     pacerPorts: {},
     pull: { status: "idle", received: 0, expected: 4762 },
+    deviceInfo: { kind: "unknown" },
   });
   store().openFactoryDefaults();
 });
@@ -100,13 +106,45 @@ describe("pulling from the Pacer", () => {
     expect(store().pull.status).toBe("pulling");
     await vi.runAllTimersAsync();
     await pulled;
-    expect(output.sent[0]).toEqual([0xf0, 0x00, 0x01, 0x77, 0x7f, 0x02, 0x7f, 0x7f, 0xf7]);
+    expect(output.sent).toContainEqual([0xf0, 0x00, 0x01, 0x77, 0x7f, 0x02, 0x7f, 0x7f, 0xf7]);
     const [entry] = store().library.entries;
     expect(entry).toMatchObject({ source: { kind: "device", portName: "PACER" }, presetCount: 24 });
     expect(entry!.name).toMatch(/^Pacer \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
     expect(store().activeConfigId).toBe(entry!.id);
     expect([...store().savedConfigBytes(entry!.id)]).toEqual([...FIXTURE]);
     expect(store().pull.status).toBe("idle");
+  });
+
+  it("records the firmware the Pacer reports on the pulled snapshot", async () => {
+    await connectFakePacer(FIXTURE, { answersIdentity: true });
+    const pulled = store().pullFromPacer();
+    await vi.runAllTimersAsync();
+    await pulled;
+    expect(store().library.entries[0]!.device).toEqual({
+      manufacturerId: [0, 1, 0x77],
+      family: 0x85,
+      model: 3,
+      version: [1, 1, 1, 2],
+    });
+    expect(store().deviceInfo).toMatchObject({ kind: "identified" });
+  });
+
+  it("still pulls (without firmware info) from a Pacer that ignores Device Inquiry", async () => {
+    await connectFakePacer(FIXTURE);
+    const pulled = store().pullFromPacer();
+    await vi.runAllTimersAsync();
+    await pulled;
+    expect(store().library.entries[0]!.device).toBeUndefined();
+    expect(store().deviceInfo).toEqual({ kind: "noReply" });
+  });
+
+  it("checks firmware on demand", async () => {
+    await connectFakePacer("silent", { answersIdentity: true });
+    const checked = store().checkFirmware();
+    expect(store().deviceInfo).toEqual({ kind: "querying" });
+    await vi.runAllTimersAsync();
+    await checked;
+    expect(store().deviceInfo).toMatchObject({ kind: "identified", identity: { version: [1, 1, 1, 2] } });
   });
 
   it("switching configurations never sends anything to the Pacer", async () => {
@@ -122,7 +160,7 @@ describe("pulling from the Pacer", () => {
   it("reports a Pacer that doesn't answer", async () => {
     await connectFakePacer("silent");
     const pulled = store().pullFromPacer();
-    await vi.advanceTimersByTimeAsync(5000);
+    await vi.advanceTimersByTimeAsync(1000 + 5000); // identity query timeout, then the dump's
     await pulled;
     expect(store().pull).toMatchObject({ status: "error", error: expect.stringMatching(/No reply from the Pacer/) });
     expect(store().library.entries).toEqual([]);
@@ -131,6 +169,7 @@ describe("pulling from the Pacer", () => {
   it("can be cancelled", async () => {
     await connectFakePacer("silent");
     const pulled = store().pullFromPacer();
+    await vi.advanceTimersByTimeAsync(1000); // past the identity query, into the dump
     store().cancelPull();
     await pulled;
     expect(store().pull.status).toBe("idle");

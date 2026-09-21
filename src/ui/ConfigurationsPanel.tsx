@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { LibraryEntry } from "../library/configLibrary";
+import { formatFirmwareVersion, isNektar, type DeviceIdentity } from "../pacer/protocol/identity";
+import type { DeviceInfoView } from "../store/configurationsSlice";
 import { usePacerStore } from "../store/pacerStore";
 import { PortSelect } from "./PortSelect";
 
@@ -9,7 +11,34 @@ function describeSource(entry: LibraryEntry): string {
   const when = new Date(entry.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
   const from =
     entry.source.kind === "device" ? `Pulled from ${entry.source.portName}` : `Imported ${entry.source.fileName}`;
-  return `${from} · ${when} · ${entry.presetCount} presets`;
+  const firmware = entry.device ? ` · firmware ${formatFirmwareVersion(entry.device)}` : "";
+  return `${from} · ${when} · ${entry.presetCount} presets${firmware}`;
+}
+
+function describeIdentity(identity: DeviceIdentity): string {
+  const maker = isNektar(identity)
+    ? "Nektar"
+    : `manufacturer ${identity.manufacturerId.map((b) => b.toString(16)).join(" ")}`;
+  return `Firmware ${formatFirmwareVersion(identity)} (${maker}, family ${identity.family}, model ${identity.model})`;
+}
+
+function DeviceInfo({ info }: { info: DeviceInfoView }) {
+  switch (info.kind) {
+    case "unknown":
+      return null;
+    case "querying":
+      return <span className="text-xs text-muted-foreground">Asking the Pacer…</span>;
+    case "identified":
+      return <span className="text-xs">{describeIdentity(info.identity)}</span>;
+    case "noReply":
+      return (
+        <span className="text-xs text-muted-foreground">
+          The Pacer didn't answer a MIDI Device Inquiry, so its firmware version isn't available.
+        </span>
+      );
+    case "error":
+      return <span className="text-xs text-destructive">{info.message}</span>;
+  }
 }
 
 /** Offers bytes as a file download. */
@@ -144,6 +173,8 @@ function PullControls() {
   const pull = usePacerStore((s) => s.pull);
   const selectPacerPorts = usePacerStore((s) => s.selectPacerPorts);
   const cancelPull = usePacerStore((s) => s.cancelPull);
+  const deviceInfo = usePacerStore((s) => s.deviceInfo);
+  const checkFirmware = usePacerStore((s) => s.checkFirmware);
 
   if (midi.status !== "connected") {
     return (
@@ -171,6 +202,17 @@ function PullControls() {
         {(!pacerPorts.inputId || !pacerPorts.outputId) && (
           <span className="text-xs text-warning">No Pacer found; connect it over USB or pick its ports.</span>
         )}
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={!pacerPorts.inputId || !pacerPorts.outputId || deviceInfo.kind === "querying"}
+          onClick={() => void checkFirmware()}
+        >
+          Check firmware
+        </Button>
+        <DeviceInfo info={deviceInfo} />
       </div>
       {!midi.sysexEnabled && (
         <p className="text-xs text-warning">Pulling needs the SysEx permission, which wasn't granted.</p>

@@ -356,6 +356,19 @@ components in `src/components/ui/`).
     quiet. It fails clearly if the Pacer never answers.
   - The Pacer's ports are auto-detected by name (/pacer/i) and can be
     overridden.
+- **Firmware version:** the dump doesn't contain one. Its global fields
+  are identical between the factory capture and a real device dump, and
+  are all settings.
+  - The app sends a standard MIDI Device Inquiry (Universal SysEx
+    `F0 7E 7F 06 01 F7`, `protocol/identity.ts`, `midi/deviceIdentity.ts`)
+    before each pull, and on demand via "Check firmware".
+  - The reply (manufacturer, family, model, 4 version bytes) is stored on
+    the pulled snapshot.
+  - Confirmed on hardware: the Pacer answers (Nektar, family 9319, model
+    8273). Its 4 version bytes are ASCII digits ("0101"), shown as text;
+    non-printable version bytes are shown as numbers. How "0101" maps to
+    Nektar's version names (e.g. "v10112") is unknown. No reply is treated
+    as normal, not as an error.
 - **Saved configurations** (`src/library/configLibrary.ts`,
   `store/configurationsSlice.ts`, `ui/ConfigurationsPanel.tsx`):
   - Every pull and every `.syx` import becomes an immutable snapshot in

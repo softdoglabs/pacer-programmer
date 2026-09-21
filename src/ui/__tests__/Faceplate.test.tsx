@@ -43,7 +43,7 @@ describe("Faceplate (factory defaults)", () => {
     render(<App />);
     const list = screen.getByRole("list", { name: "Saved configurations" });
     expect(within(list).getByText("gig-rig")).toBeTruthy();
-    expect(within(list).getByText(/Imported gig-rig.syx .* 24 presets/)).toBeTruthy();
+    expect(within(list).getByText(/Imported gig-rig.syx .* 24 presets$/)).toBeTruthy(); // no firmware for files
 
     // Rename inline.
     fireEvent.click(within(list).getByRole("button", { name: "Rename" }));

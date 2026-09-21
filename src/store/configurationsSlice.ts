@@ -1,5 +1,6 @@
 import { ConfigLibrary, LibraryFullError, type LibraryEntry, type KeyValueStorage } from "../library/configLibrary";
 import { DumpError, findPacerPorts, pullFullDump, type PacerPorts } from "../midi/pacerDump";
+import { queryDeviceIdentity, type IdentityResult } from "../midi/deviceIdentity";
 import type { MidiConnection } from "../midi/webMidi";
 import { loadFactoryDefaults } from "../pacer/factoryDefaults";
 import { EXPECTED_FULL_DUMP_MESSAGES } from "../pacer/protocol/requests";
@@ -25,6 +26,9 @@ export interface PullView {
   error?: string;
 }
 
+/** The Pacer's answer to a MIDI Device Inquiry (firmware version etc.). */
+export type DeviceInfoView = { kind: "unknown" } | { kind: "querying" } | IdentityResult;
+
 export interface ConfigurationsSlice {
   library: LibraryView;
   /** The saved configuration open in the simulator; undefined = the built-in factory defaults. */
@@ -32,6 +36,9 @@ export interface ConfigurationsSlice {
   /** Ports used to talk to the Pacer (auto-detected by name when MIDI connects). */
   pacerPorts: PacerPorts;
   pull: PullView;
+  deviceInfo: DeviceInfoView;
+  /** Asks the Pacer for its identity (firmware version) via a MIDI Device Inquiry. */
+  checkFirmware: () => Promise<void>;
   openFactoryDefaults: () => void;
   openSavedConfig: (id: string) => void;
   /** Saves an imported .syx as a new snapshot and opens it. */
@@ -100,9 +107,14 @@ export function createConfigurationsSlice(
   }
 
   /** Saves bytes as a snapshot, then opens it. Reports failures in the library view instead of throwing. */
-  function saveAndOpen(name: string, source: LibraryEntry["source"], bytes: Uint8Array): boolean {
+  function saveAndOpen(
+    name: string,
+    source: LibraryEntry["source"],
+    bytes: Uint8Array,
+    details: Pick<LibraryEntry, "device"> = {},
+  ): boolean {
     try {
-      const entry = library.add(name, source, bytes);
+      const entry = library.add(name, source, bytes, details);
       refreshEntries();
       open(entry.id);
       return true;
@@ -119,6 +131,18 @@ export function createConfigurationsSlice(
     activeConfigId: undefined,
     pacerPorts: {},
     pull: { status: "idle", received: 0, expected: EXPECTED_FULL_DUMP_MESSAGES },
+    deviceInfo: { kind: "unknown" },
+
+    checkFirmware: async () => {
+      const connection = deps.midiConnection();
+      const { inputId, outputId } = get().pacerPorts;
+      if (!connection || !inputId || !outputId) {
+        set({ deviceInfo: { kind: "error", message: "Connect MIDI and choose the Pacer's ports first." } });
+        return;
+      }
+      set({ deviceInfo: { kind: "querying" } });
+      set({ deviceInfo: await queryDeviceIdentity(connection, { inputId, outputId }) });
+    },
 
     openFactoryDefaults: () => {
       get().loadConfig(loadFactoryDefaults(), FACTORY_NAME);
@@ -155,6 +179,9 @@ export function createConfigurationsSlice(
       }
       pullAbort = new AbortController();
       set({ pull: { status: "pulling", received: 0, expected: EXPECTED_FULL_DUMP_MESSAGES } });
+      // Record what firmware produced this dump, if the Pacer answers a Device Inquiry.
+      const identity = await queryDeviceIdentity(connection, { inputId, outputId });
+      set({ deviceInfo: identity });
       try {
         const bytes = await pullFullDump(connection, {
           inputId,
@@ -167,7 +194,12 @@ export function createConfigurationsSlice(
           },
         });
         const portName = get().midi.inputs.find((p) => p.id === inputId)?.name ?? "Pacer";
-        const saved = saveAndOpen(snapshotName(now()), { kind: "device", portName }, bytes);
+        const saved = saveAndOpen(
+          snapshotName(now()),
+          { kind: "device", portName },
+          bytes,
+          identity.kind === "identified" ? { device: identity.identity } : {},
+        );
         set({
           pull: saved
             ? { status: "idle", received: 0, expected: EXPECTED_FULL_DUMP_MESSAGES }

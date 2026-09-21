@@ -77,6 +77,27 @@ describe("Faceplate (factory defaults)", () => {
     expect(display()).toBe("B1");
   });
 
+  it("preset select: 1-6 flash dim except the loaded preset's number (solid bright); [Preset] flashes", () => {
+    act(() => usePacerStore.getState().jumpToPreset(2)); // A3
+    vi.useFakeTimers();
+    render(<App />);
+    const preset = screen.getByRole("button", { name: /^Preset button/ });
+    hold(preset);
+    act(() => vi.advanceTimersByTime(PRESET_HOLD_MS));
+    fireEvent.keyUp(preset, { key: " " });
+    vi.useRealTimers();
+
+    const led = (el: Element) => [el.getAttribute("data-led"), el.getAttribute("data-led-flashing")];
+    expect(led(preset)).toEqual(["bright", "true"]);
+    expect(led(switchButton("3"))).toEqual(["bright", "false"]);
+    for (const n of ["1", "2", "4", "5", "6"]) expect(led(switchButton(n))).toEqual(["dim", "true"]);
+    expect(led(switchButton("A"))).toEqual(["bright", "false"]);
+    expect(led(switchButton("B"))).toEqual(["off", "false"]);
+
+    tap(switchButton("B")); // another bank: no loaded preset among 1-6
+    expect(led(switchButton("3"))).toEqual(["dim", "true"]);
+  });
+
   it("the inspector shows the pressed control's steps", () => {
     render(<App />);
     tap(switchButton("2"));

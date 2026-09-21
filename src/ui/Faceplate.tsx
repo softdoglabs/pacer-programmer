@@ -1,6 +1,6 @@
 import { ControlId, presetIndexToLabel } from "../pacer/protocol/constants";
 import { getControlLedState, getControlDisplayState, ledColor, summarizeControl } from "../pacer/simulator";
-import { PRESET_HOLD_MS, SPECIAL_PRESETS } from "../pacer/device";
+import { PRESET_HOLD_MS, SPECIAL_PRESETS, presetButtonLed, presetSelectLed, type IndicatorLed } from "../pacer/device";
 import { usePacerStore, type DeviceModeView } from "../store/pacerStore";
 import { useControlHandlers } from "./useControlHandlers";
 import { useHoldHandlers } from "./useHoldHandlers";
@@ -21,6 +21,11 @@ const FRONT_ROW_Y = 350;
 const LED_OFF = "#26262a";
 const DISPLAY_RED = "#ff3322";
 const PRESET_BLUE = "#5b8cff";
+/** Every LED the firmware lights in preset select is royal blue... */
+const PRESET_LED = "#4169e1";
+const PRESET_LED_DIM = `color-mix(in srgb, ${PRESET_LED} 40%, black)`;
+/** ...except [Preset] itself, which flashes bright red while preset select is active. */
+const PRESET_BUTTON_SELECT_LED = "#ff2a1f";
 
 const colX = (col: number) => COL_X0 + col * COL_PITCH;
 
@@ -49,6 +54,8 @@ interface SwitchArtProps {
   ledCss: string;
   ledGlow: boolean;
   ledBlink?: boolean;
+  /** Set when the LED is a firmware indicator (e.g. preset select) rather than preset-configured. */
+  indicator?: IndicatorLed;
   pressed: boolean;
   selected?: boolean;
   dimmed?: boolean;
@@ -73,6 +80,8 @@ function SwitchArt(props: SwitchArtProps) {
       aria-pressed={pressed}
       data-pressed={pressed}
       data-selected={props.selected ?? false}
+      data-led={props.indicator?.brightness}
+      data-led-flashing={props.indicator?.flashing}
       opacity={props.dimmed ? 0.55 : 1}
       {...props.handlers}
     >
@@ -93,6 +102,7 @@ function SwitchArt(props: SwitchArtProps) {
       >
         {legend}
       </text>
+      <rect x={20} y={92} width={HOUSING_W - 40} height={10} rx={5} fill={LED_OFF} />
       <rect
         x={20}
         y={92}
@@ -101,7 +111,7 @@ function SwitchArt(props: SwitchArtProps) {
         rx={5}
         fill={props.ledCss}
         filter={props.ledGlow ? "url(#led-glow)" : undefined}
-        className={props.ledBlink ? "pacer-blink" : undefined}
+        className={props.ledBlink ? "pacer-led-flash" : undefined}
       />
       <g className="pad">
         <rect x={22} y={114} width={HOUSING_W - 44} height={108} rx={12} fill={pressed ? "#141416" : "#1d1d20"} stroke="#000" strokeWidth={3} />
@@ -142,22 +152,29 @@ interface SwitchLook {
   ledCss: string;
   ledGlow: boolean;
   ledBlink?: boolean;
+  indicator?: IndicatorLed;
   dimmed: boolean;
   title: string;
 }
 
 /** How a stompswitch looks inside one of the firmware's special presets, which override the user preset's config. */
-function specialPresetLook(mode: DeviceModeView, controlId: number, name: string, isBankSwitch: boolean): SwitchLook | undefined {
+function specialPresetLook(
+  mode: DeviceModeView,
+  controlId: number,
+  name: string,
+  isBankSwitch: boolean,
+  activePresetIndex: number,
+): SwitchLook | undefined {
   if (mode.mode === "presetSelect") {
-    const activeBank = isBankSwitch && "ABCD".indexOf(name) === mode.pendingBank;
     const legend = isBankSwitch ? `BANK ${name}` : `${"ABCD"[mode.pendingBank]}${name}`;
-    // Per the User Guide, switches 1-6 blink while preset select is active.
+    const indicator = presetSelectLed(controlId, mode.pendingBank, activePresetIndex) ?? { brightness: "off", flashing: false };
     return {
       legend,
       legendColor: PRESET_BLUE,
-      ledCss: activeBank || !isBankSwitch ? PRESET_BLUE : LED_OFF,
-      ledGlow: activeBank || !isBankSwitch,
-      ledBlink: !isBankSwitch,
+      ledCss: indicator.brightness === "bright" ? PRESET_LED : indicator.brightness === "dim" ? PRESET_LED_DIM : LED_OFF,
+      ledGlow: indicator.brightness === "bright",
+      ledBlink: indicator.flashing,
+      indicator,
       dimmed: false,
       title: isBankSwitch ? `Select bank ${name}` : `Load preset ${legend}`,
     };
@@ -188,7 +205,7 @@ function StompSwitch({ controlId, name, col, rowY, badge }: { controlId: number;
   const display = getControlDisplayState(board, controlId);
   const led = getControlLedState(board, controlId);
 
-  let look = specialPresetLook(deviceMode, controlId, name, badge);
+  let look = specialPresetLook(deviceMode, controlId, name, badge, board.activePresetIndex);
   if (!look) {
     const legend = summarizeControl(control, "switch");
     const stepNote = display.sequencePointer !== undefined ? ` (sequence: next step ${display.sequencePointer})` : "";
@@ -212,6 +229,7 @@ function StompSwitch({ controlId, name, col, rowY, badge }: { controlId: number;
       ledCss={look.ledCss}
       ledGlow={look.ledGlow}
       ledBlink={look.ledBlink}
+      indicator={look.indicator}
       pressed={deviceMode.mode === "user" && display.pressed}
       selected={selected}
       dimmed={look.dimmed}
@@ -230,6 +248,9 @@ function PresetSwitch() {
   const handlers = useHoldHandlers(usePacerStore((s) => s.presetButtonDown), usePacerStore((s) => s.presetButtonUp));
   const inSpecial = mode !== "user";
   const holdHint = `hold ${PRESET_HOLD_MS / 1000}s: preset select (A-D bank, 1-6 preset)`;
+  const led = presetButtonLed(mode);
+  // Red while preset select is active (unlike the royal-blue selection LEDs); royal blue otherwise.
+  const ledHue = mode === "presetSelect" ? PRESET_BUTTON_SELECT_LED : PRESET_LED;
   return (
     <SwitchArt
       x={colX(0)}
@@ -237,8 +258,10 @@ function PresetSwitch() {
       name="PRESET"
       legend="Preset"
       legendColor={PRESET_BLUE}
-      ledCss={inSpecial ? PRESET_BLUE : LED_OFF}
-      ledGlow={inSpecial}
+      ledCss={led.brightness === "off" ? LED_OFF : ledHue}
+      ledGlow={led.brightness === "bright"}
+      ledBlink={led.flashing}
+      indicator={led}
       pressed={held}
       ariaLabel={inSpecial ? `Preset button (tap: back to ${lastPreset}; ${holdHint})` : `Preset button (${holdHint})`}
       title={inSpecial ? `Preset. Tap: back to ${lastPreset}. Hold ${PRESET_HOLD_MS / 1000}s: preset select.` : `Preset. ${holdHint}.`}

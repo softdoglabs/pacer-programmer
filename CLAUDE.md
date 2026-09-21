@@ -236,6 +236,10 @@ control/preset inspector, and the output log.
     - A tap returns to the last user preset: it reloads from
       Track/Transport, cancels preset select, and does nothing on a user
       preset.
+  - Preset-select LEDs (`presetSelectLeds.ts`, observed on hardware) are
+    royal blue: 1-6 flash dim, except the loaded preset's number, which is
+    solid bright. [Preset]'s own LED flashes bright red. The A-D LEDs
+    (pending bank bright, others off) are assumed.
   - Factory A and B use PresetSelect's reserved targets 1 ("track") and
     2 ("transport"). The engine reports these as `specialPresetRequested`.
   - Track/Transport switch assignments are in `specialPresets.ts`. They

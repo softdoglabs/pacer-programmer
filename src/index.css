@@ -89,3 +89,13 @@
 .pacer-blink {
   animation: pacer-blink 0.8s steps(1) infinite;
 }
+
+/* An LED flashing between its color and fully off (the off bar is drawn underneath). */
+@keyframes pacer-led-flash {
+  50% {
+    opacity: 0;
+  }
+}
+.pacer-led-flash {
+  animation: pacer-led-flash 0.8s steps(1) infinite;
+}

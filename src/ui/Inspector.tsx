@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tab, TabList, TabPanel, Tabs } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { ControlMode, STEPS_PER_CONTROL, presetIndexToLabel } from "../pacer/protocol/constants";
 import type { LedConfig, Preset, Step, SwitchControl } from "../pacer/protocol/types";
@@ -28,19 +27,15 @@ const MODE_NAMES: Record<number, string> = {
 function LedSwatch({ code, label }: { code?: number; label: string }) {
   if (code === undefined) return <span className="text-muted-foreground">·</span>;
   const name = ledColorName(code);
+  // The color's name is in the title and accessible name; no hover-only UI (tablets have no hover).
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          className="inline-block size-3.5 rounded-full border border-white/20 align-middle"
-          style={{ background: colorCodeCss(code) }}
-          aria-label={`${label}: ${name}`}
-        />
-      </TooltipTrigger>
-      <TooltipContent>
-        {label}: {name}
-      </TooltipContent>
-    </Tooltip>
+    <span
+      role="img"
+      className="inline-block size-3.5 rounded-full border border-white/20 align-middle"
+      style={{ background: colorCodeCss(code) }}
+      title={`${label}: ${name}`}
+      aria-label={`${label}: ${name}`}
+    />
   );
 }
 
@@ -242,22 +237,22 @@ export function Inspector() {
   const mode = usePacerStore((s) => s.deviceMode.mode);
   const note = SPECIAL_MODE_NOTES[mode];
   return (
-    <Tabs defaultValue="control">
+    <Tabs defaultSelectedKey="control">
       {note && (
         <p className="mb-2 rounded-md border border-primary/40 bg-primary/10 px-2 py-1.5 text-xs">
           {note} [Preset] returns to {presetIndexToLabel(index)}; the details below are for {presetIndexToLabel(index)}.
         </p>
       )}
-      <TabsList>
-        <TabsTrigger value="control">Control</TabsTrigger>
-        <TabsTrigger value="preset">Preset</TabsTrigger>
-      </TabsList>
-      <TabsContent value="control" className="pt-2">
+      <TabList aria-label="Inspector">
+        <Tab id="control">Control</Tab>
+        <Tab id="preset">Preset</Tab>
+      </TabList>
+      <TabPanel id="control" className="pt-2">
         <ControlTab />
-      </TabsContent>
-      <TabsContent value="preset" className="pt-2">
+      </TabPanel>
+      <TabPanel id="preset" className="pt-2">
         <PresetTab preset={preset} index={index} />
-      </TabsContent>
+      </TabPanel>
     </Tabs>
   );
 }

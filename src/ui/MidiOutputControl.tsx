@@ -12,7 +12,12 @@ export function MidiOutputControl() {
     case "disconnected":
     case "connecting":
       return (
-        <Button variant="outline" size="sm" disabled={midi.status === "connecting"} onClick={() => void connectMidi()}>
+        <Button
+          variant="outline"
+          size="sm"
+          isDisabled={midi.status === "connecting"}
+          onPress={() => void connectMidi()}
+        >
           {midi.status === "connecting" ? "Connecting…" : "Connect MIDI"}
         </Button>
       );
@@ -24,7 +29,7 @@ export function MidiOutputControl() {
       return (
         <span className="flex items-center gap-2 text-xs text-warning">
           MIDI access denied{midi.error ? `: ${midi.error}` : ""}
-          <Button variant="ghost" size="sm" onClick={() => void connectMidi()}>
+          <Button variant="ghost" size="sm" onPress={() => void connectMidi()}>
             Retry
           </Button>
         </span>

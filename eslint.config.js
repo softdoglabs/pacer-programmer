@@ -16,7 +16,7 @@ import tseslint from "typescript-eslint";
 const noUiInDomain = {
   patterns: [
     {
-      group: ["react", "react-dom", "zustand", "@xstate/react", "@react-aria/*"],
+      group: ["react", "react-dom", "zustand", "@xstate/react", "react-aria", "react-aria-components", "@react-aria/*"],
       message: "src/pacer is framework-free domain code.",
     },
     {

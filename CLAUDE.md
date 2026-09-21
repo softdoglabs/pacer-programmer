@@ -175,7 +175,7 @@ client — a server buys nothing here).
 | Device state machine | **XState**, hand-authored | Models the Pacer's own firmware-level UI behavior (bank-select mode, active preset/bank, LED feedback) given whatever preset config is currently loaded. This is what the on-screen simulator runs. |
 | Preset analysis engine | **Plain TypeScript, pure functions, heavily unit-tested (Vitest)** | Computes the template hierarchy and the derived preset-transition graph from the canonical config. This is derived/inferred data, not something a user or a hand-authored state machine defines — it belongs in a well-tested analysis module, not a UI framework. Exact algorithm (e.g. recursive partitioning by maximal shared field-value sets, vs. a formal-concept-analysis-style lattice) is still to be worked out. |
 | Diagram rendering | **React Flow** (`@xyflow/react`) | Renders three different graphs from the same library: the device state machine, the derived template hierarchy tree, and the derived preset-transition graph. |
-| Component/styling | **shadcn/ui + Tailwind CSS** | Radix-based primitives (dialogs, tabs, tooltips, forms) that are copy-owned rather than a black-box dependency — needed because we're doing something non-standard (precise hit-regions positioned over a hardware photo/SVG), so full styling control matters more than a large prebuilt widget set. |
+| Component/styling | **React Aria Components + Tailwind CSS** | Unstyled, accessible primitives (buttons, selects, number fields, tabs, …) with press handling that works the same for mouse, touch, pen and keyboard. That matters for a tablet-friendly editor and for the faceplate's switch hit regions. We style them ourselves with Tailwind via thin wrappers in `src/components/ui/`, so we keep full control over the non-standard hardware UI. (The project started on shadcn/ui/Radix and moved off it.) |
 | MIDI I/O | **Web MIDI API** directly (`navigator.requestMIDIAccess({ sysex: true })`), thin wrapper module | No dependency needed for something this small; keeping it thin makes the SysEx parsing/encoding logic easy to unit test independent of the browser API. |
 | Package manager | **pnpm** | Fast, disk-efficient, fine default. |
 | Testing | **Vitest** + Testing Library | Pairs natively with Vite; SysEx encode/decode and both the device and analysis logic are pure and easy to unit test — and correctness of the analysis engine is the actual hard problem in this project, so it needs real test coverage. |
@@ -350,8 +350,10 @@ every control on every real factory preset).
     `protocol/ledColors.ts`.
 
 The simulator UI (`src/App.tsx`, `src/ui/`, `src/store/pacerStore.ts`) is
-built on Tailwind v4 + shadcn/ui (dark-only theme, `@/` path alias,
-components in `src/components/ui/`).
+built on Tailwind v4 + React Aria Components (dark-only theme, `@/` path
+alias). Small Tailwind-styled wrappers over RAC live in
+`src/components/ui/` (Button, Tabs, Select, plus a static Badge). There's
+no hover-only UI, for tablets.
 - **The faceplate** (`src/ui/panel/Faceplate.tsx`) contains no per-switch
   or per-mode logic. It lays out `PACER_HARDWARE` and paints
   `computePanelState` through the generic `SwitchView`, which renders any
@@ -364,8 +366,8 @@ components in `src/components/ui/`).
   background SVG (body, display, markings, hints), with its artwork in an
   inner SVG.
 - **Press handling:** all presses, including the rear-jack buttons, go
-  through React Aria's `usePress` (`@react-aria/interactions`), not
-  hand-rolled pointer/focus code.
+  through React Aria's `usePress` (`react-aria`), not hand-rolled
+  pointer/focus code.
 - **Why not SVG elements:** `usePress` only ends a touch long-press (no
   click on iOS/Android) for `HTMLElement` targets.
 - **Tap vs. hold on [Preset]:** decided by the device machine's timer, not

@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { usePacerStore, type LogEntry } from "../store/pacerStore";
 
@@ -24,11 +23,11 @@ export function MessageLog() {
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center justify-between pb-2">
         <h2 className="text-sm font-semibold">Output</h2>
-        <Button variant="ghost" size="sm" onClick={clearLog} disabled={log.length === 0}>
+        <Button variant="ghost" size="sm" onPress={clearLog} isDisabled={log.length === 0}>
           Clear
         </Button>
       </div>
-      <ScrollArea className="min-h-0 flex-1 rounded-md border bg-black/30">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-md border bg-black/30">
         <div className="space-y-3 p-3 font-mono text-xs" role="log" aria-label="Output log">
           {entries.length === 0 && <p className="text-muted-foreground">Press a switch to see what it would send.</p>}
           {entries.map((entry) => (
@@ -42,7 +41,7 @@ export function MessageLog() {
             </div>
           ))}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { usePress } from "@react-aria/interactions";
+import { usePress } from "react-aria";
 import { usePacerStore } from "../store/pacerStore";
 
 /**

@@ -1,7 +1,6 @@
 import { Fragment } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { usePacerStore } from "./store/pacerStore";
 import { ConfigurationsPanel } from "./ui/ConfigurationsPanel";
 import { Faceplate } from "./ui/panel/Faceplate";
@@ -26,7 +25,7 @@ export function App() {
   const resetMidiState = usePacerStore((s) => s.resetMidiState);
 
   return (
-    <TooltipProvider delayDuration={200}>
+    <>
       <div className="flex min-h-screen flex-col lg:h-screen">
         <header className="flex flex-wrap items-center gap-3 border-b px-4 py-2.5">
           <h1 className="text-base font-semibold">Pacer Programmer</h1>
@@ -44,7 +43,7 @@ export function App() {
             <Fragment key={`sim-${sessionId}`}>
               <Faceplate />
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <Button size="sm" variant="outline" onClick={resetMidiState}>
+                <Button size="sm" variant="outline" onPress={resetMidiState}>
                   Reset MIDI state
                 </Button>
                 <span>
@@ -71,6 +70,6 @@ export function App() {
           </aside>
         </main>
       </div>
-    </TooltipProvider>
+    </>
   );
 }

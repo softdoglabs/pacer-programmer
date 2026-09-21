@@ -1,4 +1,4 @@
-import { usePress } from "@react-aria/interactions";
+import { usePress } from "react-aria";
 import { useMemo, type CSSProperties } from "react";
 import { panelRow, type SwitchSpec } from "@/pacer/hardware";
 import { computePanelState, switchHint, type DisplayState, type SwitchPanelState } from "@/pacer/panel";

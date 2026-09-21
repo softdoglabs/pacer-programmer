@@ -141,7 +141,7 @@ function EntryRow({ entry }: { entry: LibraryEntry }) {
         <Button
           size="sm"
           variant="ghost"
-          onClick={() => {
+          onPress={() => {
             setDraft(entry.name);
             setEditing(true);
           }}
@@ -151,14 +151,14 @@ function EntryRow({ entry }: { entry: LibraryEntry }) {
         <Button
           size="sm"
           variant="ghost"
-          onClick={() => downloadBytes(`${entry.name}.syx`, savedConfigBytes(entry.id))}
+          onPress={() => downloadBytes(`${entry.name}.syx`, savedConfigBytes(entry.id))}
         >
           Export .syx
         </Button>
         <Button
           size="sm"
           variant={confirmingDelete ? "destructive" : "ghost"}
-          onClick={() => (confirmingDelete ? deleteSavedConfig(entry.id) : setConfirmingDelete(true))}
+          onPress={() => (confirmingDelete ? deleteSavedConfig(entry.id) : setConfirmingDelete(true))}
         >
           {confirmingDelete ? "Confirm delete" : "Delete"}
         </Button>
@@ -207,8 +207,8 @@ function PullControls() {
         <Button
           size="sm"
           variant="ghost"
-          disabled={!pacerPorts.inputId || !pacerPorts.outputId || deviceInfo.kind === "querying"}
-          onClick={() => void checkFirmware()}
+          isDisabled={!pacerPorts.inputId || !pacerPorts.outputId || deviceInfo.kind === "querying"}
+          onPress={() => void checkFirmware()}
         >
           Check firmware
         </Button>
@@ -223,7 +223,7 @@ function PullControls() {
           <span className="text-xs tabular-nums text-muted-foreground">
             {pull.received} / {pull.expected}
           </span>
-          <Button size="sm" variant="ghost" onClick={cancelPull}>
+          <Button size="sm" variant="ghost" onPress={cancelPull}>
             Cancel
           </Button>
         </div>
@@ -255,10 +255,10 @@ export function ConfigurationsPanel() {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" disabled={!canPull || pull.status === "pulling"} onClick={() => void pullFromPacer()}>
+        <Button size="sm" isDisabled={!canPull || pull.status === "pulling"} onPress={() => void pullFromPacer()}>
           {pull.status === "pulling" ? "Pulling…" : "Pull from Pacer"}
         </Button>
-        <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+        <Button size="sm" variant="outline" onPress={() => fileInputRef.current?.click()}>
           Import .syx
         </Button>
         <input ref={fileInputRef} type="file" accept=".syx" className="hidden" onChange={handleFile} />

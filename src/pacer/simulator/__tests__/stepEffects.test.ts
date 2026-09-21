@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ExpressionMessageType, SwitchMessageType } from "../../protocol/constants";
 import type { Step } from "../../protocol/types";
+import { EMPTY_MIDI_STATE, recordMidi } from "../midiState";
 import { fireExpressionStep, fireSwitchStep, type StepSubState } from "../stepEffects";
 
 /** Wire channel passed to the step functions (they no longer read step.channel). */
@@ -10,7 +11,7 @@ function step(msgType: number, data: [number, number, number], channel = 1, acti
   return { channel, msgType, data, active };
 }
 
-const noSubState: StepSubState = {};
+const noSubState: StepSubState = { midi: EMPTY_MIDI_STATE };
 
 describe("fireSwitchStep", () => {
   it("Off does nothing on either phase", () => {
@@ -37,27 +38,31 @@ describe("fireSwitchStep", () => {
     ]);
   });
 
-  it("CcToggle alternates value1/value2 on press only, flipping persistent state", () => {
+  it("CcToggle follows the remembered CC value: sends On unless the CC is already On, press only", () => {
     const s = step(SwitchMessageType.CcToggle, [10, 0, 127]);
-    const first = fireSwitchStep(s, "press", {}, WIRE_CHANNEL);
+    const first = fireSwitchStep(s, "press", noSubState, WIRE_CHANNEL);
     expect(first.messages).toEqual([{ kind: "controlChange", channel: 1, controller: 10, value: 127 }]);
-    expect(first.runtimePatch).toEqual({ toggle: true });
+    expect(first.runtimePatch).toBeUndefined();
 
-    const second = fireSwitchStep(s, "press", { toggle: first.runtimePatch!.toggle }, WIRE_CHANNEL);
+    const midi = recordMidi(EMPTY_MIDI_STATE, first.messages);
+    const second = fireSwitchStep(s, "press", { midi }, WIRE_CHANNEL);
     expect(second.messages).toEqual([{ kind: "controlChange", channel: 1, controller: 10, value: 0 }]);
-    expect(second.runtimePatch).toEqual({ toggle: false });
 
-    expect(fireSwitchStep(s, "release", {}, WIRE_CHANNEL)).toEqual({ messages: [], deviceActions: [], warnings: [] });
+    expect(fireSwitchStep(s, "release", noSubState, WIRE_CHANNEL)).toEqual({
+      messages: [],
+      deviceActions: [],
+      warnings: [],
+    });
   });
 
   it("CcStep steps from start to end and wraps, one value per press, nothing on release", () => {
     const s = step(SwitchMessageType.CcStep, [5, 10, 12]);
-    let sub: StepSubState = {};
+    let sub: StepSubState = noSubState;
     const seen: number[] = [];
     for (let i = 0; i < 4; i++) {
       const result = fireSwitchStep(s, "press", sub, WIRE_CHANNEL);
       seen.push((result.messages[0] as { value: number }).value);
-      sub = { counter: result.runtimePatch!.counter };
+      sub = { ...sub, counter: result.runtimePatch!.counter };
     }
     expect(seen).toEqual([10, 11, 12, 10]);
     expect(fireSwitchStep(s, "release", sub, WIRE_CHANNEL)).toEqual({ messages: [], deviceActions: [], warnings: [] });
@@ -73,13 +78,17 @@ describe("fireSwitchStep", () => {
     ]);
   });
 
-  it("NoteToggle alternates NoteOn/NoteOff on press only", () => {
+  it("NoteToggle follows the remembered note: NoteOff if it's sounding, else NoteOn; press only", () => {
     const s = step(SwitchMessageType.NoteToggle, [64, 90, 0]);
-    const first = fireSwitchStep(s, "press", {}, WIRE_CHANNEL);
+    const first = fireSwitchStep(s, "press", noSubState, WIRE_CHANNEL);
     expect(first.messages).toEqual([{ kind: "noteOn", channel: 1, note: 64, velocity: 90 }]);
-    const second = fireSwitchStep(s, "press", { toggle: first.runtimePatch!.toggle }, WIRE_CHANNEL);
+    const second = fireSwitchStep(s, "press", { midi: recordMidi(EMPTY_MIDI_STATE, first.messages) }, WIRE_CHANNEL);
     expect(second.messages).toEqual([{ kind: "noteOff", channel: 1, note: 64, velocity: 0 }]);
-    expect(fireSwitchStep(s, "release", {}, WIRE_CHANNEL)).toEqual({ messages: [], deviceActions: [], warnings: [] });
+    expect(fireSwitchStep(s, "release", noSubState, WIRE_CHANNEL)).toEqual({
+      messages: [],
+      deviceActions: [],
+      warnings: [],
+    });
   });
 
   it("ProgramAndBank sends only Program Change when bank bytes are both zero", () => {
@@ -100,12 +109,12 @@ describe("fireSwitchStep", () => {
 
   it("ProgramStep uses data[1]/data[2] as start/end (data[0] unused) and wraps", () => {
     const s = step(SwitchMessageType.ProgramStep, [0, 0, 2]);
-    let sub: StepSubState = {};
+    let sub: StepSubState = noSubState;
     const seen: number[] = [];
     for (let i = 0; i < 4; i++) {
       const result = fireSwitchStep(s, "press", sub, WIRE_CHANNEL);
       seen.push((result.messages[0] as { program: number }).program);
-      sub = { counter: result.runtimePatch!.counter };
+      sub = { ...sub, counter: result.runtimePatch!.counter };
     }
     expect(seen).toEqual([0, 1, 2, 0]);
   });

@@ -281,14 +281,31 @@ every control on every real factory preset).
   strategy per mode:
   - **The firmware LED model** (`engagement.ts`, `stepLight`).
     - **Steps that send MIDI have a value state.** The manual calls the
-      colors "On/maximum value state" and "Off/minimum value state", and
-      the light shows the On or Off color:
-      - CC/Note Toggle: by the toggle bit (bank B rests dim blue).
-      - Program Change: On while its switch sent the preset's last PC
-        (User Guide on A1-A4). A1 rests dim orange.
-      - Momentary types (CC Trigger, Note, MMC, ...): On while held. At
-        rest a CC Trigger shows its Off color (observed, dim orange); the
-        held state is assumed.
+      colors "On/maximum value state" and "Off/minimum value state".
+    - **That state is the device's remembered MIDI values**
+      (`simulator/midiState.ts`: CC values, notes that are on, program and
+      bank per channel), kept in `BoardState.midi`.
+      - Every message the simulator sends updates it. It survives preset
+        changes (observed: a PC switch sent on A1 is still bright after
+        visiting another preset and returning).
+      - It's cleared only by the "Reset MIDI state" button or a new
+        session.
+      - The dump's global "Current" block stores the same kind of state
+        (program/bank per channel), but its encoding isn't known, so it
+        isn't used as a starting point.
+    - **Lights follow the memory** (`stepValueOn`):
+      - CC Toggle / CC Trigger: the CC holds the step's On / press value.
+        Bank B rests dim blue; a CC Trigger rests at its Off color (both
+        observed).
+      - Note / Note Toggle: the note is sounding.
+      - Program & Bank: the channel's current program (and bank, if the
+        step sends one) is the step's. A1 rests dim orange.
+      - Other MIDI types: On while held (assumed).
+    - **Toggles follow the memory too:** a CC Toggle sends Off if its CC
+      holds the On value, else On, so every switch toggling the same CC
+      shares state. Note Toggle works the same way. This replaced
+      per-switch toggle bits and a "last PC sender" that were reset on
+      every preset change.
     - **Preset navigation has no value state.** Each kind has a fixed light
       role (all observed):
       - Preset Select to a user preset: the On color, steadily. A with

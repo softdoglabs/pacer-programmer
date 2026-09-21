@@ -8,10 +8,11 @@ export type CurrentPreset = { kind: "user"; index: number } | { kind: "special";
 export interface StepContext {
   /** The switch is physically held. */
   held: boolean;
-  /** The step's persistent toggle bit (CC/Note Toggle). */
-  toggleOn: boolean;
-  /** This switch sent the current preset's most recent Program Change. */
-  sentLastProgramChange: boolean;
+  /**
+   * Whether the step's MIDI is in its On state per the device's remembered values
+   * (`stepValueOn`), or undefined for steps whose light doesn't follow a remembered value.
+   */
+  valueOn: boolean | undefined;
   current: CurrentPreset;
 }
 
@@ -32,14 +33,15 @@ const DARK: StepLight = { kind: "dark" };
  * The firmware's LED model, reconstructed from the manual and hardware observations.
  *
  * Steps that send MIDI have a value state. The User Guide calls the colors "On/maximum value
- * state" and "Off/minimum value state", and the light shows On or Off accordingly:
- * - CC/Note Toggle: the toggle bit. Factory bank B's CC toggles rest dim blue.
- * - Program Change: On while this switch sent the preset's most recent Program Change. User
- *   Guide on A1-A4: "the LED switch for the last sent message is fully illuminated with other
- *   switches dimmed". A1 rests dim orange.
- * - Momentary types (CC Trigger/Step, Note, NRPN, MMC, Relay, Step Select): On while held, Off
- *   otherwise. Observed at rest: a CC Trigger with Orange/Dim Orange rests dim orange. The
- *   held state is assumed.
+ * state" and "Off/minimum value state". The light shows On or Off by the device's remembered
+ * MIDI values (midiState.ts), which persist across preset changes (observed: a PC switch sent on
+ * A1 is still bright after visiting another preset and coming back):
+ * - CC Toggle / CC Trigger: the CC holds the step's On / press value. Factory bank B's CC
+ *   toggles rest dim blue; a CC Trigger with Orange/Dim Orange rests dim orange (observed).
+ * - Note / Note Toggle: the note is sounding.
+ * - Program & Bank: the channel's current program is the step's. User Guide on A1-A4: "the LED
+ *   switch for the last sent message is fully illuminated with other switches dimmed".
+ * - Other MIDI types (CC/Program Step, NRPN, MMC, Relay, Step Select): On while held. Assumed.
  *
  * Preset navigation has no value state; the firmware gives each kind a fixed light role:
  * - Preset Select to a user preset: On color, steadily. Observed: A set to Preset Select with
@@ -52,12 +54,6 @@ const DARK: StepLight = { kind: "dark" };
  */
 export function stepLight(step: Step, ctx: StepContext): StepLight {
   switch (step.msgType) {
-    case SwitchMessageType.CcToggle:
-    case SwitchMessageType.NoteToggle:
-      return ctx.toggleOn ? ON : OFF;
-    case SwitchMessageType.ProgramAndBank:
-    case SwitchMessageType.ProgramStep:
-      return ctx.sentLastProgramChange ? ON : OFF;
     case SwitchMessageType.PresetSelect: {
       const target = step.data[0];
       if (target === 1 || target === 2) {
@@ -69,6 +65,7 @@ export function stepLight(step: Step, ctx: StepContext): StepLight {
     case SwitchMessageType.PresetIncDec:
       return DARK;
     default:
+      if (ctx.valueOn !== undefined) return ctx.valueOn ? ON : OFF;
       return ctx.held ? ON : OFF;
   }
 }

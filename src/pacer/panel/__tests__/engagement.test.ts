@@ -7,21 +7,18 @@ const A1 = userPresetIndex(0, 1);
 const C1 = userPresetIndex(2, 1);
 const idle: StepContext = {
   held: false,
-  toggleOn: false,
-  sentLastProgramChange: false,
+  valueOn: undefined,
   current: { kind: "user", index: A1 },
 };
 const step = (msgType: number, d0 = 0): Step => ({ channel: 0, msgType, data: [d0, 0, 0], active: true });
 
 describe("stepLight (the firmware LED model)", () => {
-  it("MIDI steps show On/Off by value state: toggle bit, last Program Change, or held", () => {
-    const toggle = step(SwitchMessageType.CcToggle);
-    expect(stepLight(toggle, { ...idle, toggleOn: true })).toEqual({ kind: "on" });
-    expect(stepLight(toggle, { ...idle, held: true })).toEqual({ kind: "off" });
-    const pc = step(SwitchMessageType.ProgramAndBank, 5);
-    expect(stepLight(pc, { ...idle, sentLastProgramChange: true })).toEqual({ kind: "on" });
-    expect(stepLight(pc, idle)).toEqual({ kind: "off" });
-    for (const t of [SwitchMessageType.CcTrigger, SwitchMessageType.Note, SwitchMessageType.Mmc]) {
+  it("MIDI steps show On/Off by their remembered value when they have one, else by being held", () => {
+    for (const t of [SwitchMessageType.CcToggle, SwitchMessageType.ProgramAndBank, SwitchMessageType.Note]) {
+      expect(stepLight(step(t), { ...idle, valueOn: true })).toEqual({ kind: "on" });
+      expect(stepLight(step(t), { ...idle, valueOn: false, held: true })).toEqual({ kind: "off" });
+    }
+    for (const t of [SwitchMessageType.CcStep, SwitchMessageType.Mmc, SwitchMessageType.Relay]) {
       expect(stepLight(step(t), { ...idle, held: true })).toEqual({ kind: "on" });
       expect(stepLight(step(t), idle)).toEqual({ kind: "off" });
     }

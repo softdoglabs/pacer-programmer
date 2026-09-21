@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { usePacerStore } from "./store/pacerStore";
 import { ConfigurationsPanel } from "./ui/ConfigurationsPanel";
@@ -22,6 +23,7 @@ function Section({ title, children, className }: { title: string; children: Reac
 export function App() {
   const configSource = usePacerStore((s) => s.configSource);
   const sessionId = usePacerStore((s) => s.sessionId);
+  const resetMidiState = usePacerStore((s) => s.resetMidiState);
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -41,6 +43,15 @@ export function App() {
             {/* Simulator views are keyed on the session, so a configuration switch remounts them. */}
             <Fragment key={`sim-${sessionId}`}>
               <Faceplate />
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <Button size="sm" variant="outline" onClick={resetMidiState}>
+                  Reset MIDI state
+                </Button>
+                <span>
+                  The Pacer remembers the last program, CC values and notes it sent (they light switches across
+                  presets). This forgets them.
+                </span>
+              </div>
               <Section title="Rear jacks">
                 <RearJacks />
               </Section>

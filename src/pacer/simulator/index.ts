@@ -6,3 +6,4 @@ export * from "./engine";
 export * from "./controlLabels";
 export * from "./format";
 export * from "./describe";
+export * from "./midiState";

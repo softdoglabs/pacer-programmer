@@ -5,7 +5,8 @@ import {
   SWITCH_CONTROL_IDS,
   wrapUserPresetIndex,
 } from "../protocol/constants";
-import { globalMidiChannel } from "../protocol/globalSettings";
+import { globalMidiChannel, wireChannel } from "../protocol/globalSettings";
+import { EMPTY_MIDI_STATE, recordMidi, stepValueOn, type MidiState } from "./midiState";
 import type { PacerConfig } from "../protocol/types";
 import { resolveControl, type ControlKind } from "./controlEffects";
 import {
@@ -17,8 +18,26 @@ import {
   type SpecialPresetName,
 } from "./types";
 
-export function createBoardState(config: PacerConfig, initialPresetIndex = FIRST_USER_PRESET_INDEX): BoardState {
-  return { config, activePresetIndex: initialPresetIndex, controls: {} };
+export function createBoardState(
+  config: PacerConfig,
+  initialPresetIndex = FIRST_USER_PRESET_INDEX,
+  midi: MidiState = EMPTY_MIDI_STATE,
+): BoardState {
+  return { config, activePresetIndex: initialPresetIndex, controls: {}, midi };
+}
+
+/**
+ * Switches to another preset (or reloads this one). Per-control runtime state starts fresh (an
+ * assumption: step counters and sequence positions reset), but the device's remembered MIDI
+ * values carry over (observed).
+ */
+export function changePreset(board: BoardState, index: number): BoardState {
+  return createBoardState(board.config, index, board.midi);
+}
+
+/** Forgets every remembered MIDI value (the simulator's "Reset MIDI state"). */
+export function resetMidiState(board: BoardState): BoardState {
+  return { ...board, midi: EMPTY_MIDI_STATE };
 }
 
 export function controlKindOf(controlId: number): ControlKind | undefined {
@@ -78,7 +97,11 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
   }
 
   const runtimeState = board.controls[event.controlId] ?? createControlRuntimeState();
-  const resolved = resolveControl(control, controlKind, event.phase, runtimeState, globalMidiChannel(board.config));
+  const resolved = resolveControl(control, controlKind, event.phase, runtimeState, {
+    globalChannel: globalMidiChannel(board.config),
+    midi: board.midi,
+  });
+  const midi = recordMidi(board.midi, resolved.messages);
 
   const {
     nextPresetIndex,
@@ -95,7 +118,7 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
     // was, since that's the preset the firmware comes back to. The pressed control's own state
     // change is discarded, like any other preset-changing press.
     return {
-      board,
+      board: { ...board, midi },
       effect: { messages: resolved.messages, relayActions, specialPresetRequested: specialPreset, warnings },
     };
   }
@@ -105,7 +128,7 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
     // this also means the just-computed `resolved.nextRuntimeState` for the pressed control is
     // discarded, so a release that follows (still addressed to this controlId) lands on nothing.
     return {
-      board: { config: board.config, activePresetIndex: nextPresetIndex, controls: {} },
+      board: createBoardState(board.config, nextPresetIndex, midi),
       effect: {
         messages: resolved.messages,
         relayActions,
@@ -115,13 +138,11 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
     };
   }
 
-  const sentProgramChange = resolved.messages.some((m) => m.kind === "programChange");
   return {
     board: {
-      config: board.config,
-      activePresetIndex: board.activePresetIndex,
+      ...board,
       controls: { ...board.controls, [event.controlId]: resolved.nextRuntimeState },
-      lastProgramChangeControlId: sentProgramChange ? event.controlId : board.lastProgramChangeControlId,
+      midi,
     },
     effect: { messages: resolved.messages, relayActions, warnings },
   };
@@ -138,7 +159,8 @@ export interface ControlDisplayState {
   controlId: number;
   exists: boolean;
   pressed: boolean;
-  activeToggleSteps: number[];
+  /** Steps whose MIDI is currently in its On state per the remembered values (e.g. a CC Toggle that's on). */
+  valueOnSteps: number[];
   /** Only set when the control's mode is Sequence. */
   sequencePointer?: number;
 }
@@ -147,21 +169,24 @@ export function getControlDisplayState(board: BoardState, controlId: number): Co
   const preset = board.config.presets[board.activePresetIndex];
   const control = preset?.controls[controlId];
   if (!control) {
-    return { controlId, exists: false, pressed: false, activeToggleSteps: [] };
+    return { controlId, exists: false, pressed: false, valueOnSteps: [] };
   }
 
   const runtime = board.controls[controlId];
-  const activeToggleSteps = runtime
-    ? Object.entries(runtime.toggleState)
-        .filter(([, isOn]) => isOn)
-        .map(([stepNumber]) => Number(stepNumber))
-    : [];
+  const globalChannel = globalMidiChannel(board.config);
+  const valueOnSteps = Object.entries(control.steps)
+    .filter(([, step]) => {
+      if (!step?.active) return false;
+      const channel = wireChannel(step.channel, globalChannel);
+      return channel !== undefined && stepValueOn(step, channel, board.midi) === true;
+    })
+    .map(([n]) => Number(n));
 
   return {
     controlId,
     exists: true,
     pressed: runtime?.pressed ?? false,
-    activeToggleSteps,
+    valueOnSteps,
     sequencePointer: control.controlMode === ControlMode.Sequence ? (runtime?.sequencePointer ?? 1) : undefined,
   };
 }

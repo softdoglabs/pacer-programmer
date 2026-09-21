@@ -1,4 +1,5 @@
 import type { PacerConfig } from "../protocol/types";
+import type { MidiState } from "./midiState";
 
 /** Real outgoing MIDI wire messages. Deliberately excludes preset navigation and relay actions — see `DeviceAction`. */
 export type OutgoingMidiMessage =
@@ -38,8 +39,6 @@ export interface ControlRuntimeState {
   /** Sequence mode only: the step armed by the most recent press, awaiting its matching release. */
   pendingSequenceStep?: number;
   pressed: boolean;
-  /** Keyed by step number (1-6): persistent toggle bit for CcToggle/NoteToggle steps. */
-  toggleState: Partial<Record<number, boolean>>;
   /** Keyed by step number (1-6): persistent current value for CcStep/ProgramStep steps. */
   stepCounters: Partial<Record<number, number>>;
 }
@@ -48,7 +47,6 @@ export function createControlRuntimeState(): ControlRuntimeState {
   return {
     sequencePointer: 1,
     pressed: false,
-    toggleState: {},
     stepCounters: {},
   };
 }
@@ -59,12 +57,10 @@ export interface BoardState {
   /** Keyed by ControlId. Absent entry == control never pressed since the last preset change. */
   controls: Partial<Record<number, ControlRuntimeState>>;
   /**
-   * The control whose press most recently sent a Program Change on this preset, if any. The
-   * firmware keeps that switch's LED lit; per the User Guide's factory presets A1-A4, "the LED
-   * switch for the last sent message is fully illuminated with other switches dimmed". Reset on
-   * preset change, like the rest of the runtime state.
+   * The device's remembered MIDI values. They persist across preset changes (unlike `controls`)
+   * and are cleared only by an explicit reset or a new session. See midiState.ts.
    */
-  lastProgramChangeControlId?: number;
+  midi: MidiState;
 }
 
 export interface BoardEvent {

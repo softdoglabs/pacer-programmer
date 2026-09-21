@@ -4,6 +4,7 @@ import { loadFactoryDefaults } from "../../pacer/factoryDefaults";
 import { ControlId, SwitchMessageType, userPresetIndex } from "../../pacer/protocol/constants";
 import { createEmptyPacerConfig, getOrCreateControl, getOrCreatePreset } from "../../pacer/protocol/types";
 import { FakeMidiAccess, FakeOutput } from "../../midi/__tests__/fakeMidi";
+import { computePanelState } from "../../pacer/panel";
 import { usePacerStore } from "../pacerStore";
 
 const store = () => usePacerStore.getState();
@@ -254,7 +255,7 @@ describe("pacerStore: sessions", () => {
     expect(s.sessionId).toBeGreaterThan(before);
     expect(s.board.activePresetIndex).toBe(A1);
     expect(s.board.controls).toEqual({});
-    expect(s.board.lastProgramChangeControlId).toBeUndefined();
+    expect(s.board.midi).toEqual({ cc: {}, notes: {}, programs: {} });
     expect(s.deviceMode).toEqual({ mode: "user", pendingBank: 0, presetButtonDown: false });
     expect(s.log).toEqual([]);
     expect(s.swallowedReleases).toEqual([]);
@@ -263,5 +264,34 @@ describe("pacerStore: sessions", () => {
     // The old session's pending [Preset] hold timer died with it, so it never fires.
     vi.advanceTimersByTime(PRESET_HOLD_MS);
     expect(store().deviceMode.mode).toBe("user");
+  });
+});
+
+describe("pacerStore: remembered MIDI state", () => {
+  const sw2Bar = () => computePanelState(store().board, store().deviceMode).switches.sw2.lights.bottom?.brightness;
+
+  it("a PC switch stays lit after visiting other presets and coming back, until reset", () => {
+    store().jumpToPreset(A1);
+    expect(sw2Bar()).toBe("dim");
+    tap(ControlId.Stompswitch2); // A1 switch 2: PC 1
+    expect(sw2Bar()).toBe("bright");
+
+    tap(ControlId.StompswitchD); // -> A2
+    tap(ControlId.StompswitchC); // -> back to A1
+    expect(store().board.activePresetIndex).toBe(A1);
+    expect(sw2Bar()).toBe("bright");
+
+    holdPreset(); // preset select -> bank C, preset 1, then back to A1 the same way
+    tap(ControlId.StompswitchC);
+    tap(ControlId.Stompswitch1);
+    holdPreset();
+    tap(ControlId.StompswitchA);
+    tap(ControlId.Stompswitch1);
+    expect(store().board.activePresetIndex).toBe(A1);
+    expect(sw2Bar()).toBe("bright");
+
+    store().resetMidiState();
+    expect(sw2Bar()).toBe("dim");
+    expect(store().log.at(-1)?.title).toBe("MIDI state");
   });
 });

@@ -8,7 +8,8 @@ import {
 } from "../../protocol/constants";
 import { LED_COLOR_DEFAULT } from "../../protocol/ledColors";
 import type { LedConfig, SwitchControl } from "../../protocol/types";
-import { createControlRuntimeState, type ControlRuntimeState } from "../../simulator/types";
+import { EMPTY_MIDI_STATE, recordMidi } from "../../simulator/midiState";
+import { createControlRuntimeState, type ControlRuntimeState, type OutgoingMidiMessage } from "../../simulator/types";
 import { dawPresetLights, presetButtonBar, presetSelectLights } from "../firmwareLights";
 import { legendLights } from "../legendLights";
 import { userPresetLights } from "../userPresetLights";
@@ -30,7 +31,11 @@ function runtime(patch: Partial<ControlRuntimeState>): ControlRuntimeState {
 }
 
 const sw1 = switchSpec("sw1");
-const CTX = { activePresetIndex: userPresetIndex(0, 1), sentLastProgramChange: false };
+const CTX = { activePresetIndex: userPresetIndex(0, 1), midi: EMPTY_MIDI_STATE, globalChannel: 1 };
+/** Remembered MIDI after sending `messages` (steps built by control() are on channel 0 = Global = wire 0). */
+/** The MIDI memory after pressing a switch built by control() (CC Trigger on CC 1, press value 127). */
+const pressed = () => remembered({ kind: "controlChange", channel: 0, controller: 1, value: 127 });
+const remembered = (...messages: OutgoingMidiMessage[]) => ({ ...CTX, midi: recordMidi(EMPTY_MIDI_STATE, messages) });
 
 describe("userPresetLights", () => {
   it("LED num 0 (Default) drives the bar with the inactive color at rest and the active color while held", () => {
@@ -38,7 +43,7 @@ describe("userPresetLights", () => {
     expect(userPresetLights(sw1, c, undefined, CTX)).toEqual({
       bottom: { brightness: "dim", flashing: false, color: { kind: "hue", hue: "red" } },
     });
-    expect(userPresetLights(sw1, c, runtime({ pressed: true }), CTX).bottom).toEqual({
+    expect(userPresetLights(sw1, c, runtime({ pressed: true }), pressed()).bottom).toEqual({
       brightness: "bright",
       flashing: false,
       color: { kind: "hue", hue: "red" },
@@ -47,7 +52,7 @@ describe("userPresetLights", () => {
 
   it("LED num 2 lights the middle icon row in its printed ink, not the config hue", () => {
     const c = control({ 1: { activeColor: BLUE_BRIGHT, inactiveColor: 0, position: 2 } });
-    expect(userPresetLights(sw1, c, runtime({ pressed: true }), CTX)).toEqual({
+    expect(userPresetLights(sw1, c, runtime({ pressed: true }), pressed())).toEqual({
       middle: { brightness: "bright", flashing: false, color: { kind: "ink" } },
     });
     expect(userPresetLights(sw1, c, undefined, CTX).middle?.brightness).toBe("off");
@@ -61,30 +66,33 @@ describe("userPresetLights", () => {
       flashing: false,
       color: { kind: "hue", hue: "blue" },
     });
-    expect(userPresetLights(sw1, c, runtime({ pressed: true }), CTX).bottom).toEqual({
+    expect(userPresetLights(sw1, c, runtime({ pressed: true }), pressed()).bottom).toEqual({
       brightness: "bright",
       flashing: false,
       color: { kind: "hue", hue: "blue" },
     });
   });
 
-  it("a Program Change step stays lit while its switch sent the preset's last Program Change", () => {
+  it("a Program Change step is lit while its program is the channel's current one", () => {
     const c = control({ 1: { activeColor: LED_COLOR_DEFAULT, inactiveColor: LED_COLOR_DEFAULT, position: 0 } });
     c.steps[1] = { channel: 0, msgType: SwitchMessageType.ProgramAndBank, data: [3, 0, 0], active: true };
-    expect(userPresetLights(sw1, c, undefined, { ...CTX, sentLastProgramChange: false }).bottom).toEqual({
+    expect(userPresetLights(sw1, c, undefined, CTX).bottom).toEqual({
       brightness: "dim",
       flashing: false,
       color: { kind: "hue", hue: "orange" },
     });
-    expect(userPresetLights(sw1, c, undefined, { ...CTX, sentLastProgramChange: true }).bottom?.brightness).toBe(
-      "bright",
-    );
+    expect(
+      userPresetLights(sw1, c, undefined, remembered({ kind: "programChange", channel: 0, program: 3 })).bottom
+        ?.brightness,
+    ).toBe("bright");
   });
 
   it("a toggled-on CC Toggle step keeps its light on after release", () => {
     const c = control({ 1: { activeColor: RED_BRIGHT, inactiveColor: RED_DIM, position: 0 } });
     c.steps[1] = { channel: 0, msgType: SwitchMessageType.CcToggle, data: [1, 0, 127], active: true };
-    expect(userPresetLights(sw1, c, runtime({ toggleState: { 1: true } }), CTX).bottom?.brightness).toBe("bright");
+    const on = remembered({ kind: "controlChange", channel: 0, controller: 1, value: 127 });
+    expect(userPresetLights(sw1, c, undefined, on).bottom?.brightness).toBe("bright");
+    expect(userPresetLights(sw1, c, undefined, CTX).bottom?.brightness).toBe("dim");
   });
 
   it("all-steps-at-once: every active step drives its own indicator; the lower step wins a conflict", () => {

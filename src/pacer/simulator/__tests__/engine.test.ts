@@ -6,7 +6,15 @@ import {
   userPresetIndex,
 } from "../../protocol/constants";
 import { createEmptyPacerConfig, getOrCreateControl, getOrCreatePreset, type PacerConfig } from "../../protocol/types";
-import { applyBoardEvent, createBoardState, getActiveControlIds, getControlDisplayState } from "../engine";
+import {
+  applyBoardEvent,
+  changePreset,
+  createBoardState,
+  getActiveControlIds,
+  getControlDisplayState,
+  resetMidiState,
+} from "../engine";
+import { EMPTY_MIDI_STATE } from "../midiState";
 import { midiMessageToBytes } from "../midiMessages";
 
 function ccToggleStep(controller: number, value1: number, value2: number) {
@@ -80,7 +88,7 @@ describe("applyBoardEvent — preset navigation", () => {
 
     // Set some toggle state on an unrelated control first.
     const { board: boardWithToggle } = applyBoardEvent(board0, { controlId: ControlId.Stompswitch1, phase: "press" });
-    expect(getControlDisplayState(boardWithToggle, ControlId.Stompswitch1).activeToggleSteps).toEqual([1]);
+    expect(getControlDisplayState(boardWithToggle, ControlId.Stompswitch1).valueOnSteps).toEqual([1]);
 
     const { board: boardAfterJump, effect } = applyBoardEvent(boardWithToggle, {
       controlId: ControlId.StompswitchA,
@@ -93,17 +101,20 @@ describe("applyBoardEvent — preset navigation", () => {
     expect(Object.keys(boardAfterJump.controls)).toEqual([]);
   });
 
-  it("toggle state is reset (not restored) after jumping away and back", () => {
+  it("toggle state survives jumping away and back (it's the device's remembered CC value)", () => {
     const config = buildLooperConfig();
     let board = createBoardState(config, A1);
     board = applyBoardEvent(board, { controlId: ControlId.Stompswitch1, phase: "press" }).board;
-    expect(getControlDisplayState(board, ControlId.Stompswitch1).activeToggleSteps).toEqual([1]);
+    expect(getControlDisplayState(board, ControlId.Stompswitch1).valueOnSteps).toEqual([1]);
 
     board = applyBoardEvent(board, { controlId: ControlId.StompswitchA, phase: "press" }).board; // -> A2
     board = applyBoardEvent(board, { controlId: ControlId.StompswitchA, phase: "press" }).board; // -> back to A1
 
     expect(board.activePresetIndex).toBe(A1);
-    expect(getControlDisplayState(board, ControlId.Stompswitch1).activeToggleSteps).toEqual([]);
+    expect(getControlDisplayState(board, ControlId.Stompswitch1).valueOnSteps).toEqual([1]);
+    // ...so the next press toggles it off rather than sending On again.
+    const { effect } = applyBoardEvent(board, { controlId: ControlId.Stompswitch1, phase: "press" });
+    expect(effect.messages).toEqual([{ kind: "controlChange", channel: 0, controller: 10, value: 0 }]);
   });
 
   it("a release addressed to a control after its press changed the preset is a no-op, not a crash", () => {
@@ -191,28 +202,44 @@ describe("applyBoardEvent: built-in Track/Transport presets", () => {
     expect(effect.specialPresetRequested).toBe("track");
     expect(effect.presetChanged).toBeUndefined();
     expect(effect.warnings).toEqual([]);
-    expect(after).toBe(board);
+    expect(after).toEqual(board); // same preset and runtime state to return to (it sent no MIDI)
   });
 });
 
-describe("applyBoardEvent: last Program Change", () => {
-  it("remembers which control last sent a Program Change, and forgets it on preset change", () => {
+describe("applyBoardEvent: remembered MIDI state", () => {
+  it("remembers the program per channel across preset changes, until reset", () => {
     const config = buildLooperConfig();
-    const pc1 = getOrCreateControl(getOrCreatePreset(config, A1), ControlId.Stompswitch2);
-    pc1.steps[1] = programAndBankStep(7);
+    const pc = getOrCreateControl(getOrCreatePreset(config, A1), ControlId.Stompswitch2);
+    pc.steps[1] = programAndBankStep(7);
 
     let board = createBoardState(config, A1);
-    expect(board.lastProgramChangeControlId).toBeUndefined();
+    expect(board.midi).toEqual(EMPTY_MIDI_STATE);
     board = applyBoardEvent(board, { controlId: ControlId.Stompswitch2, phase: "press" }).board;
-    expect(board.lastProgramChangeControlId).toBe(ControlId.Stompswitch2);
-    board = applyBoardEvent(board, { controlId: ControlId.Stompswitch2, phase: "release" }).board;
-    expect(board.lastProgramChangeControlId).toBe(ControlId.Stompswitch2);
-    board = applyBoardEvent(board, { controlId: ControlId.Stompswitch1, phase: "press" }).board; // CC toggle
-    expect(board.lastProgramChangeControlId).toBe(ControlId.Stompswitch2);
+    expect(board.midi.programs[0]).toMatchObject({ program: 7 });
+    expect(getControlDisplayState(board, ControlId.Stompswitch2).valueOnSteps).toEqual([1]);
 
-    board = applyBoardEvent(board, { controlId: ControlId.StompswitchA, phase: "press" }).board; // PC + jump
+    board = applyBoardEvent(board, { controlId: ControlId.StompswitchA, phase: "press" }).board; // PC 5 + jump to A2
     expect(board.activePresetIndex).toBe(A2);
-    expect(board.lastProgramChangeControlId).toBeUndefined();
+    expect(board.midi.programs[0]).toMatchObject({ program: 5 });
+
+    board = changePreset(board, A1);
+    expect(board.midi.programs[0]).toMatchObject({ program: 5 }); // survives the preset change
+    expect(getControlDisplayState(board, ControlId.Stompswitch2).valueOnSteps).toEqual([]); // 7 isn't current
+
+    expect(resetMidiState(board).midi).toEqual(EMPTY_MIDI_STATE);
+  });
+
+  it("records the MIDI a press sends even when it leaves for a DAW preset", () => {
+    const config = createEmptyPacerConfig();
+    const a = getOrCreateControl(getOrCreatePreset(config, A1), ControlId.StompswitchA);
+    a.steps[1] = programAndBankStep(9);
+    a.steps[2] = { channel: 1, msgType: SwitchMessageType.PresetSelect, data: [1, 0, 0], active: true }; // -> Track
+    const { board, effect } = applyBoardEvent(createBoardState(config, A1), {
+      controlId: ControlId.StompswitchA,
+      phase: "press",
+    });
+    expect(effect.specialPresetRequested).toBe("track");
+    expect(board.midi.programs[0]).toMatchObject({ program: 9 });
   });
 });
 

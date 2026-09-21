@@ -2,6 +2,8 @@ import { indicatorForLedNum, type IndicatorSpec, type SwitchSpec } from "../hard
 import { ControlMode, STEPS_PER_CONTROL } from "../protocol/constants";
 import type { PacerHue } from "../protocol/ledColors";
 import type { LedConfig, SwitchControl } from "../protocol/types";
+import { wireChannel } from "../protocol/globalSettings";
+import { stepValueOn, type MidiState } from "../simulator/midiState";
 import type { ControlRuntimeState } from "../simulator/types";
 import { defaultLedHue } from "./defaultLedColors";
 import { stepLight, type StepLight } from "./engagement";
@@ -54,8 +56,10 @@ function renderStepLight(
 /** Per-preset facts the light rules need beyond one control's own config and runtime state. */
 export interface UserPresetContext {
   activePresetIndex: number;
-  /** This switch sent the preset's most recent Program Change. */
-  sentLastProgramChange: boolean;
+  /** The device's remembered MIDI values. */
+  midi: MidiState;
+  /** The config's global MIDI channel (1-16), to resolve steps set to channel 0. */
+  globalChannel: number;
 }
 
 /**
@@ -79,10 +83,10 @@ export function userPresetLights(
     if (!led || !step) continue;
     const indicator = indicatorForLedNum(spec, led.position ?? 0);
     if (!indicator || lights[indicator.id]) continue;
+    const channel = wireChannel(step.channel, context.globalChannel);
     const light = stepLight(step, {
       held: runtime?.pressed ?? false,
-      toggleOn: runtime?.toggleState[n] === true,
-      sentLastProgramChange: context.sentLastProgramChange,
+      valueOn: channel === undefined ? undefined : stepValueOn(step, channel, context.midi),
       current: { kind: "user", index: context.activePresetIndex },
     });
     lights[indicator.id] = renderStepLight(indicator, light, led, defaultLedHue(step.msgType));

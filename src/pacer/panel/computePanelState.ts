@@ -1,5 +1,6 @@
 import type { DeviceMode } from "../device";
 import { PACER_HARDWARE, type PhysicalSwitchId, type SwitchSpec } from "../hardware";
+import { globalMidiChannel } from "../protocol/globalSettings";
 import type { BoardState } from "../simulator/types";
 import { displayState } from "./display";
 import { dawPresetLights, presetButtonBar, presetSelectLights } from "./firmwareLights";
@@ -23,7 +24,8 @@ function modeLights(spec: SwitchSpec, board: BoardState, firmware: FirmwareModeS
       const control = board.config.presets[board.activePresetIndex]?.controls[spec.controlId];
       return userPresetLights(spec, control, board.controls[spec.controlId], {
         activePresetIndex: board.activePresetIndex,
-        sentLastProgramChange: board.lastProgramChangeControlId === spec.controlId,
+        midi: board.midi,
+        globalChannel: globalMidiChannel(board.config),
       });
     }
     case "presetSelect":

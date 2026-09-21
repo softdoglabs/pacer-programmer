@@ -122,9 +122,7 @@ function ControlDetails({ controlId, control }: { controlId: number; control: Sw
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="secondary">{MODE_NAMES[mode] ?? `Mode 0x${mode.toString(16)}`}</Badge>
         {display.pressed && <Badge>held</Badge>}
-        {display.activeToggleSteps.length > 0 && (
-          <Badge variant="outline">toggled on: step {display.activeToggleSteps.join(", ")}</Badge>
-        )}
+        {display.valueOnSteps.length > 0 && <Badge variant="outline">on: step {display.valueOnSteps.join(", ")}</Badge>}
         {mode === ControlMode.ExternalStepSelect && (
           <span className="text-xs text-warning">
             Simulated as always firing step 1 (cross-control step targeting not modeled yet).

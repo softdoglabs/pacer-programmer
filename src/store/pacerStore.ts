@@ -7,7 +7,9 @@ import { loadFactoryDefaults } from "../pacer/factoryDefaults";
 import type { PacerConfig } from "../pacer/protocol/types";
 import {
   applyBoardEvent,
+  changePreset,
   controlLabel,
+  resetMidiState as forgetRememberedMidi,
   createBoardState,
   formatBoardEffect,
   midiMessageToBytes,
@@ -85,6 +87,8 @@ export interface PacerStore extends ConfigurationsSlice {
   selectControl: (controlId: number | undefined) => void;
   loadConfig: (config: PacerConfig, source: string, initialPresetIndex?: number) => void;
   clearLog: () => void;
+  /** Forgets the device's remembered MIDI values (program per channel, CC values, notes). */
+  resetMidiState: () => void;
   midi: MidiView;
   /** Requests Web MIDI access (`requester` is for tests; defaults to the browser's). */
   connectMidi: (requester?: MidiAccessRequester) => Promise<void>;
@@ -119,10 +123,6 @@ function freshSession(config: PacerConfig, initialPresetIndex: number) {
   };
 }
 
-function withPreset(board: BoardState, index: number): BoardState {
-  return createBoardState(board.config, index);
-}
-
 const MODE_TITLES: Record<DeviceMode, string> = {
   user: "Preset",
   presetSelect: "Preset select",
@@ -138,7 +138,7 @@ export const usePacerStore = create<PacerStore>((set, get) => {
     actions: {
       loadPreset: (_, { index }) =>
         set((s) => ({
-          board: withPreset(s.board, index),
+          board: changePreset(s.board, index),
           log: appendLog(s.log, {
             kind: "firmware",
             title: "Preset select",
@@ -147,7 +147,7 @@ export const usePacerStore = create<PacerStore>((set, get) => {
         })),
       returnToLastPreset: () =>
         set((s) => ({
-          board: withPreset(s.board, s.board.activePresetIndex),
+          board: changePreset(s.board, s.board.activePresetIndex),
           log: appendLog(s.log, {
             kind: "firmware",
             title: "Preset button",
@@ -277,7 +277,7 @@ export const usePacerStore = create<PacerStore>((set, get) => {
       // A direct jump always lands on a user preset, leaving any special preset.
       resetDeviceActor();
       set((s) => ({
-        board: withPreset(s.board, index),
+        board: changePreset(s.board, index),
         swallowedReleases: [],
         log: appendLog(s.log, {
           kind: "app",
@@ -297,6 +297,16 @@ export const usePacerStore = create<PacerStore>((set, get) => {
     },
 
     clearLog: () => set({ log: [] }),
+
+    resetMidiState: () =>
+      set((s) => ({
+        board: forgetRememberedMidi(s.board),
+        log: appendLog(s.log, {
+          kind: "app",
+          title: "MIDI state",
+          lines: ["Remembered MIDI values reset (programs, CC values, notes)"],
+        }),
+      })),
 
     midi: { status: "disconnected", outputs: [], inputs: [], sysexEnabled: false },
 

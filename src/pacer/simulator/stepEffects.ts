@@ -6,19 +6,24 @@ import {
 } from "../protocol/constants";
 import type { Step } from "../protocol/types";
 import { cc, channelAftertouch, mmc, noteOff, noteOn, pitchBend, programChange } from "./midiMessages";
+import { ccValue, isNoteOn, type MidiState } from "./midiState";
 import type { ControlPhase, DeviceAction, OutgoingMidiMessage } from "./types";
 
-/** A step's persistent per-step runtime state, sliced out by the caller (controlEffects.ts). */
+/**
+ * What a step can read when it fires: its own step counter (CC/Program Step), sliced out by the
+ * caller (controlEffects.ts), and the device's remembered MIDI values, which the toggle types
+ * follow (see midiState.ts).
+ */
 export interface StepSubState {
-  toggle?: boolean;
   counter?: number;
+  midi: MidiState;
 }
 
 export interface StepFireResult {
   messages: OutgoingMidiMessage[];
   deviceActions: DeviceAction[];
-  /** Present only when this step mutates its own persistent state (toggle/step-counter types). */
-  runtimePatch?: { toggle?: boolean; counter?: number };
+  /** Present only when this step advances its own step counter (CC/Program Step). */
+  runtimePatch?: { counter: number };
   warnings: string[];
 }
 
@@ -66,14 +71,11 @@ export function fireSwitchStep(
 
     case SwitchMessageType.CcToggle: {
       if (phase === "release") return empty();
-      const [controller, value1, value2] = data;
-      const nextToggle = !(subState.toggle ?? false);
-      return {
-        messages: [cc(channel, controller, nextToggle ? value2 : value1)],
-        deviceActions: [],
-        runtimePatch: { toggle: nextToggle },
-        warnings: [],
-      };
+      // Toggles follow the device's remembered value for this CC, not a per-switch bit, so the
+      // state survives preset changes and is shared by every switch toggling the same CC.
+      const [controller, offValue, onValue] = data;
+      const isOn = ccValue(subState.midi, channel, controller) === onValue;
+      return { ...empty(), messages: [cc(channel, controller, isOn ? offValue : onValue)] };
     }
 
     case SwitchMessageType.CcStep: {
@@ -99,13 +101,8 @@ export function fireSwitchStep(
     case SwitchMessageType.NoteToggle: {
       if (phase === "release") return empty();
       const [note, velocity] = data;
-      const nextToggle = !(subState.toggle ?? false);
-      return {
-        messages: [nextToggle ? noteOn(channel, note, velocity) : noteOff(channel, note, 0)],
-        deviceActions: [],
-        runtimePatch: { toggle: nextToggle },
-        warnings: [],
-      };
+      const sounding = isNoteOn(subState.midi, channel, note);
+      return { ...empty(), messages: [sounding ? noteOff(channel, note, 0) : noteOn(channel, note, velocity)] };
     }
 
     case SwitchMessageType.ProgramAndBank: {

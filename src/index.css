@@ -1,119 +1,91 @@
-* {
-  box-sizing: border-box;
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/* shadcn/ui design tokens. The app is dark-only for now: a hardware tool used on stage/in the studio. */
+:root {
+  --radius: 0.5rem;
+  --background: oklch(0.16 0.005 285);
+  --foreground: oklch(0.96 0 0);
+  --card: oklch(0.2 0.006 285);
+  --card-foreground: oklch(0.96 0 0);
+  --popover: oklch(0.22 0.006 285);
+  --popover-foreground: oklch(0.96 0 0);
+  --primary: oklch(0.72 0.1 180);
+  --primary-foreground: oklch(0.18 0.02 180);
+  --secondary: oklch(0.27 0.006 286);
+  --secondary-foreground: oklch(0.96 0 0);
+  --muted: oklch(0.27 0.006 286);
+  --muted-foreground: oklch(0.7 0.015 286);
+  --accent: oklch(0.3 0.006 286);
+  --accent-foreground: oklch(0.96 0 0);
+  --destructive: oklch(0.7 0.19 22);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.72 0.1 180);
+  --warning: oklch(0.8 0.15 80);
+  color-scheme: dark;
 }
 
-body {
-  margin: 0;
-  font-family: system-ui, sans-serif;
-  background: #1a1a1e;
-  color: #eaeaea;
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-warning: var(--warning);
 }
 
-.app {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
 }
 
-.app-header {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid #333;
-}
-
-.app-header h1 {
-  font-size: 1.1rem;
-  margin: 0;
-}
-
-.preset-indicator {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.preset-label {
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-.preset-name {
-  color: #999;
-}
-
-.file-loader {
-  margin-left: auto;
-  font-size: 0.85rem;
+/* Faceplate-specific bits that are awkward to express as utility classes on SVG. */
+.pacer-switch {
   cursor: pointer;
+  outline: none;
+}
+.pacer-switch .pad {
+  transition: transform 60ms ease-out;
+}
+.pacer-switch[data-pressed="true"] .pad {
+  transform: translateY(4px);
+}
+.pacer-switch:hover .housing,
+.pacer-switch:focus-visible .housing {
+  stroke: oklch(0.72 0.1 180 / 60%);
+}
+.pacer-switch[data-selected="true"] .housing {
+  stroke: oklch(0.72 0.1 180);
 }
 
-.app-main {
-  display: flex;
-  flex: 1;
-  min-height: 0;
+@keyframes pacer-blink {
+  50% {
+    opacity: 0.25;
+  }
 }
-
-.control-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 0.75rem;
-  padding: 1.25rem;
-  align-content: start;
-  flex: 2;
-}
-
-.control-button {
-  padding: 1rem 0.5rem;
-  border-radius: 8px;
-  border: 1px solid #444;
-  background: #2a2a30;
-  color: inherit;
-  cursor: pointer;
-  user-select: none;
-  text-align: center;
-}
-
-.control-button.is-pressed {
-  background: #46464f;
-  border-color: #888;
-}
-
-.control-button.is-toggled-on {
-  border-color: #4caf50;
-  box-shadow: inset 0 0 0 1px #4caf50;
-}
-
-.control-sub {
-  font-size: 0.7rem;
-  color: #999;
-  margin-top: 0.25rem;
-}
-
-.message-log {
-  flex: 1;
-  border-left: 1px solid #333;
-  padding: 1rem;
-  overflow-y: auto;
-  font-family: ui-monospace, monospace;
-  font-size: 0.8rem;
-}
-
-.message-log-empty {
-  color: #777;
-}
-
-.message-log-entry {
-  margin-bottom: 0.75rem;
-}
-
-.message-log-header {
-  color: #9cf;
-  font-weight: 600;
-}
-
-.message-log-line {
-  white-space: pre;
+.pacer-blink {
+  animation: pacer-blink 0.8s steps(1) infinite;
 }

@@ -208,13 +208,46 @@ to validate it without a real capture that exercises it). Covered by 40+
 unit tests (synthetic configs for behavior, plus a smoke test pressing
 every control on every real factory preset).
 
-A minimal placeholder UI now exists too (`src/App.tsx`, `src/ui/`,
-`src/store/pacerStore.ts`): plain labeled buttons per control, a live
-MIDI message log, a preset indicator, and a `.syx` file loader — wired to
-the engine via a small Zustand store. No faceplate image/hit-regions yet
-(deliberately deferred), no Tailwind/shadcn yet, no XState yet (reserved
-for the physical Preset-button/bank-select firmware mode, which is a
-separate, still-unbuilt feature). `pnpm dev` now works.
+The simulator UI (`src/App.tsx`, `src/ui/`, `src/store/pacerStore.ts`) is
+built on Tailwind v4 + shadcn/ui (dark-only theme, `@/` path alias,
+components in `src/components/ui/`). Its centerpiece is `Faceplate.tsx`, a
+hand-drawn SVG of the top panel (back row Preset, A-D, display + encoder;
+front row 1-6). Each switch housing is a pointer/keyboard hit region, and
+each switch shows a legend summarizing its active steps plus an LED bar.
+Around it: rear-jack controls (FS1-4, EXP1-2), a preset list (a direct
+jump that the hardware can't do; logged as an app action), a
+control/preset inspector, and the output log.
+- `src/pacer/device/deviceModeMachine.ts` is the XState machine for the
+  firmware's *special presets*. Preset select, Track and Transport are
+  modeled as firmware-owned presets that aren't in the config. While one
+  is active, the board still holds the last user preset, which is what
+  [Preset] returns to.
+  - [Preset] is tap-vs-hold (a parallel `presetButton` region with a
+    timed `after` transition).
+    - Holding it for `PRESET_HOLD_MS` (2000 ms, per the User Guide's
+      "hold for 2 seconds"; possibly shorter on real hardware, unverified)
+      enters preset select, from any mode. There, A-D pick a bank and 1-6
+      load that number in the pending bank, which starts as the current
+      bank.
+    - A tap returns to the last user preset: it reloads from
+      Track/Transport, cancels preset select, and does nothing on a user
+      preset.
+  - Factory A and B use PresetSelect's reserved targets 1 ("track") and
+    2 ("transport"). The engine reports these as `specialPresetRequested`.
+  - Track/Transport switch assignments are in `specialPresets.ts`. They
+    come from the Pacer User Guide and the faceplate legends.
+  - Their DAW commands are logged symbolically; the actual Nektar DAW
+    Integration / MCU bytes aren't modeled.
+  - Assumptions: A/B switch between Track and Transport, and returning
+    resets the user preset's runtime state.
+- `src/pacer/simulator/leds.ts` holds the LED color table (codes
+  0x01-0x18, documented) and the rules for which LED shows. Those rules
+  are an assumption: step 1, or the last-fired step in Sequence mode;
+  the active color while held or toggled on. 0x7F, used on nearly every
+  factory LED, is undocumented and rendered neutral.
+- Not simulated yet: a preset's own load-time MIDI settings (shown in the
+  inspector only), LED `midiController` input, and continuous expression
+  pedal sweeps (press/release = max/min).
 
 ### Running locally
 

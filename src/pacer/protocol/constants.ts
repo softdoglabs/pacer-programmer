@@ -180,8 +180,13 @@ export const PresetSelectTarget = [
   "D6",
 ] as const;
 
-/** Bank letter + number for a preset's own `idx` (0-based: A1=0 .. D6=23). */
+/**
+ * Bank letter + number for a preset's own `idx` (0-based: A1=0 .. D6=23). Slots beyond the
+ * 24 user presets (e.g. idx 24, "SEQNC" in the factory dump) have no front-panel label and
+ * are shown by index instead.
+ */
 export function presetIndexToLabel(idx: number): string {
+  if (idx < 0 || idx >= PRESET_COUNT) return `#${idx}`;
   const bank = "ABCD"[Math.floor(idx / 6)];
   const num = (idx % 6) + 1;
   return `${bank}${num}`;

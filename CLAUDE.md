@@ -340,6 +340,14 @@ components in `src/components/ui/`).
   click on iOS/Android) for `HTMLElement` targets.
 - **Tap vs. hold on [Preset]:** decided by the device machine's timer, not
   the UI.
+- **Sessions:** loading a configuration (opening a snapshot, importing,
+  pulling) starts a fresh simulator session.
+  - `freshSession` in the store rebuilds all per-session state, and the
+    device mode machine is restarted. The same function builds the initial
+    state, so nothing is patched field by field.
+  - The simulator views are keyed on `sessionId`, so React remounts them
+    and no component state (a held press, the inspector tab) survives the
+    switch.
 - **Around the faceplate:** rear-jack controls, a preset list (a direct
   jump that the hardware can't do; logged as an app action), a
   control/preset inspector (step table with LED colors and which light each

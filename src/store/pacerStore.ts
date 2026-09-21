@@ -61,6 +61,12 @@ export interface PacerStore extends ConfigurationsSlice {
   board: BoardState;
   /** Display name of the open configuration ("Factory defaults", a saved snapshot's name). */
   configSource: string;
+  /**
+   * Identifies the current simulator session. Every configuration load starts a new one, with
+   * all per-session state rebuilt from scratch (see `freshSession`). The simulator UI is keyed on
+   * it, so component state (held presses, open tabs) can't leak across configurations either.
+   */
+  sessionId: number;
   log: LogEntry[];
   deviceMode: DeviceModeView;
   /**
@@ -97,6 +103,19 @@ function toDeviceModeView(snapshot: SnapshotFrom<typeof deviceModeMachine>): Dev
     mode: snapshot.value.mode as DeviceMode,
     pendingBank: snapshot.context.pendingBank,
     presetButtonDown: snapshot.value.presetButton !== "up",
+  };
+}
+
+let nextSessionId = 0;
+
+/** Everything that belongs to one run of the simulator on one configuration, freshly initialized. */
+function freshSession(config: PacerConfig, initialPresetIndex: number) {
+  return {
+    sessionId: nextSessionId++,
+    board: createBoardState(config, initialPresetIndex),
+    log: [] as LogEntry[],
+    swallowedReleases: [] as number[],
+    selectedControlId: undefined as number | undefined,
   };
 }
 
@@ -221,12 +240,9 @@ export const usePacerStore = create<PacerStore>((set, get) => {
       persistent: storage !== undefined,
       midiConnection: () => midiConnection,
     }),
-    board: createBoardState(loadFactoryDefaults(), FIRST_USER_PRESET_INDEX),
+    ...freshSession(loadFactoryDefaults(), FIRST_USER_PRESET_INDEX),
     configSource: "Factory defaults",
-    log: [],
     deviceMode: toDeviceModeView(deviceActor.getSnapshot()),
-    swallowedReleases: [],
-    selectedControlId: undefined,
 
     press: (controlId) => {
       if (get().deviceMode.mode !== "user") {
@@ -274,13 +290,10 @@ export const usePacerStore = create<PacerStore>((set, get) => {
     selectControl: (controlId) => set({ selectedControlId: controlId }),
 
     loadConfig: (config, source, initialPresetIndex = FIRST_USER_PRESET_INDEX) => {
+      // A new configuration means a new simulator session: the firmware mode machine and all
+      // per-session state are rebuilt, never patched.
       resetDeviceActor();
-      set({
-        board: createBoardState(config, initialPresetIndex),
-        configSource: source,
-        log: [],
-        swallowedReleases: [],
-      });
+      set({ ...freshSession(config, initialPresetIndex), configSource: source });
     },
 
     clearLog: () => set({ log: [] }),

@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { Badge } from "@/components/ui/badge";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { usePacerStore } from "./store/pacerStore";
@@ -20,6 +21,7 @@ function Section({ title, children, className }: { title: string; children: Reac
 
 export function App() {
   const configSource = usePacerStore((s) => s.configSource);
+  const sessionId = usePacerStore((s) => s.sessionId);
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -36,18 +38,21 @@ export function App() {
 
         <main className="grid min-h-0 flex-1 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(360px,440px)]">
           <div className="min-h-0 space-y-5 lg:overflow-y-auto lg:pr-1">
-            <Faceplate />
-            <Section title="Rear jacks">
-              <RearJacks />
-            </Section>
+            {/* Simulator views are keyed on the session, so a configuration switch remounts them. */}
+            <Fragment key={`sim-${sessionId}`}>
+              <Faceplate />
+              <Section title="Rear jacks">
+                <RearJacks />
+              </Section>
+            </Fragment>
             <Section title="Configurations">
               <ConfigurationsPanel />
             </Section>
-            <Section title="Presets">
+            <Section title="Presets" key={`presets-${sessionId}`}>
               <PresetList />
             </Section>
           </div>
-          <aside className="flex min-h-0 flex-col gap-4 max-lg:h-[70vh]">
+          <aside className="flex min-h-0 flex-col gap-4 max-lg:h-[70vh]" key={`aside-${sessionId}`}>
             <div className="rounded-lg border bg-card p-3">
               <Inspector />
             </div>

@@ -236,3 +236,32 @@ describe("pacerStore: MIDI output", () => {
     expect(store().midi).toMatchObject({ status: "denied", error: "nope" });
   });
 });
+
+describe("pacerStore: sessions", () => {
+  it("loading a configuration starts a fresh session, whatever state the simulator was in", () => {
+    // Build up state: a toggled control, a selection, Track mode, a held [Preset], log entries.
+    store().jumpToPreset(COLOR_PRESET);
+    tap(ControlId.Stompswitch1);
+    store().selectControl(ControlId.Stompswitch1);
+    store().press(ControlId.Stompswitch2); // held when the config changes
+    tap(ControlId.StompswitchA); // -> Track
+    store().presetButtonDown();
+    const before = store().sessionId;
+
+    store().loadConfig(loadFactoryDefaults(), "Factory defaults");
+
+    const s = store();
+    expect(s.sessionId).toBeGreaterThan(before);
+    expect(s.board.activePresetIndex).toBe(A1);
+    expect(s.board.controls).toEqual({});
+    expect(s.board.lastProgramChangeControlId).toBeUndefined();
+    expect(s.deviceMode).toEqual({ mode: "user", pendingBank: 0, presetButtonDown: false });
+    expect(s.log).toEqual([]);
+    expect(s.swallowedReleases).toEqual([]);
+    expect(s.selectedControlId).toBeUndefined();
+
+    // The old session's pending [Preset] hold timer died with it, so it never fires.
+    vi.advanceTimersByTime(PRESET_HOLD_MS);
+    expect(store().deviceMode.mode).toBe("user");
+  });
+});

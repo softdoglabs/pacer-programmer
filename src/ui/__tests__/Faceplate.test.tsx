@@ -37,6 +37,29 @@ describe("Faceplate (factory defaults)", () => {
     expect(screen.getByRole("button", { name: "Switch D: P+" })).toBeTruthy();
   });
 
+  it("switching configurations starts a fresh simulator: nothing held, selected, or pending carries over", () => {
+    const fixture = new Uint8Array(readFileSync("fixtures/factory-presets.syx"));
+    act(() => usePacerStore.getState().importSyxFile("other.syx", fixture));
+    act(() => usePacerStore.getState().openFactoryDefaults());
+    render(<App />);
+    const pointer = { pointerId: 1, pointerType: "mouse", button: 0, width: 1, height: 1, pressure: 0.5 };
+    const sw1 = switchButton("1");
+    fireEvent.pointerDown(sw1, pointer); // held (and selected in the inspector) when the config changes
+    expect(usePacerStore.getState().selectedControlId).toBeDefined();
+
+    const list = screen.getByRole("list", { name: "Saved configurations" });
+    fireEvent.click(within(list).getByRole("button", { name: /^other/ }));
+    fireEvent.pointerUp(sw1, pointer);
+    fireEvent.click(sw1);
+
+    const state = usePacerStore.getState();
+    expect(state.log).toEqual([]); // the old press's release must not reach the new session
+    expect(state.selectedControlId).toBeUndefined();
+    expect(state.board.controls).toEqual({});
+    expect(switchButton("1").getAttribute("aria-pressed")).toBe("false");
+    act(() => usePacerStore.getState().deleteSavedConfig(state.activeConfigId!));
+  });
+
   it("the Configurations panel lists saved snapshots and switches between them", async () => {
     const fixture = new Uint8Array(readFileSync("fixtures/factory-presets.syx"));
     act(() => usePacerStore.getState().importSyxFile("gig-rig.syx", fixture));

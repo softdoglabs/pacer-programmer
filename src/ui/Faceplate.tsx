@@ -2,13 +2,20 @@ import { ControlId, presetIndexToLabel } from "../pacer/protocol/constants";
 import { getControlLedState, getControlDisplayState, ledColor, summarizeControl } from "../pacer/simulator";
 import { PRESET_HOLD_MS, SPECIAL_PRESETS, presetButtonLed, presetSelectLed, type IndicatorLed } from "../pacer/device";
 import { usePacerStore, type DeviceModeView } from "../store/pacerStore";
-import { useControlHandlers } from "./useControlHandlers";
-import { useHoldHandlers } from "./useHoldHandlers";
+import { usePress, type PressEvents } from "@react-aria/interactions";
+import type { CSSProperties } from "react";
+import { useControlPress } from "./useControlPress";
 
 /*
  * A schematic, hand-drawn rendering of the Pacer's top panel (landscape, player's view):
  * back row = Preset, A-D, then the display and encoder; front row = 1-6. Proportions are
- * approximate; hit regions are the switch housings themselves.
+ * approximate.
+ *
+ * Layout: a background SVG draws the body, display and faceplate markings. Each switch is a
+ * real HTML <button> hit region positioned over it (percentages of the SVG's coordinate
+ * space), with its own artwork in an inner SVG. The switches have to be HTML elements, not SVG
+ * ones: React Aria's usePress ends a touch long-press, which fires no click on iOS/Android, by
+ * clicking the target itself, and it only does that for HTMLElements.
  */
 const WIDTH = 1480;
 const HEIGHT = 650;
@@ -60,10 +67,14 @@ interface SwitchArtProps {
   selected?: boolean;
   dimmed?: boolean;
   ariaLabel: string;
-  handlers: ReturnType<typeof useHoldHandlers>;
-  /** Faceplate marking printed below the housing (A-D get a teal badge, 1-6 plain numerals). */
-  marking?: { text: string; badge: boolean };
+  /** From React Aria's `usePress`. */
+  pressProps: ReturnType<typeof usePress>["pressProps"];
   title: string;
+}
+
+/** Positions an element over the background SVG, in its coordinate space. */
+function overlayStyle(x: number, y: number, w: number, h: number): CSSProperties {
+  return { left: `${(x / WIDTH) * 100}%`, top: `${(y / HEIGHT) * 100}%`, width: `${(w / WIDTH) * 100}%`, height: `${(h / HEIGHT) * 100}%` };
 }
 
 function SwitchArt(props: SwitchArtProps) {
@@ -71,74 +82,53 @@ function SwitchArt(props: SwitchArtProps) {
   const legendSize = legend.length > 12 ? 15 : legend.length > 8 ? 19 : 24;
 
   return (
-    <g
-      className="pacer-switch"
-      transform={`translate(${x} ${y})`}
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
+      className="pacer-switch absolute rounded-[7%] p-0"
+      style={overlayStyle(x, y, HOUSING_W, HOUSING_H)}
+      title={props.title}
       aria-label={props.ariaLabel}
       aria-pressed={pressed}
       data-pressed={pressed}
       data-selected={props.selected ?? false}
       data-led={props.indicator?.brightness}
       data-led-flashing={props.indicator?.flashing}
-      opacity={props.dimmed ? 0.55 : 1}
-      {...props.handlers}
+      {...props.pressProps}
     >
-      <title>{props.title}</title>
-      <rect className="housing" width={HOUSING_W} height={HOUSING_H} rx={14} fill="#111113" stroke="#000" strokeWidth={4} />
-      <rect x={12} y={12} width={HOUSING_W - 24} height={70} rx={6} fill="#050506" />
-      <text x={22} y={32} fontSize={14} fill="#8b8b93" fontFamily="ui-sans-serif, system-ui">
-        {props.name}
-      </text>
-      <text
-        x={HOUSING_W / 2}
-        y={63}
-        textAnchor="middle"
-        fontSize={legendSize}
-        fontWeight={700}
-        fill={props.legendColor}
-        fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-      >
-        {legend}
-      </text>
-      <rect x={20} y={92} width={HOUSING_W - 40} height={10} rx={5} fill={LED_OFF} />
-      <rect
-        x={20}
-        y={92}
-        width={HOUSING_W - 40}
-        height={10}
-        rx={5}
-        fill={props.ledCss}
-        filter={props.ledGlow ? "url(#led-glow)" : undefined}
-        className={props.ledBlink ? "pacer-led-flash" : undefined}
-      />
-      <g className="pad">
-        <rect x={22} y={114} width={HOUSING_W - 44} height={108} rx={12} fill={pressed ? "#141416" : "#1d1d20"} stroke="#000" strokeWidth={3} />
-        <rect x={34} y={126} width={HOUSING_W - 68} height={84} rx={9} fill={pressed ? "#1a1a1d" : "#27272b"} />
-      </g>
-      {props.marking &&
-        (props.marking.badge ? (
-          <g transform={`translate(${HOUSING_W / 2} ${HOUSING_H + 28})`}>
-            <circle r={15} fill="#5fa99b" />
-            <text textAnchor="middle" dy={6} fontSize={17} fontWeight={700} fill="#1c2b28" fontFamily="ui-sans-serif, system-ui">
-              {props.marking.text}
-            </text>
-          </g>
-        ) : (
-          <text
-            x={HOUSING_W / 2}
-            y={HOUSING_H + 36}
-            textAnchor="middle"
-            fontSize={22}
-            fontWeight={700}
-            fill="#d4d4d8"
-            fontFamily="ui-sans-serif, system-ui"
-          >
-            {props.marking.text}
-          </text>
-        ))}
-    </g>
+      <svg viewBox={`0 0 ${HOUSING_W} ${HOUSING_H}`} className="block size-full" opacity={props.dimmed ? 0.55 : 1} aria-hidden>
+        <rect className="housing" width={HOUSING_W} height={HOUSING_H} rx={14} fill="#111113" stroke="#000" strokeWidth={4} />
+        <rect x={12} y={12} width={HOUSING_W - 24} height={70} rx={6} fill="#050506" />
+        <text x={22} y={32} fontSize={14} fill="#8b8b93" fontFamily="ui-sans-serif, system-ui">
+          {props.name}
+        </text>
+        <text
+          x={HOUSING_W / 2}
+          y={63}
+          textAnchor="middle"
+          fontSize={legendSize}
+          fontWeight={700}
+          fill={props.legendColor}
+          fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+        >
+          {legend}
+        </text>
+        <rect x={20} y={92} width={HOUSING_W - 40} height={10} rx={5} fill={LED_OFF} />
+        <rect
+          x={20}
+          y={92}
+          width={HOUSING_W - 40}
+          height={10}
+          rx={5}
+          fill={props.ledCss}
+          filter={props.ledGlow ? "url(#led-glow)" : undefined}
+          className={props.ledBlink ? "pacer-led-flash" : undefined}
+        />
+        <g className="pad">
+          <rect x={22} y={114} width={HOUSING_W - 44} height={108} rx={12} fill={pressed ? "#141416" : "#1d1d20"} stroke="#000" strokeWidth={3} />
+          <rect x={34} y={126} width={HOUSING_W - 68} height={84} rx={9} fill={pressed ? "#1a1a1d" : "#27272b"} />
+        </g>
+      </svg>
+    </button>
   );
 }
 
@@ -199,7 +189,7 @@ function StompSwitch({ controlId, name, col, rowY, badge }: { controlId: number;
   const board = usePacerStore((s) => s.board);
   const selected = usePacerStore((s) => s.selectedControlId === controlId);
   const deviceMode = usePacerStore((s) => s.deviceMode);
-  const handlers = useControlHandlers(controlId);
+  const { pressProps } = useControlPress(controlId);
 
   const control = board.config.presets[board.activePresetIndex]?.controls[controlId];
   const display = getControlDisplayState(board, controlId);
@@ -235,8 +225,7 @@ function StompSwitch({ controlId, name, col, rowY, badge }: { controlId: number;
       dimmed={look.dimmed}
       ariaLabel={`Switch ${name}: ${look.legend}`}
       title={look.title}
-      handlers={handlers}
-      marking={{ text: name, badge }}
+      pressProps={pressProps}
     />
   );
 }
@@ -245,7 +234,13 @@ function PresetSwitch() {
   const mode = usePacerStore((s) => s.deviceMode.mode);
   const held = usePacerStore((s) => s.deviceMode.presetButtonDown);
   const lastPreset = usePacerStore((s) => presetIndexToLabel(s.board.activePresetIndex));
-  const handlers = useHoldHandlers(usePacerStore((s) => s.presetButtonDown), usePacerStore((s) => s.presetButtonUp));
+  // Tap vs. hold is decided by the device machine's timer (it's firmware behavior being
+  // simulated), so the UI only reports press start/end.
+  const presetPress: PressEvents = {
+    onPressStart: usePacerStore((s) => s.presetButtonDown),
+    onPressEnd: usePacerStore((s) => s.presetButtonUp),
+  };
+  const { pressProps } = usePress(presetPress);
   const inSpecial = mode !== "user";
   const holdHint = `hold ${PRESET_HOLD_MS / 1000}s: preset select (A-D bank, 1-6 preset)`;
   const led = presetButtonLed(mode);
@@ -265,8 +260,29 @@ function PresetSwitch() {
       pressed={held}
       ariaLabel={inSpecial ? `Preset button (tap: back to ${lastPreset}; ${holdHint})` : `Preset button (${holdHint})`}
       title={inSpecial ? `Preset. Tap: back to ${lastPreset}. Hold ${PRESET_HOLD_MS / 1000}s: preset select.` : `Preset. ${holdHint}.`}
-      handlers={handlers}
+      pressProps={pressProps}
     />
+  );
+}
+
+/** Faceplate markings printed below each switch: A-D get a teal badge, 1-6 plain numerals. */
+function Markings() {
+  return (
+    <g fontFamily="ui-sans-serif, system-ui" fontWeight={700} textAnchor="middle">
+      {BACK_ROW.map((sw, i) => (
+        <g key={sw.name} transform={`translate(${colX(i + 1) + HOUSING_W / 2} ${BACK_ROW_Y + HOUSING_H + 28})`}>
+          <circle r={15} fill="#5fa99b" />
+          <text dy={6} fontSize={17} fill="#1c2b28">
+            {sw.name}
+          </text>
+        </g>
+      ))}
+      {FRONT_ROW.map((sw, i) => (
+        <text key={sw.name} x={colX(i) + HOUSING_W / 2} y={FRONT_ROW_Y + HOUSING_H + 36} fontSize={22} fill="#d4d4d8">
+          {sw.name}
+        </text>
+      ))}
+    </g>
   );
 }
 
@@ -319,34 +335,38 @@ function Display() {
 
 export function Faceplate() {
   return (
-    <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="h-auto w-full select-none touch-none" role="group" aria-label="Pacer faceplate">
-      <defs>
-        <filter id="led-glow" x="-30%" y="-200%" width="160%" height="500%">
-          <feGaussianBlur stdDeviation="4" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-        <filter id="display-glow" x="-10%" y="-30%" width="120%" height="160%">
-          <feGaussianBlur stdDeviation="2.5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-      <rect width={WIDTH} height={HEIGHT} rx={28} fill="#3a3b3e" />
-      <rect x={12} y={12} width={WIDTH - 24} height={HEIGHT - 24} rx={20} fill="none" stroke="#5fa99b" strokeWidth={3} opacity={0.8} />
+    <div className="relative w-full select-none touch-none" style={{ aspectRatio: `${WIDTH} / ${HEIGHT}` }} role="group" aria-label="Pacer faceplate">
+      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="absolute inset-0 size-full">
+        <defs>
+          <filter id="led-glow" x="-30%" y="-200%" width="160%" height="500%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <filter id="display-glow" x="-10%" y="-30%" width="120%" height="160%">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <rect width={WIDTH} height={HEIGHT} rx={28} fill="#3a3b3e" />
+        <rect x={12} y={12} width={WIDTH - 24} height={HEIGHT - 24} rx={20} fill="none" stroke="#5fa99b" strokeWidth={3} opacity={0.8} />
+
+        <Markings />
+        <Display />
+      </svg>
 
       <PresetSwitch />
       {BACK_ROW.map((sw, i) => (
         <StompSwitch key={sw.controlId} controlId={sw.controlId} name={sw.name} col={i + 1} rowY={BACK_ROW_Y} badge />
       ))}
-      <Display />
       {FRONT_ROW.map((sw, i) => (
         <StompSwitch key={sw.controlId} controlId={sw.controlId} name={sw.name} col={i} rowY={FRONT_ROW_Y} badge={false} />
       ))}
-    </svg>
+    </div>
   );
 }

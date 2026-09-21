@@ -66,6 +66,10 @@
 .pacer-switch {
   cursor: pointer;
   outline: none;
+  background: none;
+  border: 0;
+  /* No iOS callout/magnifier on a long press (e.g. holding [Preset]). */
+  -webkit-touch-callout: none;
 }
 .pacer-switch .pad {
   transition: transform 60ms ease-out;

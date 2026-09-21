@@ -2,7 +2,7 @@ import { ControlId } from "../pacer/protocol/constants";
 import { controlKindOf, controlLabel, getControlDisplayState, summarizeControl } from "../pacer/simulator";
 import { usePacerStore } from "../store/pacerStore";
 import { cn } from "@/lib/utils";
-import { useControlHandlers } from "./useControlHandlers";
+import { useControlPress } from "./useControlPress";
 
 const EXTERNAL_CONTROLS: { controlId: number; hint?: string }[] = [
   { controlId: ControlId.Footswitch1 },
@@ -16,7 +16,7 @@ const EXTERNAL_CONTROLS: { controlId: number; hint?: string }[] = [
 function ExternalControl({ controlId, hint }: { controlId: number; hint?: string }) {
   const board = usePacerStore((s) => s.board);
   const selected = usePacerStore((s) => s.selectedControlId === controlId);
-  const handlers = useControlHandlers(controlId);
+  const { pressProps } = useControlPress(controlId);
   const control = board.config.presets[board.activePresetIndex]?.controls[controlId];
   const { pressed } = getControlDisplayState(board, controlId);
 
@@ -31,7 +31,7 @@ function ExternalControl({ controlId, hint }: { controlId: number; hint?: string
         selected && "border-primary",
         !control && "opacity-50",
       )}
-      {...handlers}
+      {...pressProps}
     >
       <span className="text-xs text-muted-foreground">{controlLabel(controlId)}</span>
       <span className="truncate font-mono text-sm font-semibold">{summarizeControl(control, controlKindOf(controlId)!)}</span>

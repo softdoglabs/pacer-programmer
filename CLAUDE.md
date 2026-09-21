@@ -216,8 +216,18 @@ The simulator UI (`src/App.tsx`, `src/ui/`, `src/store/pacerStore.ts`) is
 built on Tailwind v4 + shadcn/ui (dark-only theme, `@/` path alias,
 components in `src/components/ui/`). Its centerpiece is `Faceplate.tsx`, a
 hand-drawn SVG of the top panel (back row Preset, A-D, display + encoder;
-front row 1-6). Each switch housing is a pointer/keyboard hit region, and
-each switch shows a legend summarizing its active steps plus an LED bar.
+front row 1-6). Each switch shows a legend summarizing its active steps
+plus an LED bar.
+- **Hit regions:** each switch is a real HTML `<button>` positioned over a
+  background SVG (body, display, markings), with its artwork in an inner
+  SVG.
+- **Press handling:** all presses, including the rear-jack buttons, go
+  through React Aria's `usePress` (`@react-aria/interactions`), not
+  hand-rolled pointer/focus code.
+- **Why not SVG elements:** `usePress` only ends a touch long-press (no
+  click on iOS/Android) for `HTMLElement` targets.
+- **Tap vs. hold on [Preset]:** decided by the device machine's timer, not
+  the UI.
 Around it: rear-jack controls (FS1-4, EXP1-2), a preset list (a direct
 jump that the hardware can't do; logged as an app action), a
 control/preset inspector, and the output log.

@@ -77,6 +77,47 @@ describe("Faceplate (factory defaults)", () => {
     expect(display()).toBe("B1");
   });
 
+  it("a mouse long-press on Preset enters preset select, even if focus moves mid-hold", () => {
+    vi.useFakeTimers();
+    render(<App />);
+    const preset = screen.getByRole("button", { name: /^Preset button/ });
+    const pointer = { pointerId: 1, pointerType: "mouse", button: 0, width: 1, height: 1, pressure: 0.5 };
+    fireEvent.pointerDown(preset, pointer);
+    fireEvent.blur(preset); // e.g. the first click into an inactive browser window
+    act(() => vi.advanceTimersByTime(PRESET_HOLD_MS));
+    fireEvent.pointerUp(preset, pointer);
+    fireEvent.click(preset);
+    vi.useRealTimers();
+    expect(display()).toBe("A-");
+    expect(usePacerStore.getState().deviceMode.presetButtonDown).toBe(false);
+  });
+
+  it("a touch long-press on Preset (no click afterwards, as on iOS/Android) still ends the press", () => {
+    vi.useFakeTimers();
+    render(<App />);
+    const preset = screen.getByRole("button", { name: /^Preset button/ });
+    const touch = { pointerId: 2, pointerType: "touch", button: 0, width: 20, height: 20, pressure: 0.5 };
+    fireEvent.pointerDown(preset, touch);
+    act(() => vi.advanceTimersByTime(PRESET_HOLD_MS));
+    fireEvent.pointerUp(preset, touch);
+    act(() => vi.advanceTimersByTime(100)); // React Aria's synthetic-click fallback
+    vi.useRealTimers();
+    expect(display()).toBe("A-");
+    expect(usePacerStore.getState().deviceMode.presetButtonDown).toBe(false);
+  });
+
+  it("a mouse click on a switch presses and releases it", () => {
+    render(<App />);
+    const sw1 = switchButton("1");
+    const pointer = { pointerId: 1, pointerType: "mouse", button: 0, width: 1, height: 1, pressure: 0.5 };
+    fireEvent.pointerDown(sw1, pointer);
+    expect(sw1.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.pointerUp(sw1, pointer);
+    fireEvent.click(sw1); // browsers follow pointerup with click, which is what ends a usePress press
+    expect(sw1.getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("log").textContent).toContain("Program Change 0");
+  });
+
   it("preset select: 1-6 flash dim except the loaded preset's number (solid bright); [Preset] flashes", () => {
     act(() => usePacerStore.getState().jumpToPreset(2)); // A3
     vi.useFakeTimers();

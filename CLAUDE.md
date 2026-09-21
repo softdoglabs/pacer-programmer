@@ -269,8 +269,17 @@ every control on every real factory preset).
   strategy per mode:
   - `userPresetLights`: each showing step's LED config lights the
     indicator its LED num selects. Fixed-ink legends keep their ink and
-    take only the brightness. The undocumented 0x7F color shows bright
-    when active and dim when not.
+    take only the brightness.
+    - Color "Default" (0x7F, used on almost every factory LED) is the step
+      message type's default hue: bright A when on, dimmed b when off.
+      Documented in User Guide p. 12, Chart 2 and implemented in
+      `defaultLedColors.ts`: PC = orange, CC = blue, Note = green,
+      Preset Select/Inc-Dec = red, MMC = yellow, Relay = lavender,
+      NRPN = purple, Step Select = pink.
+    - A Program Change step stays "on" while its switch sent the preset's
+      most recent Program Change. The User Guide says of A1-A4: "the LED
+      switch for the last sent message is fully illuminated". The engine
+      tracks `lastProgramChangeControlId` for this.
   - `presetSelectLights`, all observed on hardware:
     - [Preset]'s bar flashes bright red.
     - A-D: only the current bank's bar is lit, in solid bright royal blue.

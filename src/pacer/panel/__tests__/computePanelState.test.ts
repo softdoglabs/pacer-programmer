@@ -33,6 +33,37 @@ describe("computePanelState (factory presets)", () => {
     expect(panel.switches.sw1.lights.bottom?.brightness).toBe("bright");
   });
 
+  it("Default LED colors follow the message type, matching the hardware", () => {
+    const bars = (idx: number) => {
+      const panel = computePanelState(createBoardState(config, idx), USER);
+      return (["sw1", "swC", "swD"] as const).map((id) => panel.switches[id].lights.bottom);
+    };
+    const dim = (hue: string) => ({ brightness: "dim", flashing: false, color: { kind: "hue", hue } });
+    // A1: Program Change -> dim orange (observed); C/D are Preset Inc/Dec -> dim red.
+    expect(bars(A1)).toEqual([dim("orange"), dim("red"), dim("red")]);
+    // B1 (HELX1): MIDI CC -> dim blue (observed).
+    expect(bars(userPresetIndex(1, 1))[0]).toEqual(dim("blue"));
+    // A5 (NOTES): MIDI Note -> green.
+    expect(bars(userPresetIndex(0, 5))[0]?.color).toEqual({ kind: "hue", hue: "green" });
+  });
+
+  it("A1: the switch that sent the last Program Change stays bright; the others stay dim", () => {
+    let board = createBoardState(config, A1);
+    for (const phase of ["press", "release"] as const) {
+      board = applyBoardEvent(board, { controlId: ControlId.Stompswitch3, phase }).board;
+    }
+    const panel = computePanelState(board, USER);
+    expect(panel.switches.sw3.lights.bottom?.brightness).toBe("bright");
+    expect(panel.switches.sw1.lights.bottom?.brightness).toBe("dim");
+
+    for (const phase of ["press", "release"] as const) {
+      board = applyBoardEvent(board, { controlId: ControlId.Stompswitch5, phase }).board;
+    }
+    const after = computePanelState(board, USER);
+    expect(after.switches.sw5.lights.bottom?.brightness).toBe("bright");
+    expect(after.switches.sw3.lights.bottom?.brightness).toBe("dim");
+  });
+
   it("D2 COLOR: each front-row bar shows its configured hue", () => {
     const panel = computePanelState(createBoardState(config, COLOR), USER);
     expect(panel.switches.sw1.lights.bottom?.color).toEqual({ kind: "hue", hue: "red" });

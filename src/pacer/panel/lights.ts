@@ -1,5 +1,5 @@
 import type { IndicatorId, IndicatorSpec, SwitchSpec } from "../hardware";
-import { decodeLedColor } from "../protocol/ledColors";
+import { LED_COLOR_DEFAULT, decodeLedColor, type PacerHue } from "../protocol/ledColors";
 import type { LightState } from "./types";
 
 export type SwitchLights = Partial<Record<IndicatorId, LightState>>;
@@ -11,13 +11,20 @@ export function inkOrColor(indicator: IndicatorSpec, fallback: LightState["color
 
 /**
  * The light a config LED color code produces on an indicator.
- * - Hue codes carry their own brightness (odd = bright "A", even = dim "B"). A fixed-color
+ * - Hue codes carry their own brightness (odd = bright "A", even = dim "b"). A fixed-color
  *   legend shows that brightness in its printed ink, since it can't change color (inferred).
- * - The undocumented 0x7F default, or an unknown code, has no brightness of its own: it shows
- *   bright when the step is active and dim otherwise (assumption).
+ * - "Default" (0x7F) uses the step message type's default hue (`defaultHue`, see
+ *   defaultLedColors.ts): bright "A" when the step is active, dimmed "b" when it isn't.
+ * - An unknown code, or Default with no hue for the message type, shows bright/dim with no
+ *   specific color.
  */
-export function lightFromColorCode(indicator: IndicatorSpec, code: number | undefined, active: boolean): LightState {
-  const decoded = decodeLedColor(code ?? 0x7f);
+export function lightFromColorCode(
+  indicator: IndicatorSpec,
+  code: number | undefined,
+  active: boolean,
+  defaultHue: PacerHue | undefined,
+): LightState {
+  const decoded = decodeLedColor(code ?? LED_COLOR_DEFAULT);
   switch (decoded.kind) {
     case "off":
       return { brightness: "off", flashing: false, color: { kind: "unspecified" } };
@@ -28,12 +35,14 @@ export function lightFromColorCode(indicator: IndicatorSpec, code: number | unde
         color: inkOrColor(indicator, { kind: "hue", hue: decoded.hue }),
       };
     case "default":
-    case "unknown":
+    case "unknown": {
+      const hue = decoded.kind === "default" ? defaultHue : undefined;
       return {
         brightness: active ? "bright" : "dim",
         flashing: false,
-        color: inkOrColor(indicator, { kind: "unspecified" }),
+        color: inkOrColor(indicator, hue ? { kind: "hue", hue } : { kind: "unspecified" }),
       };
+    }
   }
 }
 

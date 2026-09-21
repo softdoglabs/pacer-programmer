@@ -20,7 +20,12 @@ function modeLights(spec: SwitchSpec, board: BoardState, firmware: FirmwareModeS
     case "user": {
       if (spec.controlId === undefined) return {};
       const control = board.config.presets[board.activePresetIndex]?.controls[spec.controlId];
-      return userPresetLights(spec, control, board.controls[spec.controlId]);
+      return userPresetLights(
+        spec,
+        control,
+        board.controls[spec.controlId],
+        board.lastProgramChangeControlId === spec.controlId,
+      );
     }
     case "presetSelect":
       return presetSelectLights(spec, firmware.pendingBank, board.activePresetIndex);

@@ -58,6 +58,13 @@ export interface BoardState {
   activePresetIndex: number;
   /** Keyed by ControlId. Absent entry == control never pressed since the last preset change. */
   controls: Partial<Record<number, ControlRuntimeState>>;
+  /**
+   * The control whose press most recently sent a Program Change on this preset, if any. The
+   * firmware keeps that switch's LED lit; per the User Guide's factory presets A1-A4, "the LED
+   * switch for the last sent message is fully illuminated with other switches dimmed". Reset on
+   * preset change, like the rest of the runtime state.
+   */
+  lastProgramChangeControlId?: number;
 }
 
 export interface BoardEvent {

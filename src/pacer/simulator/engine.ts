@@ -114,11 +114,13 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
     };
   }
 
+  const sentProgramChange = resolved.messages.some((m) => m.kind === "programChange");
   return {
     board: {
       config: board.config,
       activePresetIndex: board.activePresetIndex,
       controls: { ...board.controls, [event.controlId]: resolved.nextRuntimeState },
+      lastProgramChangeControlId: sentProgramChange ? event.controlId : board.lastProgramChangeControlId,
     },
     effect: { messages: resolved.messages, relayActions, warnings },
   };

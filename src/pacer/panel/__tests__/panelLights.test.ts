@@ -48,14 +48,30 @@ describe("userPresetLights", () => {
     expect(userPresetLights(sw1, c, undefined).middle?.brightness).toBe("off");
   });
 
-  it("the 0x7F default shows bright when active and dim when not, with no hue", () => {
+  it("Default (0x7F) uses the message type's documented hue: dim at rest, bright when active", () => {
     const c = control({ 1: { activeColor: LED_COLOR_DEFAULT, inactiveColor: LED_COLOR_DEFAULT, position: 0 } });
+    // control() builds CC Trigger steps: MIDI CC's default is 9 (blue).
     expect(userPresetLights(sw1, c, undefined).bottom).toEqual({
       brightness: "dim",
       flashing: false,
-      color: { kind: "unspecified" },
+      color: { kind: "hue", hue: "blue" },
     });
-    expect(userPresetLights(sw1, c, runtime({ pressed: true })).bottom?.brightness).toBe("bright");
+    expect(userPresetLights(sw1, c, runtime({ pressed: true })).bottom).toEqual({
+      brightness: "bright",
+      flashing: false,
+      color: { kind: "hue", hue: "blue" },
+    });
+  });
+
+  it("a Program Change step stays lit while its switch sent the preset's last Program Change", () => {
+    const c = control({ 1: { activeColor: LED_COLOR_DEFAULT, inactiveColor: LED_COLOR_DEFAULT, position: 0 } });
+    c.steps[1] = { channel: 0, msgType: SwitchMessageType.ProgramAndBank, data: [3, 0, 0], active: true };
+    expect(userPresetLights(sw1, c, undefined, false).bottom).toEqual({
+      brightness: "dim",
+      flashing: false,
+      color: { kind: "hue", hue: "orange" },
+    });
+    expect(userPresetLights(sw1, c, undefined, true).bottom?.brightness).toBe("bright");
   });
 
   it("a toggled-on step keeps its light active after release", () => {

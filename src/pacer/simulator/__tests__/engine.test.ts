@@ -193,3 +193,24 @@ describe("applyBoardEvent: built-in Track/Transport presets", () => {
     expect(after).toBe(board);
   });
 });
+
+describe("applyBoardEvent: last Program Change", () => {
+  it("remembers which control last sent a Program Change, and forgets it on preset change", () => {
+    const config = buildLooperConfig();
+    const pc1 = getOrCreateControl(getOrCreatePreset(config, A1), ControlId.Stompswitch2);
+    pc1.steps[1] = programAndBankStep(7);
+
+    let board = createBoardState(config, A1);
+    expect(board.lastProgramChangeControlId).toBeUndefined();
+    board = applyBoardEvent(board, { controlId: ControlId.Stompswitch2, phase: "press" }).board;
+    expect(board.lastProgramChangeControlId).toBe(ControlId.Stompswitch2);
+    board = applyBoardEvent(board, { controlId: ControlId.Stompswitch2, phase: "release" }).board;
+    expect(board.lastProgramChangeControlId).toBe(ControlId.Stompswitch2);
+    board = applyBoardEvent(board, { controlId: ControlId.Stompswitch1, phase: "press" }).board; // CC toggle
+    expect(board.lastProgramChangeControlId).toBe(ControlId.Stompswitch2);
+
+    board = applyBoardEvent(board, { controlId: ControlId.StompswitchA, phase: "press" }).board; // PC + jump
+    expect(board.activePresetIndex).toBe(A2);
+    expect(board.lastProgramChangeControlId).toBeUndefined();
+  });
+});

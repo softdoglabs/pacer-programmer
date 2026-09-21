@@ -192,9 +192,29 @@ identical `PacerConfig` (see `__tests__/roundtrip.test.ts`) — this is the
 foundation the device state machine, template analysis, and
 preset-transition graph (all still unbuilt) will sit on top of. Global
 config fields are preserved but not semantically decoded (see hardware
-background and open questions above). No UI yet — `pnpm test` and `pnpm
-typecheck` are the only working commands so far; `pnpm dev` will come with
-the Vite/React scaffold once there's something to render.
+background and open questions above).
+
+`src/pacer/simulator/` — the device-level hardware simulator engine
+(`applyBoardEvent`, `createBoardState`) that turns a `PacerConfig` plus
+press/release events into MIDI messages, preset jumps, and relay actions,
+per `ControlMode` (all-steps-at-once / sequence / external-step-select)
+and per-message-type semantics. Message-type data-byte layouts are
+reference-documented (from the same reference project's
+`MSG_TYPES_DATA_HELP`, not guessed) except where noted inline as an
+assumption (step-range wrap direction, runtime-state-resets-on-preset-
+change, and `ExternalStepSelect`/`StepSelect`/`StepIncDec` cross-control
+targeting, which is deliberately deferred — unverified numbering, no way
+to validate it without a real capture that exercises it). Covered by 40+
+unit tests (synthetic configs for behavior, plus a smoke test pressing
+every control on every real factory preset).
+
+A minimal placeholder UI now exists too (`src/App.tsx`, `src/ui/`,
+`src/store/pacerStore.ts`): plain labeled buttons per control, a live
+MIDI message log, a preset indicator, and a `.syx` file loader — wired to
+the engine via a small Zustand store. No faceplate image/hit-regions yet
+(deliberately deferred), no Tailwind/shadcn yet, no XState yet (reserved
+for the physical Preset-button/bank-select firmware mode, which is a
+separate, still-unbuilt feature). `pnpm dev` now works.
 
 ### Running locally
 

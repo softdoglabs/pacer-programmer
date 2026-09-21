@@ -16,8 +16,16 @@ export type OutgoingMidiMessage =
  * Kept out of `OutgoingMidiMessage` so the type system enforces the
  * distinction rather than relying on convention.
  */
+/**
+ * The firmware's built-in, read-only DAW presets (Nektar DAW Integration), reachable via
+ * PresetSelect's reserved targets 1 ("track") and 2 ("transport"). They aren't in the
+ * config at all; see `src/pacer/device/specialPresets.ts`.
+ */
+export type SpecialPresetName = "track" | "transport";
+
 export type DeviceAction =
   | { kind: "presetJump"; targetIndex: number }
+  | { kind: "specialPreset"; preset: SpecialPresetName }
   | { kind: "presetRelative"; direction: "next" | "prev" }
   | { kind: "relay"; relayIndex: number; mode: number };
 
@@ -61,5 +69,10 @@ export interface BoardEffect {
   messages: OutgoingMidiMessage[];
   relayActions: Extract<DeviceAction, { kind: "relay" }>[];
   presetChanged?: { from: number; to: number };
+  /**
+   * The press asked the firmware to enter a built-in DAW preset. The board itself is left on
+   * the current user preset: that's the "last preset" the firmware returns to afterwards.
+   */
+  specialPresetRequested?: SpecialPresetName;
   warnings: string[];
 }

@@ -34,6 +34,8 @@ export function formatDeviceAction(action: DeviceAction): string {
       return `Preset ${action.direction === "next" ? "next" : "previous"}, no MIDI sent`;
     case "relay":
       return `Relay R${action.relayIndex + 1} mode ${action.mode}`;
+    case "specialPreset":
+      return `Enter built-in ${action.preset === "track" ? "Track" : "Transport"} preset, no MIDI sent`;
   }
 }
 
@@ -45,6 +47,9 @@ export function formatBoardEffect(effect: BoardEffect): string[] {
     lines.push(
       `Preset changed: ${presetIndexToLabel(effect.presetChanged.from)} -> ${presetIndexToLabel(effect.presetChanged.to)}`,
     );
+  }
+  if (effect.specialPresetRequested) {
+    lines.push(formatDeviceAction({ kind: "specialPreset", preset: effect.specialPresetRequested }));
   }
   for (const warning of effect.warnings) lines.push(`(warning) ${warning}`);
   return lines;

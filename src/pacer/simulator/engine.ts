@@ -7,13 +7,14 @@ import {
   type BoardEvent,
   type BoardState,
   type DeviceAction,
+  type SpecialPresetName,
 } from "./types";
 
 export function createBoardState(config: PacerConfig, initialPresetIndex = 0): BoardState {
   return { config, activePresetIndex: initialPresetIndex, controls: {} };
 }
 
-function controlKindOf(controlId: number): ControlKind | undefined {
+export function controlKindOf(controlId: number): ControlKind | undefined {
   if (SWITCH_CONTROL_IDS.includes(controlId)) return "switch";
   if (EXPRESSION_PEDAL_CONTROL_IDS.includes(controlId)) return "expressionPedal";
   return undefined;
@@ -27,14 +28,19 @@ function wrapPresetIndex(index: number): number {
 function resolvePresetNavigation(
   activePresetIndex: number,
   deviceActions: DeviceAction[],
-): { nextPresetIndex?: number; warning?: string } {
-  const navActions = deviceActions.filter((a) => a.kind === "presetJump" || a.kind === "presetRelative");
+): { nextPresetIndex?: number; specialPreset?: SpecialPresetName; warning?: string } {
+  const navActions = deviceActions.filter(
+    (a) => a.kind === "presetJump" || a.kind === "presetRelative" || a.kind === "specialPreset",
+  );
   if (navActions.length === 0) return {};
 
   const warning =
     navActions.length > 1 ? "multiple preset-navigation actions fired by one press; using the first" : undefined;
 
   const action = navActions[0]!;
+  if (action.kind === "specialPreset") {
+    return { specialPreset: action.preset, warning };
+  }
   if (action.kind === "presetJump") {
     return { nextPresetIndex: action.targetIndex, warning };
   }
@@ -63,9 +69,20 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
   const runtimeState = board.controls[event.controlId] ?? createControlRuntimeState();
   const resolved = resolveControl(control, controlKind, event.phase, runtimeState);
 
-  const { nextPresetIndex, warning: navWarning } = resolvePresetNavigation(board.activePresetIndex, resolved.deviceActions);
+  const {
+    nextPresetIndex,
+    specialPreset,
+    warning: navWarning,
+  } = resolvePresetNavigation(board.activePresetIndex, resolved.deviceActions);
   const warnings = navWarning ? [...resolved.warnings, navWarning] : resolved.warnings;
   const relayActions = resolved.deviceActions.filter((a): a is Extract<DeviceAction, { kind: "relay" }> => a.kind === "relay");
+
+  if (specialPreset) {
+    // Leaving for a firmware DAW preset: the board (and its runtime state) stays exactly as it
+    // was, since that's the preset the firmware comes back to. The pressed control's own state
+    // change is discarded, like any other preset-changing press.
+    return { board, effect: { messages: resolved.messages, relayActions, specialPresetRequested: specialPreset, warnings } };
+  }
 
   if (nextPresetIndex !== undefined && nextPresetIndex !== board.activePresetIndex) {
     // Preset change resets ALL controls' runtime state (assumption, see the simulator plan) —

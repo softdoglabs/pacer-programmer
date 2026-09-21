@@ -152,9 +152,11 @@ export function fireSwitchStep(step: Step, phase: ControlPhase, subState: StepSu
     case SwitchMessageType.PresetSelect: {
       if (phase === "release") return empty();
       const [target] = data;
+      if (target === 1) return { ...empty(), deviceActions: [{ kind: "specialPreset", preset: "track" }] };
+      if (target === 2) return { ...empty(), deviceActions: [{ kind: "specialPreset", preset: "transport" }] };
       if (target < 3) {
         const label = PresetSelectTarget[target] ?? String(target);
-        return warn(`PresetSelect target "${label}" depends on external DAW state, not simulated`);
+        return warn(`PresetSelect target "${label}" isn't simulated yet`);
       }
       return { ...empty(), deviceActions: [{ kind: "presetJump", targetIndex: target - 3 }] };
     }

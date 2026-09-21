@@ -130,13 +130,19 @@ describe("fireSwitchStep", () => {
     expect(result.deviceActions).toEqual([{ kind: "relay", relayIndex: 1, mode: 3 }]);
   });
 
-  it("PresetSelect warns and no-ops for target < 3 (current/track/transport)", () => {
-    for (const target of [0, 1, 2]) {
-      const s = step(SwitchMessageType.PresetSelect, [target, 0, 0]);
-      const result = fireSwitchStep(s, "press", noSubState);
-      expect(result.deviceActions).toEqual([]);
-      expect(result.warnings.length).toBe(1);
-    }
+  it("PresetSelect warns and no-ops for target 0 (current)", () => {
+    const result = fireSwitchStep(step(SwitchMessageType.PresetSelect, [0, 0, 0]), "press", noSubState);
+    expect(result.deviceActions).toEqual([]);
+    expect(result.warnings.length).toBe(1);
+  });
+
+  it("PresetSelect targets 1/2 request the built-in Track/Transport presets", () => {
+    expect(fireSwitchStep(step(SwitchMessageType.PresetSelect, [1, 0, 0]), "press", noSubState).deviceActions).toEqual([
+      { kind: "specialPreset", preset: "track" },
+    ]);
+    expect(fireSwitchStep(step(SwitchMessageType.PresetSelect, [2, 0, 0]), "press", noSubState).deviceActions).toEqual([
+      { kind: "specialPreset", preset: "transport" },
+    ]);
   });
 
   it("PresetSelect jumps to targetIndex = target - 3 for target >= 3", () => {

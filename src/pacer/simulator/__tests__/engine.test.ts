@@ -131,3 +131,26 @@ describe("getActiveControlIds / getControlDisplayState", () => {
     expect(getControlDisplayState(board, ControlId.Footswitch1).exists).toBe(false);
   });
 });
+
+describe("applyBoardEvent: built-in Track/Transport presets", () => {
+  it("requests the special preset and leaves the board (the preset to return to) untouched", () => {
+    const config = createEmptyPacerConfig();
+    const preset = getOrCreatePreset(config, 4);
+    getOrCreateControl(preset, ControlId.Stompswitch1).steps[1] = ccToggleStep(10, 0, 127);
+    getOrCreateControl(preset, ControlId.StompswitchA).steps[1] = {
+      channel: 0,
+      msgType: SwitchMessageType.PresetSelect,
+      data: [1, 0, 0], // reserved target 1 = "track"
+      active: true,
+    };
+
+    let board = createBoardState(config, 4);
+    board = applyBoardEvent(board, { controlId: ControlId.Stompswitch1, phase: "press" }).board;
+    const { board: after, effect } = applyBoardEvent(board, { controlId: ControlId.StompswitchA, phase: "press" });
+
+    expect(effect.specialPresetRequested).toBe("track");
+    expect(effect.presetChanged).toBeUndefined();
+    expect(effect.warnings).toEqual([]);
+    expect(after).toBe(board);
+  });
+});

@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { switchSpec } from "../../hardware";
-import { ControlMode, SwitchMessageType, userPresetIndex } from "../../protocol/constants";
+import {
+  ControlMode,
+  SwitchMessageType,
+  presetIndexToPresetSelectTarget,
+  userPresetIndex,
+} from "../../protocol/constants";
 import { LED_COLOR_DEFAULT } from "../../protocol/ledColors";
 import type { LedConfig, SwitchControl } from "../../protocol/types";
 import { createControlRuntimeState, type ControlRuntimeState } from "../../simulator/types";
 import { dawPresetLights, presetButtonBar, presetSelectLights } from "../firmwareLights";
-import { idleLights } from "../lights";
+import { legendLights } from "../legendLights";
 import { userPresetLights } from "../userPresetLights";
 
 const RED_BRIGHT = 0x03;
@@ -122,13 +127,44 @@ describe("userPresetLights", () => {
   });
 });
 
-describe("idleLights", () => {
-  it("back-row legends are always lit in their ink; front-row legends are dark", () => {
-    expect(idleLights(switchSpec("swA"))).toEqual({
-      top: { brightness: "bright", flashing: false, color: { kind: "ink" } },
-    });
-    expect(idleLights(switchSpec("preset")).top?.brightness).toBe("bright");
-    expect(idleLights(sw1)).toEqual({});
+describe("legendLights (a legend lights while its switch is assigned what it depicts)", () => {
+  const ink = { brightness: "bright", flashing: false, color: { kind: "ink" } };
+  const presetSelect = (target: number): SwitchControl => ({
+    steps: { 1: { channel: 0, msgType: SwitchMessageType.PresetSelect, data: [target, 0, 0], active: true } },
+    led: {},
+  });
+  const incDec = (direction: number): SwitchControl => ({
+    steps: { 1: { channel: 0, msgType: SwitchMessageType.PresetIncDec, data: [direction, 0, 0], active: true } },
+    led: {},
+  });
+
+  it("A's 'Track' lights only while A selects Track (observed: dark where A was reprogrammed)", () => {
+    expect(legendLights(switchSpec("swA"), "user", presetSelect(1))).toEqual({ top: ink });
+    expect(
+      legendLights(switchSpec("swA"), "user", presetSelect(presetIndexToPresetSelectTarget(userPresetIndex(2, 1)))),
+    ).toEqual({});
+    expect(legendLights(switchSpec("swA"), "user", undefined)).toEqual({});
+    expect(legendLights(switchSpec("swB"), "user", presetSelect(2))).toEqual({ top: ink });
+    expect(legendLights(switchSpec("swB"), "user", presetSelect(1))).toEqual({});
+  });
+
+  it("C/D's arrows light while they step to the previous/next preset", () => {
+    expect(legendLights(switchSpec("swC"), "user", incDec(1))).toEqual({ top: ink });
+    expect(legendLights(switchSpec("swD"), "user", incDec(0))).toEqual({ top: ink });
+    expect(legendLights(switchSpec("swC"), "user", incDec(0))).toEqual({}); // C set to "next": not its arrow
+  });
+
+  it("[Preset]'s legend is always lit; front-row legends are dark on user presets", () => {
+    expect(legendLights(switchSpec("preset"), "user", undefined)).toEqual({ top: ink });
+    expect(legendLights(sw1, "user", control({ 1: { activeColor: 3, inactiveColor: 4 } }))).toEqual({});
+  });
+
+  it("in the DAW presets, Track lights the top text row and Transport the middle icon row", () => {
+    expect(legendLights(sw1, "track", undefined)).toEqual({ top: ink }); // Solo
+    expect(legendLights(sw1, "transport", undefined)).toEqual({ middle: ink }); // Cycle
+    expect(legendLights(switchSpec("swA"), "track", undefined)).toEqual({ top: ink });
+    expect(legendLights(switchSpec("swB"), "track", undefined)).toEqual({ top: ink });
+    expect(legendLights(switchSpec("swC"), "transport", undefined)).toEqual({ top: ink }); // previous track
   });
 });
 
@@ -163,15 +199,6 @@ describe("presetSelectLights", () => {
 });
 
 describe("dawPresetLights", () => {
-  it("Track lights the top text row; Transport lights the middle icon row", () => {
-    expect(dawPresetLights(sw1, "track")).toEqual({
-      top: { brightness: "bright", flashing: false, color: { kind: "ink" } },
-    });
-    expect(dawPresetLights(sw1, "transport")).toEqual({
-      middle: { brightness: "bright", flashing: false, color: { kind: "ink" } },
-    });
-  });
-
   it("lights the current mode's switch (A = Track, B = Transport) light blue, and not the other", () => {
     expect(dawPresetLights(switchSpec("swA"), "track").bottom).toEqual({
       brightness: "bright",
@@ -183,7 +210,8 @@ describe("dawPresetLights", () => {
     expect(dawPresetLights(switchSpec("swA"), "transport").bottom?.brightness).toBe("off");
   });
 
-  it("back-row switches have no middle row, and their always-lit legends come from idleLights", () => {
+  it("leaves DAW-function bars (unknown behavior) and all legends alone", () => {
+    expect(dawPresetLights(sw1, "track")).toEqual({});
     expect(dawPresetLights(switchSpec("swC"), "transport")).toEqual({});
   });
 });

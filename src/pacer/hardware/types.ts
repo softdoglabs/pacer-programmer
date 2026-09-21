@@ -21,6 +21,38 @@ export type IconId = "loop" | "rewind" | "fastForward" | "stop" | "play" | "reco
 export type IndicatorFace =
   { kind: "bar" } | { kind: "text"; text: string } | { kind: "icons"; icons: readonly IconId[] };
 
+/** The DAW functions printed on the front-row legends (and assigned by the built-in Track/Transport presets). */
+export type DawCommand =
+  | "Solo"
+  | "Mute"
+  | "Rec Arm"
+  | "Click"
+  | "Previous patch"
+  | "Next patch"
+  | "Cycle"
+  | "Rewind"
+  | "Fast forward"
+  | "Stop"
+  | "Play"
+  | "Record"
+  | "Previous track"
+  | "Next track";
+
+/**
+ * The function a printed legend depicts. A legend lights while its switch is assigned that
+ * function. User Guide: "When DAW Transport or Track functions are assigned, the top and middle
+ * row icons are illuminated". Observed: A's "Track" legend is dark on presets where A was
+ * reprogrammed away from selecting Track, and lit where it wasn't.
+ */
+export type LegendFunction =
+  /** [Preset]: the firmware's own, non-programmable switch, so always assigned. */
+  | { kind: "presetButton" }
+  /** Selecting the built-in Track or Transport preset. */
+  | { kind: "selectMode"; mode: "track" | "transport" }
+  /** Stepping to the previous/next preset (user presets) or track (DAW presets). */
+  | { kind: "navigate"; direction: "previous" | "next" }
+  | { kind: "dawCommand"; command: DawCommand };
+
 /** Whether a light's color is set by config (Pacer color codes) or fixed by its printed ink. */
 export type IndicatorColor = { kind: "variable" } | { kind: "fixed"; ink: InkColor };
 
@@ -33,8 +65,8 @@ export interface IndicatorSpec {
   face: IndicatorFace;
   /** Whether a step's LED num can address this light at all. */
   addressable: boolean;
-  /** State with no config or firmware mode driving it (e.g. back-row legends are always lit). */
-  idle: "lit" | "dark";
+  /** For printed legends: the function it depicts, which lights it while assigned. Absent for bars. */
+  depicts?: LegendFunction;
   /** What each aspect of this spec rests on. Any "inferred" entry means some of it is unverified. */
   evidence: readonly Evidence[];
 }

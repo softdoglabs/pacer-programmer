@@ -3,7 +3,8 @@ import { PACER_HARDWARE, type PhysicalSwitchId, type SwitchSpec } from "../hardw
 import type { BoardState } from "../simulator/types";
 import { displayState } from "./display";
 import { dawPresetLights, presetButtonBar, presetSelectLights } from "./firmwareLights";
-import { idleLights, type SwitchLights } from "./lights";
+import { legendLights } from "./legendLights";
+import type { SwitchLights } from "./lights";
 import type { PanelState, SwitchPanelState } from "./types";
 import { userPresetLights } from "./userPresetLights";
 
@@ -38,8 +39,14 @@ function switchState(spec: SwitchSpec, board: BoardState, firmware: FirmwareMode
     spec.kind === "presetSwitch"
       ? firmware.presetButtonDown
       : firmware.mode === "user" && spec.controlId !== undefined && (board.controls[spec.controlId]?.pressed ?? false);
-  // Mode-driven lights take precedence over idle ones, indicator by indicator.
-  return { pressed, lights: { ...idleLights(spec), ...modeLights(spec, board, firmware) } };
+  // Legends lit by their assigned function, then mode/config-driven lights (which win, per
+  // indicator: e.g. a step's LED num can drive a legend row, as the factory MMC preset does).
+  const control =
+    spec.controlId === undefined ? undefined : board.config.presets[board.activePresetIndex]?.controls[spec.controlId];
+  return {
+    pressed,
+    lights: { ...legendLights(spec, firmware.mode, control), ...modeLights(spec, board, firmware) },
+  };
 }
 
 /** Everything the Pacer's panel shows right now: every switch's lights, and the display. */

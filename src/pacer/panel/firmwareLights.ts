@@ -2,7 +2,7 @@ import { SPECIAL_PRESETS, type DeviceMode } from "../device";
 import type { SpecialPresetName } from "../simulator/types";
 import { bankSelectedBy, numberSelectedBy, type SwitchSpec } from "../hardware";
 import { userPresetIndex } from "../protocol/constants";
-import { inkOrColor, type SwitchLights } from "./lights";
+import type { SwitchLights } from "./lights";
 import type { LightState } from "./types";
 
 const ROYAL_BLUE_BRIGHT: LightState = { brightness: "bright", flashing: false, color: { kind: "royalBlue" } };
@@ -16,7 +16,7 @@ const BAR_OFF: LightState = { brightness: "off", flashing: false, color: { kind:
  *   switch only shows solid while the pending bank is the loaded preset's bank; in any other
  *   bank all six flash.
  * - A-D: the current (pending) bank's bar is solid bright and the other three are off.
- * Legends keep their idle state.
+ * Legends are handled by `legendLights`.
  */
 export function presetSelectLights(spec: SwitchSpec, pendingBank: number, activePresetIndex: number): SwitchLights {
   if (spec.controlId === undefined) return {};
@@ -39,23 +39,16 @@ export function presetSelectLights(spec: SwitchSpec, pendingBank: number, active
 const MODE_INDICATOR: LightState = { brightness: "bright", flashing: false, color: { kind: "lightBlue" } };
 
 /**
- * Lights inside a built-in DAW preset (Track / Transport). Its A/B switches select Track /
- * Transport. As with any Preset Select to Track/Transport (see `stepLight`), their lights are
- * mode indicators, so the one for the current mode is lit. It shows the mode-indicator
- * light blue (observed). The preset's printed legend row lights in its ink on every switch that
- * has one (see `SpecialPresetDefinition.litLegendRow`). The DAW-function switches' bars stay off:
- * their behavior isn't documented or observed yet.
+ * Bars inside a built-in DAW preset (Track / Transport). Its A/B switches select Track /
+ * Transport, and as with any Preset Select to Track/Transport (see `stepLight`), their lights are
+ * mode indicators: the one for the current mode is lit light blue (observed). The DAW-function
+ * switches' bars stay off, since their behavior isn't documented or observed yet. Legends are
+ * handled by `legendLights`.
  */
 export function dawPresetLights(spec: SwitchSpec, current: SpecialPresetName): SwitchLights {
-  const preset = SPECIAL_PRESETS[current];
-  const lights: SwitchLights = {};
-  const row = spec.indicators.find((i) => i.id === preset.litLegendRow);
-  if (row?.color.kind === "fixed") {
-    lights[row.id] = { brightness: "bright", flashing: false, color: inkOrColor(row, { kind: "unspecified" }) };
-  }
-  const action = spec.controlId === undefined ? undefined : preset.switches[spec.controlId];
-  if (action?.kind === "goto") lights.bottom = action.preset === current ? MODE_INDICATOR : BAR_OFF;
-  return lights;
+  const action = spec.controlId === undefined ? undefined : SPECIAL_PRESETS[current].switches[spec.controlId];
+  if (action?.kind !== "goto") return {};
+  return { bottom: action.preset === current ? MODE_INDICATOR : BAR_OFF };
 }
 
 /**

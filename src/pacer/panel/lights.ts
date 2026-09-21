@@ -1,4 +1,4 @@
-import type { IndicatorId, IndicatorSpec, SwitchSpec } from "../hardware";
+import type { IndicatorId, IndicatorSpec } from "../hardware";
 import { LED_COLOR_DEFAULT, decodeLedColor, type PacerHue } from "../protocol/ledColors";
 import type { LightState } from "./types";
 
@@ -44,19 +44,4 @@ export function lightFromColorCode(
       };
     }
   }
-}
-
-/** Lights that are on with nothing driving them (e.g. back-row legends are always lit). */
-export function idleLights(spec: SwitchSpec): SwitchLights {
-  const lights: SwitchLights = {};
-  for (const indicator of spec.indicators) {
-    if (indicator.idle === "lit") {
-      lights[indicator.id] = {
-        brightness: "bright",
-        flashing: false,
-        color: inkOrColor(indicator, { kind: "unspecified" }),
-      };
-    }
-  }
-  return lights;
 }

@@ -1,4 +1,4 @@
-import type { IndicatorId } from "../hardware";
+import type { DawCommand } from "../hardware";
 import { ControlId } from "../protocol/constants";
 import type { SpecialPresetName } from "../simulator/types";
 
@@ -8,26 +8,21 @@ import type { SpecialPresetName } from "../simulator/types";
  */
 export type SpecialSwitchAction =
   /** A DAW command. The actual MIDI it sends depends on the DAW integration (MCU by default, per the manual) and isn't modeled. */
-  | { kind: "daw"; command: string }
+  | { kind: "daw"; command: DawCommand }
   /** Switch to the other built-in DAW preset. */
   | { kind: "goto"; preset: SpecialPresetName };
 
 export interface SpecialPresetDefinition {
   /** 5-character display text. Our own choice; what the real display shows isn't documented. */
   displayName: string;
-  /**
-   * Which printed legend row this preset lights on the front-row switches. User Guide: "when
-   * DAW Transport or Track functions are assigned, the top and middle row icons are
-   * illuminated"; Sound on Sound: in Transport "a middle row of icons illuminates"; Nektar's
-   * copy: "depending on the active mode, the top or middle row icons are illuminated".
-   */
-  litLegendRow: Extract<IndicatorId, "top" | "middle">;
   switches: Partial<Record<number, SpecialSwitchAction>>;
 }
 
 /*
  * Sources: the Pacer User Guide ("Pacer Functional Overview", "Factory Preset List", "Patch
- * Up/Down Function") plus the legends printed on the faceplate (see src/pacer/hardware).
+ * Up/Down Function") plus the legends printed on the faceplate (see src/pacer/hardware). The
+ * command names are the hardware table's DawCommand, so each assignment lights the legend that
+ * depicts it: the Track preset lights the top text row, Transport the middle icon row.
  * Track: 1-4 = Solo / Mute / Rec Arm / Click, 5-6 = Patch down/up. Transport: 1-6 = Cycle /
  * Rewind / Forward / Stop / Play / Record. In both, C/D select the previous/next track.
  *
@@ -42,14 +37,13 @@ const SHARED: SpecialPresetDefinition["switches"] = {
   [ControlId.StompswitchD]: { kind: "daw", command: "Next track" },
 };
 
-function daw(command: string): SpecialSwitchAction {
+function daw(command: DawCommand): SpecialSwitchAction {
   return { kind: "daw", command };
 }
 
 export const SPECIAL_PRESETS: Record<SpecialPresetName, SpecialPresetDefinition> = {
   track: {
     displayName: "TRACK",
-    litLegendRow: "top",
     switches: {
       ...SHARED,
       [ControlId.Stompswitch1]: daw("Solo"),
@@ -62,7 +56,6 @@ export const SPECIAL_PRESETS: Record<SpecialPresetName, SpecialPresetDefinition>
   },
   transport: {
     displayName: "TRANS",
-    litLegendRow: "middle",
     switches: {
       ...SHARED,
       [ControlId.Stompswitch1]: daw("Cycle"),

@@ -1,5 +1,5 @@
 import { ControlId } from "../protocol/constants";
-import type { Evidence, IconId, IndicatorSpec, InkColor, SwitchSpec } from "./types";
+import type { DawCommand, Evidence, IconId, IndicatorSpec, InkColor, LegendFunction, SwitchSpec } from "./types";
 
 /*
  * The Pacer's physical controls. The evidence behind each indicator is recorded in its
@@ -7,7 +7,7 @@ import type { Evidence, IconId, IndicatorSpec, InkColor, SwitchSpec } from "./ty
  */
 const OWNER_LAYOUT: Evidence = {
   kind: "confirmed",
-  source: "project owner: front row top = text, middle = icons, bottom = bar; back-row legends always lit",
+  source: "project owner: front row top = text, middle = icons, bottom = bar",
 };
 const OWNER_PRESET_LED: Evidence = {
   kind: "confirmed",
@@ -42,6 +42,12 @@ const BACK_LEGEND_UNADDRESSABLE: Evidence = {
   kind: "inferred",
   reason: "unknown whether a step's LED num can address back-row legends, so assumed not",
 };
+const LEGEND_BY_FUNCTION: Evidence = {
+  kind: "confirmed",
+  source:
+    "User Guide: 'When DAW Transport or Track functions are assigned, the top and middle row icons are illuminated'; " +
+    "project owner: A's 'Track' legend is dark on presets where A no longer selects Track (A1, C1 of their dump), lit elsewhere",
+};
 const DEFAULT_IS_BAR: Evidence = {
   kind: "inferred",
   reason: "every factory LED entry with a real RGB color uses LED num 0 (Default); the only non-bar use sets 2",
@@ -53,37 +59,46 @@ function bar(...extra: Evidence[]): IndicatorSpec {
     color: { kind: "variable" },
     face: { kind: "bar" },
     addressable: true,
-    idle: "dark",
     evidence: [SOS_BAR, DEFAULT_IS_BAR, ...extra],
   };
 }
 
-/** Front-row stompswitches: top = text legend, middle = icon legend, bottom = RGB bar (layout confirmed by owner). */
-function frontRowIndicators(text: string, textInk: InkColor, icon: IconId): IndicatorSpec[] {
+/**
+ * Front-row stompswitches: top = text legend (a Track function), middle = icon legend (a
+ * Transport function), bottom = RGB bar. Layout confirmed by the owner.
+ */
+function frontRowIndicators(
+  text: string,
+  textInk: InkColor,
+  trackCommand: DawCommand,
+  icon: IconId,
+  transportCommand: DawCommand,
+): IndicatorSpec[] {
   return [
     {
       id: "top",
       color: { kind: "fixed", ink: textInk },
       face: { kind: "text", text },
       addressable: true,
-      idle: "dark",
-      evidence: [OWNER_LAYOUT, FIXED_INK, OWNER_TEXT_INK, TOP_ADDRESSABLE],
+      depicts: { kind: "dawCommand", command: trackCommand },
+      evidence: [OWNER_LAYOUT, FIXED_INK, OWNER_TEXT_INK, TOP_ADDRESSABLE, LEGEND_BY_FUNCTION],
     },
     {
       id: "middle",
       color: { kind: "fixed", ink: "white" },
       face: { kind: "icons", icons: [icon] },
       addressable: true,
-      idle: "dark",
-      evidence: [OWNER_LAYOUT, MMC_MIDDLE, FIXED_INK, PHOTO_INK],
+      depicts: { kind: "dawCommand", command: transportCommand },
+      evidence: [OWNER_LAYOUT, MMC_MIDDLE, FIXED_INK, PHOTO_INK, LEGEND_BY_FUNCTION],
     },
     bar(),
   ];
 }
 
-/** Back-row switches (Preset, A-D): a printed legend that's always lit by default, over an RGB bar. */
+/** Back-row switches (Preset, A-D): a printed legend, lit while its function is assigned, over an RGB bar. */
 function backRowIndicators(
   face: IndicatorSpec["face"],
+  depicts: LegendFunction,
   ink: InkColor,
   inkEvidence: Evidence = PHOTO_INK,
   ...barEvidence: Evidence[]
@@ -94,8 +109,8 @@ function backRowIndicators(
       color: { kind: "fixed", ink },
       face,
       addressable: false,
-      idle: "lit",
-      evidence: [OWNER_LAYOUT, FIXED_INK, inkEvidence, BACK_LEGEND_UNADDRESSABLE],
+      depicts,
+      evidence: [OWNER_LAYOUT, FIXED_INK, inkEvidence, BACK_LEGEND_UNADDRESSABLE, LEGEND_BY_FUNCTION],
     },
     bar(...barEvidence),
   ];
@@ -106,7 +121,13 @@ export const PACER_HARDWARE = [
     id: "preset",
     kind: "presetSwitch",
     name: "Preset",
-    indicators: backRowIndicators({ kind: "text", text: "Preset" }, "blue", PHOTO_INK, OWNER_PRESET_LED),
+    indicators: backRowIndicators(
+      { kind: "text", text: "Preset" },
+      { kind: "presetButton" },
+      "blue",
+      PHOTO_INK,
+      OWNER_PRESET_LED,
+    ),
     placement: { kind: "panel", row: "back", col: 0 },
   },
   {
@@ -116,7 +137,7 @@ export const PACER_HARDWARE = [
     controlId: ControlId.StompswitchA,
     selectRole: { kind: "bank", bank: 0 },
     marking: "badge",
-    indicators: backRowIndicators({ kind: "text", text: "Track" }, "red"),
+    indicators: backRowIndicators({ kind: "text", text: "Track" }, { kind: "selectMode", mode: "track" }, "red"),
     defaultIndicator: "bottom",
     placement: { kind: "panel", row: "back", col: 1 },
   },
@@ -127,7 +148,12 @@ export const PACER_HARDWARE = [
     controlId: ControlId.StompswitchB,
     selectRole: { kind: "bank", bank: 1 },
     marking: "badge",
-    indicators: backRowIndicators({ kind: "icons", icons: ["stop", "play", "record"] }, "green", OWNER_B_LEGEND_INK),
+    indicators: backRowIndicators(
+      { kind: "icons", icons: ["stop", "play", "record"] },
+      { kind: "selectMode", mode: "transport" },
+      "green",
+      OWNER_B_LEGEND_INK,
+    ),
     defaultIndicator: "bottom",
     placement: { kind: "panel", row: "back", col: 2 },
   },
@@ -138,7 +164,11 @@ export const PACER_HARDWARE = [
     controlId: ControlId.StompswitchC,
     selectRole: { kind: "bank", bank: 2 },
     marking: "badge",
-    indicators: backRowIndicators({ kind: "icons", icons: ["arrowDown"] }, "white"),
+    indicators: backRowIndicators(
+      { kind: "icons", icons: ["arrowDown"] },
+      { kind: "navigate", direction: "previous" },
+      "white",
+    ),
     defaultIndicator: "bottom",
     placement: { kind: "panel", row: "back", col: 3 },
   },
@@ -149,7 +179,11 @@ export const PACER_HARDWARE = [
     controlId: ControlId.StompswitchD,
     selectRole: { kind: "bank", bank: 3 },
     marking: "badge",
-    indicators: backRowIndicators({ kind: "icons", icons: ["arrowUp"] }, "white"),
+    indicators: backRowIndicators(
+      { kind: "icons", icons: ["arrowUp"] },
+      { kind: "navigate", direction: "next" },
+      "white",
+    ),
     defaultIndicator: "bottom",
     placement: { kind: "panel", row: "back", col: 4 },
   },
@@ -160,7 +194,7 @@ export const PACER_HARDWARE = [
     controlId: ControlId.Stompswitch1,
     selectRole: { kind: "number", num: 1 },
     marking: "numeral",
-    indicators: frontRowIndicators("Solo", "yellow", "loop"),
+    indicators: frontRowIndicators("Solo", "yellow", "Solo", "loop", "Cycle"),
     defaultIndicator: "bottom",
     placement: { kind: "panel", row: "front", col: 0 },
   },
@@ -171,7 +205,7 @@ export const PACER_HARDWARE = [
     controlId: ControlId.Stompswitch2,
     selectRole: { kind: "number", num: 2 },
     marking: "numeral",
-    indicators: frontRowIndicators("Mute", "yellow", "rewind"),
+    indicators: frontRowIndicators("Mute", "yellow", "Mute", "rewind", "Rewind"),
     defaultIndicator: "bottom",
     placement: { kind: "panel", row: "front", col: 1 },
   },
@@ -182,7 +216,7 @@ export const PACER_HARDWARE = [
     controlId: ControlId.Stompswitch3,
     selectRole: { kind: "number", num: 3 },
     marking: "numeral",
-    indicators: frontRowIndicators("Rec Arm", "yellow", "fastForward"),
+    indicators: frontRowIndicators("Rec Arm", "yellow", "Rec Arm", "fastForward", "Fast forward"),
     defaultIndicator: "bottom",
     placement: { kind: "panel", row: "front", col: 2 },
   },
@@ -193,7 +227,7 @@ export const PACER_HARDWARE = [
     controlId: ControlId.Stompswitch4,
     selectRole: { kind: "number", num: 4 },
     marking: "numeral",
-    indicators: frontRowIndicators("Click", "white", "stop"),
+    indicators: frontRowIndicators("Click", "white", "Click", "stop", "Stop"),
     defaultIndicator: "bottom",
     placement: { kind: "panel", row: "front", col: 3 },
   },
@@ -204,7 +238,7 @@ export const PACER_HARDWARE = [
     controlId: ControlId.Stompswitch5,
     selectRole: { kind: "number", num: 5 },
     marking: "numeral",
-    indicators: frontRowIndicators("Patch ▼", "yellow", "play"),
+    indicators: frontRowIndicators("Patch ▼", "yellow", "Previous patch", "play", "Play"),
     defaultIndicator: "bottom",
     placement: { kind: "panel", row: "front", col: 4 },
   },
@@ -215,7 +249,7 @@ export const PACER_HARDWARE = [
     controlId: ControlId.Stompswitch6,
     selectRole: { kind: "number", num: 6 },
     marking: "numeral",
-    indicators: frontRowIndicators("Patch ▲", "yellow", "record"),
+    indicators: frontRowIndicators("Patch ▲", "yellow", "Next patch", "record", "Record"),
     defaultIndicator: "bottom",
     placement: { kind: "panel", row: "front", col: 5 },
   },

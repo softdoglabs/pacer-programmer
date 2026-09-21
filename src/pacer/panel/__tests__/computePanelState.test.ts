@@ -114,6 +114,13 @@ describe("computePanelState (factory presets)", () => {
     expect(bar("swB")).toEqual({ brightness: "dim", flashing: false, color: { kind: "hue", hue: "orange" } });
     expect(bar("swC")?.brightness).toBe("off");
     expect(bar("swD")?.brightness).toBe("off");
+    // Legends follow each switch's assignment: A (reprogrammed) and B (a CC) are dark; C/D still
+    // step presets, so their arrows are lit.
+    const legend = (id: "swA" | "swB" | "swC" | "swD") => computePanelState(board, USER).switches[id].lights.top;
+    expect(legend("swA")).toBeUndefined();
+    expect(legend("swB")).toBeUndefined();
+    expect(legend("swC")?.brightness).toBe("bright");
+    expect(legend("swD")?.brightness).toBe("bright");
     board = applyBoardEvent(board, { controlId: ControlId.StompswitchC, phase: "press" }).board; // wraps to B6
     expect(computePanelState(board, USER).switches.swC.lights.bottom?.brightness ?? "off").toBe("off");
   });

@@ -229,13 +229,24 @@ every control on every real factory preset).
   marking, and indicator lights. For each light it records the position
   (top/middle/bottom, matching SysEx LED num), variable (RGB) vs.
   fixed-ink color, face (bar / text legend / icons), whether a step can
-  address it, and its idle state. Each light carries the `evidence` behind
+  address it, and (for printed legends) the function it depicts. Each light carries the `evidence` behind
   it, marked confirmed or inferred. An invariants test checks the table.
   Current facts:
   - Front row: top = text legend, middle = icon legend, bottom = RGB bar.
     The layout is confirmed; fixed ink is inferred.
-  - Back row (Preset, A-D): an always-lit legend over an RGB bar. Whether
+  - Back row (Preset, A-D): a printed legend over an RGB bar. Whether
     steps can address the legend is unknown, so it's assumed not.
+  - **Legends are function indicators:** a legend lights while its switch
+    is assigned the function it depicts (`depicts`).
+    - Examples: A's "Track" while A selects Track; B's icons while B
+      selects Transport; C/D's arrows while they step previous/next;
+      "Preset" always; front-row DAW legends when the Track/Transport
+      preset assigns those commands.
+    - Evidence: the User Guide ("when DAW Transport or Track functions are
+      assigned, the top and middle row icons are illuminated"), and the
+      owner's dump, where A's legend is dark on A1/C1 (A reprogrammed) and
+      lit elsewhere. An earlier "back-row legends are always lit" rule was
+      only true of the factory assignments.
   - LED num 0 ("Default") drives the bar. Inferred from the factory dump;
     its MMC preset (D5) is the one place that targets middle (2).
 - `src/pacer/device/deviceModeMachine.ts` is the XState machine for the
@@ -256,8 +267,9 @@ every control on every real factory preset).
   - Factory A and B use PresetSelect's reserved targets 1 ("track") and
     2 ("transport"). The engine reports these as `specialPresetRequested`.
   - `specialPresets.ts` holds the Track/Transport switch actions (User
-    Guide) and which printed legend row each preset lights: Track = top
-    text row, Transport = middle icon row.
+    Guide). Their DAW commands use the hardware table's `DawCommand`
+    names, so each assignment lights the legend that depicts it: Track
+    lights the top text row, Transport the middle icon row.
   - Their DAW commands are logged symbolically; the actual Nektar DAW
     Integration / MCU bytes aren't modeled.
   - Assumptions: A/B switch between Track and Transport, and returning
@@ -310,10 +322,11 @@ every control on every real factory preset).
     - A-D: only the current bank's bar is lit, in solid bright royal blue.
     - 1-6: they flash dim royal blue, except the loaded preset's number,
       which is solid bright.
-  - `dawPresetLights`: lights the special preset's legend row and its
-    mode indicator. The DAW-function bars' behavior isn't known yet, so
-    they stay off.
-  - Idle lights: back-row legends are always lit.
+  - `dawPresetLights`: the mode-indicator bars. The DAW-function bars'
+    behavior isn't known yet, so they stay off.
+  - `legendLights`: printed legends, lit by assigned function (see the
+    hardware notes above). Config-driven lights win per indicator, e.g.
+    the MMC preset's LED num 2 on the icon row.
   - `switchHint` gives the app's own "what would a press do" annotation,
     which is kept separate from anything the hardware displays.
   - LED color-code decoding (hue + bright/dim) lives in

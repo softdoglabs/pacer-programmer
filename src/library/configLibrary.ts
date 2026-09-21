@@ -11,14 +11,20 @@ import type { PacerConfig } from "../pacer/protocol/types";
  * enough for ~25 full dumps.
  */
 
-export type ConfigSource = { kind: "device"; portName: string } | { kind: "file"; fileName: string };
+export type ConfigSource =
+  | { kind: "device"; portName: string }
+  | { kind: "file"; fileName: string }
+  /** Saved from the programming interface, starting from the named configuration. */
+  | { kind: "edit"; basedOn: string };
 
 export interface LibraryEntry {
   id: string;
   name: string;
   source: ConfigSource;
-  /** ISO timestamp of when it was pulled or imported. */
+  /** ISO timestamp of when it was pulled, imported, or saved. */
   createdAt: string;
+  /** ISO timestamp of the last "save over", if it has been overwritten since. */
+  modifiedAt?: string;
   byteLength: number;
   /** User presets (A1-D6) present in the dump. */
   presetCount: number;
@@ -87,6 +93,18 @@ function isQuotaError(err: unknown): boolean {
   return err instanceof DOMException && (err.name === "QuotaExceededError" || err.code === 22);
 }
 
+/** Validates that bytes are a Pacer dump and summarizes them. Throws if they aren't. */
+function describeBytes(bytes: Uint8Array): Pick<LibraryEntry, "byteLength" | "presetCount"> {
+  const config = decodeSysex(bytes);
+  if (Object.keys(config.presets).length === 0 && config.globalFields.length === 0) {
+    throw new Error("That doesn't contain any Pacer configuration data");
+  }
+  return {
+    byteLength: bytes.length,
+    presetCount: Object.keys(config.presets).map(Number).filter(isUserPresetIndex).length,
+  };
+}
+
 export class ConfigLibrary {
   constructor(
     private readonly storage: KeyValueStorage,
@@ -110,17 +128,12 @@ export class ConfigLibrary {
 
   /** Saves a snapshot. Throws if the bytes don't decode as a Pacer dump, or LibraryFullError if storage is full. */
   add(name: string, source: ConfigSource, bytes: Uint8Array, details: Pick<LibraryEntry, "device"> = {}): LibraryEntry {
-    const config = decodeSysex(bytes); // validates before anything is stored
-    if (Object.keys(config.presets).length === 0 && config.globalFields.length === 0) {
-      throw new Error("That doesn't contain any Pacer configuration data");
-    }
     const entry: LibraryEntry = {
       id: this.newId(),
       name,
       source,
       createdAt: this.now().toISOString(),
-      byteLength: bytes.length,
-      presetCount: Object.keys(config.presets).map(Number).filter(isUserPresetIndex).length,
+      ...describeBytes(bytes), // validates before anything is stored
       ...details,
     };
     try {
@@ -131,6 +144,22 @@ export class ConfigLibrary {
       throw isQuotaError(err) ? new LibraryFullError() : err;
     }
     return entry;
+  }
+
+  /** Overwrites a snapshot's bytes (keeping its name and source). Leaves it unchanged if storage is full. */
+  replace(id: string, bytes: Uint8Array): LibraryEntry {
+    const existing = this.list().find((e) => e.id === id);
+    if (!existing) throw new Error("That saved configuration no longer exists");
+    const updated: LibraryEntry = { ...existing, ...describeBytes(bytes), modifiedAt: this.now().toISOString() };
+    const previous = this.storage.getItem(dataKey(id));
+    try {
+      this.storage.setItem(dataKey(id), toBase64(bytes));
+      this.writeIndex(this.list().map((e) => (e.id === id ? updated : e)));
+    } catch (err) {
+      if (previous !== null) this.storage.setItem(dataKey(id), previous);
+      throw isQuotaError(err) ? new LibraryFullError() : err;
+    }
+    return updated;
   }
 
   loadBytes(id: string): Uint8Array {

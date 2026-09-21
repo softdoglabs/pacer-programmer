@@ -66,4 +66,16 @@ describe("ConfigLibrary", () => {
     storage.setItem("pacer-programmer.library.v1.index", "{not json");
     expect(library(storage).list()).toEqual([]);
   });
+
+  it("replaces a snapshot's bytes in place, keeping its name and source", () => {
+    const lib = library();
+    lib.add("rig", { kind: "file", fileName: "rig.syx" }, FIXTURE);
+    const edited = new Uint8Array(FIXTURE); // same shape; content identity is what matters here
+    const updated = lib.replace("id1", edited);
+    expect(updated).toMatchObject({ id: "id1", name: "rig", source: { kind: "file", fileName: "rig.syx" } });
+    expect(updated.modifiedAt).toBeDefined();
+    expect(lib.list()).toHaveLength(1);
+    expect(() => lib.replace("nope", edited)).toThrow(/no longer exists/);
+    expect(() => lib.replace("id1", Uint8Array.from([1, 2]))).toThrow(/doesn't contain/);
+  });
 });

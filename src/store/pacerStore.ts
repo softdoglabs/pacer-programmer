@@ -26,6 +26,7 @@ import {
   type MidiPortInfo,
 } from "../midi/webMidi";
 import { createConfigurationsSlice, type ConfigurationsSlice } from "./configurationsSlice";
+import { createEditingSlice, type EditHistory, type EditingSlice } from "./editingSlice";
 
 export interface LogEntry {
   id: number;
@@ -54,7 +55,7 @@ export interface MidiView {
   error?: string;
 }
 
-export interface PacerStore extends ConfigurationsSlice {
+export interface PacerStore extends ConfigurationsSlice, EditingSlice {
   /**
    * The loaded config and the current *user* preset. While a firmware special preset (preset
    * select, Track, Transport) is active, this still points at the last user preset: that's what
@@ -69,6 +70,9 @@ export interface PacerStore extends ConfigurationsSlice {
    * it, so component state (held presses, open tabs) can't leak across configurations either.
    */
   sessionId: number;
+  /** The config as last opened or saved: the baseline for "unsaved edits" (see `hasUnsavedEdits`). */
+  savedConfig: PacerConfig;
+  editHistory: EditHistory;
   log: LogEntry[];
   deviceMode: DeviceModeView;
   /**
@@ -117,6 +121,8 @@ function freshSession(config: PacerConfig, initialPresetIndex: number) {
   return {
     sessionId: nextSessionId++,
     board: createBoardState(config, initialPresetIndex),
+    savedConfig: config,
+    editHistory: { past: [], future: [] } as EditHistory,
     log: [] as LogEntry[],
     swallowedReleases: [] as number[],
     selectedControlId: undefined as number | undefined,
@@ -235,6 +241,7 @@ export const usePacerStore = create<PacerStore>((set, get) => {
   }
 
   return {
+    ...createEditingSlice(set, get),
     ...createConfigurationsSlice(set, get, {
       storage: storage ?? new MemoryStorage(),
       persistent: storage !== undefined,

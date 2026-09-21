@@ -7,12 +7,22 @@ import type { DeviceInfoView } from "../store/configurationsSlice";
 import { usePacerStore } from "../store/pacerStore";
 import { PortSelect } from "./PortSelect";
 
+function describeOrigin(source: LibraryEntry["source"]): string {
+  switch (source.kind) {
+    case "device":
+      return `Pulled from ${source.portName}`;
+    case "file":
+      return `Imported ${source.fileName}`;
+    case "edit":
+      return `Edited from ${source.basedOn}`;
+  }
+}
+
 function describeSource(entry: LibraryEntry): string {
-  const when = new Date(entry.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-  const from =
-    entry.source.kind === "device" ? `Pulled from ${entry.source.portName}` : `Imported ${entry.source.fileName}`;
+  const format = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  const saved = entry.modifiedAt ? ` · saved ${format(entry.modifiedAt)}` : "";
   const firmware = entry.device ? ` · firmware ${formatFirmwareVersion(entry.device)}` : "";
-  return `${from} · ${when} · ${entry.presetCount} presets${firmware}`;
+  return `${describeOrigin(entry.source)} · ${format(entry.createdAt)}${saved} · ${entry.presetCount} presets${firmware}`;
 }
 
 function describeIdentity(identity: DeviceIdentity): string {

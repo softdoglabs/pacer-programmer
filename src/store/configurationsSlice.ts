@@ -3,6 +3,7 @@ import { DumpError, findPacerPorts, pullFullDump, type PacerPorts } from "../mid
 import { queryDeviceIdentity, type IdentityResult } from "../midi/deviceIdentity";
 import type { MidiConnection } from "../midi/webMidi";
 import { loadFactoryDefaults } from "../pacer/factoryDefaults";
+import { encodeSysex } from "../pacer/protocol/encode";
 import { EXPECTED_FULL_DUMP_MESSAGES } from "../pacer/protocol/requests";
 import type { PacerStore } from "./pacerStore";
 
@@ -48,6 +49,10 @@ export interface ConfigurationsSlice {
   cancelPull: () => void;
   renameSavedConfig: (id: string, name: string) => void;
   deleteSavedConfig: (id: string) => void;
+  /** Saves the working config as a new snapshot and switches to it. */
+  saveAsNewSnapshot: (name: string) => void;
+  /** Overwrites the open snapshot with the working config (not possible for the built-in factory defaults). */
+  saveOverActive: () => void;
   savedConfigBytes: (id: string) => Uint8Array;
   selectPacerPorts: (ports: PacerPorts) => void;
   /** Re-detects the Pacer's ports after MIDI ports change, keeping still-valid user choices. */
@@ -239,6 +244,39 @@ export function createConfigurationsSlice(
     },
 
     savedConfigBytes: (id) => library.loadBytes(id),
+
+    saveAsNewSnapshot: (name) => {
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      const { board, configSource } = get();
+      try {
+        const entry = library.add(trimmed, { kind: "edit", basedOn: configSource }, encodeSysex(board.config));
+        refreshEntries();
+        set({ activeConfigId: entry.id, configSource: trimmed, savedConfig: board.config });
+        rememberActive(entry.id);
+      } catch (err) {
+        refreshEntries({
+          error: err instanceof LibraryFullError ? err.message : `Couldn't save: ${errorMessage(err)}`,
+        });
+      }
+    },
+
+    saveOverActive: () => {
+      const { board, activeConfigId } = get();
+      if (activeConfigId === undefined) {
+        refreshEntries({ error: "The factory defaults are read-only; save as a new snapshot instead." });
+        return;
+      }
+      try {
+        library.replace(activeConfigId, encodeSysex(board.config));
+        refreshEntries();
+        set({ savedConfig: board.config });
+      } catch (err) {
+        refreshEntries({
+          error: err instanceof LibraryFullError ? err.message : `Couldn't save: ${errorMessage(err)}`,
+        });
+      }
+    },
 
     selectPacerPorts: (ports) => set((s) => ({ pacerPorts: { ...s.pacerPorts, ...ports } })),
 

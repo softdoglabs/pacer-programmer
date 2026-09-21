@@ -11,7 +11,20 @@ export interface MidiOutputPortLike {
   send(data: number[]): void;
 }
 
+export interface MidiMessageEventLike {
+  data: Uint8Array | null;
+}
+
+export interface MidiInputPortLike {
+  id: string;
+  name: string | null;
+  state: "connected" | "disconnected";
+  addEventListener(type: "midimessage", listener: (event: MidiMessageEventLike) => void): void;
+  removeEventListener(type: "midimessage", listener: (event: MidiMessageEventLike) => void): void;
+}
+
 export interface MidiAccessLike {
+  readonly inputs: { forEach(cb: (port: MidiInputPortLike) => void): void };
   readonly outputs: { forEach(cb: (port: MidiOutputPortLike) => void): void };
   readonly sysexEnabled: boolean;
   addEventListener(type: "statechange", listener: () => void): void;
@@ -20,14 +33,27 @@ export interface MidiAccessLike {
 
 export type MidiAccessRequester = (options: { sysex: boolean }) => Promise<MidiAccessLike>;
 
-export interface MidiOutputInfo {
+export interface MidiPortInfo {
   id: string;
   name: string;
 }
 
+/** An output port (same shape as any port). */
+export type MidiOutputInfo = MidiPortInfo;
+
+function connectedPorts(ports: {
+  forEach(cb: (port: { id: string; name: string | null; state: string }) => void): void;
+}) {
+  const found: MidiPortInfo[] = [];
+  ports.forEach((port) => {
+    if (port.state === "connected") found.push({ id: port.id, name: port.name ?? port.id });
+  });
+  return found.sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export type SendResult = { ok: true } | { ok: false; reason: string };
 
-function isSysex(bytes: readonly number[]): boolean {
+function isSysex(bytes: ArrayLike<number>): boolean {
   return bytes[0] === 0xf0;
 }
 
@@ -40,15 +66,33 @@ export class MidiConnection {
   }
 
   /** Currently connected output ports, sorted by name. */
-  outputs(): MidiOutputInfo[] {
-    const ports: MidiOutputInfo[] = [];
-    this.access.outputs.forEach((port) => {
-      if (port.state === "connected") ports.push({ id: port.id, name: port.name ?? port.id });
-    });
-    return ports.sort((a, b) => a.name.localeCompare(b.name));
+  outputs(): MidiPortInfo[] {
+    return connectedPorts(this.access.outputs);
   }
 
-  send(outputId: string, bytes: readonly number[]): SendResult {
+  /** Currently connected input ports, sorted by name. */
+  inputs(): MidiPortInfo[] {
+    return connectedPorts(this.access.inputs);
+  }
+
+  /**
+   * Delivers every message arriving on an input port (SysEx arrives as one complete message).
+   * Returns an unsubscribe function, or undefined if the port isn't connected.
+   */
+  listen(inputId: string, onMessage: (bytes: Uint8Array) => void): (() => void) | undefined {
+    let port: MidiInputPortLike | undefined;
+    this.access.inputs.forEach((p) => {
+      if (p.id === inputId && p.state === "connected") port = p;
+    });
+    if (!port) return undefined;
+    const listener = (event: MidiMessageEventLike) => {
+      if (event.data) onMessage(event.data);
+    };
+    port.addEventListener("midimessage", listener);
+    return () => port!.removeEventListener("midimessage", listener);
+  }
+
+  send(outputId: string, bytes: ArrayLike<number>): SendResult {
     let port: MidiOutputPortLike | undefined;
     this.access.outputs.forEach((p) => {
       if (p.id === outputId) port = p;
@@ -56,7 +100,7 @@ export class MidiConnection {
     if (!port || port.state !== "connected") return { ok: false, reason: "output port is not connected" };
     if (isSysex(bytes) && !this.sysexEnabled) return { ok: false, reason: "SysEx permission not granted" };
     try {
-      port.send([...bytes]);
+      port.send(Array.from(bytes));
       return { ok: true };
     } catch (err) {
       return { ok: false, reason: err instanceof Error ? err.message : String(err) };

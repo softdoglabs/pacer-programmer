@@ -39,8 +39,9 @@ describe("computePanelState (factory presets)", () => {
       return (["sw1", "swC", "swD"] as const).map((id) => panel.switches[id].lights.bottom);
     };
     const dim = (hue: string) => ({ brightness: "dim", flashing: false, color: { kind: "hue", hue } });
-    // A1: Program Change -> dim orange (observed); C/D are Preset Inc/Dec -> dim red.
-    expect(bars(A1)).toEqual([dim("orange"), dim("red"), dim("red")]);
+    const off = (hue: string) => ({ brightness: "off", flashing: false, color: { kind: "hue", hue } });
+    // A1: Program Change -> dim orange; C/D (Preset Inc/Dec) -> off at rest. Both observed.
+    expect(bars(A1)).toEqual([dim("orange"), off("red"), off("red")]);
     // B1 (HELX1): MIDI CC -> dim blue (observed).
     expect(bars(userPresetIndex(1, 1))[0]).toEqual(dim("blue"));
     // A5 (NOTES): MIDI Note -> green.

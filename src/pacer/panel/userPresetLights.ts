@@ -2,7 +2,7 @@ import { indicatorForLedNum, type SwitchSpec } from "../hardware";
 import { ControlMode, STEPS_PER_CONTROL, SwitchMessageType } from "../protocol/constants";
 import type { SwitchControl } from "../protocol/types";
 import type { ControlRuntimeState } from "../simulator/types";
-import { defaultLedHue } from "./defaultLedColors";
+import { defaultLedColor } from "./defaultLedColors";
 import { lightFromColorCode, type SwitchLights } from "./lights";
 
 function previousStep(step: number): number {
@@ -58,12 +58,12 @@ export function userPresetLights(
     const isProgramChange = step !== undefined && PROGRAM_CHANGE_TYPES.includes(step.msgType);
     const active =
       (runtime?.pressed ?? false) || runtime?.toggleState[n] === true || (isProgramChange && sentLastProgramChange);
-    const defaultHue = step ? defaultLedHue(step.msgType) : undefined;
+    const defaultColor = step ? defaultLedColor(step.msgType) : undefined;
     lights[indicator.id] = lightFromColorCode(
       indicator,
       active ? led.activeColor : led.inactiveColor,
       active,
-      defaultHue,
+      defaultColor,
     );
   }
   return lights;

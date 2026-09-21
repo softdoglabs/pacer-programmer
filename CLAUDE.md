@@ -276,6 +276,10 @@ every control on every real factory preset).
       `defaultLedColors.ts`: PC = orange, CC = blue, Note = green,
       Preset Select/Inc-Dec = red, MMC = yellow, Relay = lavender,
       NRPN = purple, Step Select = pink.
+    - Exception: factory A-D (Preset Select/Inc-Dec, Default color) are
+      off at rest, not dim red (observed). Modeled as "preset navigation
+      rests off". The factory data can't rule out "back-row bars ignore
+      Default colors" instead.
     - A Program Change step stays "on" while its switch sent the preset's
       most recent Program Change. The User Guide says of A1-A4: "the LED
       switch for the last sent message is fully illuminated". The engine

@@ -32,6 +32,7 @@ const INK_CSS: Record<InkColor, string> = {
 };
 
 const ROYAL_BLUE = "#4169e1";
+const LIGHT_BLUE = "#7cc7ff";
 /** Color the config leaves unspecified (the undocumented 0x7F default): a neutral gray. */
 const UNSPECIFIED = "#aeb3bd";
 /** An unlit bar. */
@@ -62,6 +63,9 @@ export function paintLight(light: LightState | undefined, indicator: IndicatorSp
       break;
     case "royalBlue":
       base = ROYAL_BLUE;
+      break;
+    case "lightBlue":
+      base = LIGHT_BLUE;
       break;
     case "ink":
       base = indicator.color.kind === "fixed" ? INK_CSS[indicator.color.ink] : UNSPECIFIED;

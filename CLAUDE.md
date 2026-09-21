@@ -267,8 +267,18 @@ every control on every real factory preset).
   (off/dim/bright), flashing, and semantic color (Pacer hue / royal blue /
   printed ink / unspecified), plus the display. It's built from one
   strategy per mode:
-  - `userPresetLights`: each showing step's LED config lights the
-    indicator its LED num selects. Fixed-ink legends keep their ink and
+  - **The firmware LED model** (`engagement.ts`). A step's light shows
+    whether what it *selects* is currently selected ("engaged"): On color
+    when engaged, Off color otherwise.
+    - CC/Note Toggle: the toggle is on.
+    - Program Change: its switch sent the preset's last PC. The User Guide
+      on A1-A4: "the LED switch for the last sent message is fully
+      illuminated".
+    - Preset Select: its target is the current preset or mode.
+    - Preset Inc/Dec: never (observed: C/D don't light).
+    - Momentary types (CC Trigger, Note, MMC, ...): while held. Assumed.
+  - `userPresetLights` applies that model to each showing step, lighting
+    the indicator its LED num selects. Fixed-ink legends keep their ink and
     take only the brightness.
     - Color "Default" (0x7F, used on almost every factory LED) is the step
       message type's default hue: bright A when on, dimmed b when off.
@@ -280,16 +290,19 @@ every control on every real factory preset).
       off at rest, not dim red (observed). Modeled as "preset navigation
       rests off". The factory data can't rule out "back-row bars ignore
       Default colors" instead.
-    - A Program Change step stays "on" while its switch sent the preset's
-      most recent Program Change. The User Guide says of A1-A4: "the LED
-      switch for the last sent message is fully illuminated". The engine
-      tracks `lastProgramChangeControlId` for this.
+  - **Mode indicators, observed:** the bar of the switch for the current
+    mode is solid bright light blue: Preset on a user preset, A in Track,
+    B in Transport. The others are off. In the DAW presets this falls out
+    of the same engagement rule (their A/B select Track/Transport).
+    Preset's bar is the firmware's user-preset-mode indicator.
   - `presetSelectLights`, all observed on hardware:
     - [Preset]'s bar flashes bright red.
     - A-D: only the current bank's bar is lit, in solid bright royal blue.
     - 1-6: they flash dim royal blue, except the loaded preset's number,
       which is solid bright.
-  - `dawPresetLights`: lights the special preset's legend row.
+  - `dawPresetLights`: lights the special preset's legend row and its
+    mode indicator. The DAW-function bars' behavior isn't known yet, so
+    they stay off.
   - Idle lights: back-row legends are always lit.
   - `switchHint` gives the app's own "what would a press do" annotation,
     which is kept separate from anything the hardware displays.

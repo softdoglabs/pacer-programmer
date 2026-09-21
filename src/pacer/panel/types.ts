@@ -12,8 +12,10 @@ export type Brightness = "off" | "dim" | "bright";
 export type LightColor =
   /** One of the Pacer's 12 LED hues, from a step's LED config. */
   | { kind: "hue"; hue: PacerHue }
-  /** Firmware-chosen color outside the config palette (preset select LEDs). */
+  /** Firmware-chosen colors outside the config palette: preset select LEDs (royal blue), and the
+   * selected-mode indicator on Preset / A / B (light blue). */
   | { kind: "royalBlue" }
+  | { kind: "lightBlue" }
   /** A fixed-color legend lit in its own printed ink (see the indicator's hardware spec). */
   | { kind: "ink" }
   /** Color the config doesn't specify: the undocumented 0x7F "default", or an unknown code. */

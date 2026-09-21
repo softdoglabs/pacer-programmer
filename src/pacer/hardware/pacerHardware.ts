@@ -11,7 +11,7 @@ const OWNER_LAYOUT: Evidence = {
 };
 const OWNER_PRESET_LED: Evidence = {
   kind: "confirmed",
-  source: "project owner: [Preset]'s LED shows red (flashing) and royal blue",
+  source: "project owner: [Preset]'s bar is light blue on a user preset and flashes red in preset select",
 };
 const SOS_BAR: Evidence = {
   kind: "confirmed",

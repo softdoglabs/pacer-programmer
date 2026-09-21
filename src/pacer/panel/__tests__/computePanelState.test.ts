@@ -65,6 +65,28 @@ describe("computePanelState (factory presets)", () => {
     expect(after.switches.sw3.lights.bottom?.brightness).toBe("dim");
   });
 
+  it("mode indicators: on a user preset only Preset is lit light blue; in Track only A; in Transport only B", () => {
+    const board = createBoardState(config, A1);
+    const bars = (firmware: FirmwareModeState) => {
+      const panel = computePanelState(board, firmware);
+      return (["preset", "swA", "swB"] as const).map((id) => panel.switches[id].lights.bottom?.brightness);
+    };
+    expect(bars(USER)).toEqual(["bright", "off", "off"]);
+    expect(computePanelState(board, USER).switches.preset.lights.bottom?.color).toEqual({ kind: "lightBlue" });
+    expect(bars({ ...USER, mode: "track" })).toEqual(["off", "bright", "off"]);
+    expect(bars({ ...USER, mode: "transport" })).toEqual(["off", "off", "bright"]);
+  });
+
+  it("C/D (Preset Inc/Dec) never light, even while held", () => {
+    const board = createBoardState(config, A1);
+    const held = applyBoardEvent(board, { controlId: ControlId.StompswitchC, phase: "press" }).board;
+    for (const b of [board, held]) {
+      const panel = computePanelState(b, USER);
+      expect(panel.switches.swC.lights.bottom?.brightness).toBe("off");
+      expect(panel.switches.swD.lights.bottom?.brightness).toBe("off");
+    }
+  });
+
   it("D2 COLOR: each front-row bar shows its configured hue", () => {
     const panel = computePanelState(createBoardState(config, COLOR), USER);
     expect(panel.switches.sw1.lights.bottom?.color).toEqual({ kind: "hue", hue: "red" });

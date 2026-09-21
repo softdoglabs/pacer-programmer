@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { SPECIAL_PRESETS } from "../../device";
 import { switchSpec } from "../../hardware";
 import { ControlMode, SwitchMessageType, userPresetIndex } from "../../protocol/constants";
 import { LED_COLOR_DEFAULT } from "../../protocol/ledColors";
@@ -26,14 +25,15 @@ function runtime(patch: Partial<ControlRuntimeState>): ControlRuntimeState {
 }
 
 const sw1 = switchSpec("sw1");
+const CTX = { activePresetIndex: userPresetIndex(0, 1), sentLastProgramChange: false };
 
 describe("userPresetLights", () => {
   it("LED num 0 (Default) drives the bar with the inactive color at rest and the active color while held", () => {
     const c = control({ 1: { activeColor: RED_BRIGHT, inactiveColor: RED_DIM, position: 0 } });
-    expect(userPresetLights(sw1, c, undefined)).toEqual({
+    expect(userPresetLights(sw1, c, undefined, CTX)).toEqual({
       bottom: { brightness: "dim", flashing: false, color: { kind: "hue", hue: "red" } },
     });
-    expect(userPresetLights(sw1, c, runtime({ pressed: true })).bottom).toEqual({
+    expect(userPresetLights(sw1, c, runtime({ pressed: true }), CTX).bottom).toEqual({
       brightness: "bright",
       flashing: false,
       color: { kind: "hue", hue: "red" },
@@ -42,21 +42,21 @@ describe("userPresetLights", () => {
 
   it("LED num 2 lights the middle icon row in its printed ink, not the config hue", () => {
     const c = control({ 1: { activeColor: BLUE_BRIGHT, inactiveColor: 0, position: 2 } });
-    expect(userPresetLights(sw1, c, runtime({ pressed: true }))).toEqual({
+    expect(userPresetLights(sw1, c, runtime({ pressed: true }), CTX)).toEqual({
       middle: { brightness: "bright", flashing: false, color: { kind: "ink" } },
     });
-    expect(userPresetLights(sw1, c, undefined).middle?.brightness).toBe("off");
+    expect(userPresetLights(sw1, c, undefined, CTX).middle?.brightness).toBe("off");
   });
 
   it("Default (0x7F) uses the message type's documented hue: dim at rest, bright when active", () => {
     const c = control({ 1: { activeColor: LED_COLOR_DEFAULT, inactiveColor: LED_COLOR_DEFAULT, position: 0 } });
     // control() builds CC Trigger steps: MIDI CC's default is 9 (blue).
-    expect(userPresetLights(sw1, c, undefined).bottom).toEqual({
+    expect(userPresetLights(sw1, c, undefined, CTX).bottom).toEqual({
       brightness: "dim",
       flashing: false,
       color: { kind: "hue", hue: "blue" },
     });
-    expect(userPresetLights(sw1, c, runtime({ pressed: true })).bottom).toEqual({
+    expect(userPresetLights(sw1, c, runtime({ pressed: true }), CTX).bottom).toEqual({
       brightness: "bright",
       flashing: false,
       color: { kind: "hue", hue: "blue" },
@@ -66,17 +66,20 @@ describe("userPresetLights", () => {
   it("a Program Change step stays lit while its switch sent the preset's last Program Change", () => {
     const c = control({ 1: { activeColor: LED_COLOR_DEFAULT, inactiveColor: LED_COLOR_DEFAULT, position: 0 } });
     c.steps[1] = { channel: 0, msgType: SwitchMessageType.ProgramAndBank, data: [3, 0, 0], active: true };
-    expect(userPresetLights(sw1, c, undefined, false).bottom).toEqual({
+    expect(userPresetLights(sw1, c, undefined, { ...CTX, sentLastProgramChange: false }).bottom).toEqual({
       brightness: "dim",
       flashing: false,
       color: { kind: "hue", hue: "orange" },
     });
-    expect(userPresetLights(sw1, c, undefined, true).bottom?.brightness).toBe("bright");
+    expect(userPresetLights(sw1, c, undefined, { ...CTX, sentLastProgramChange: true }).bottom?.brightness).toBe(
+      "bright",
+    );
   });
 
-  it("a toggled-on step keeps its light active after release", () => {
+  it("a toggled-on CC Toggle step keeps its light on after release", () => {
     const c = control({ 1: { activeColor: RED_BRIGHT, inactiveColor: RED_DIM, position: 0 } });
-    expect(userPresetLights(sw1, c, runtime({ toggleState: { 1: true } })).bottom?.brightness).toBe("bright");
+    c.steps[1] = { channel: 0, msgType: SwitchMessageType.CcToggle, data: [1, 0, 127], active: true };
+    expect(userPresetLights(sw1, c, runtime({ toggleState: { 1: true } }), CTX).bottom?.brightness).toBe("bright");
   });
 
   it("all-steps-at-once: every active step drives its own indicator; the lower step wins a conflict", () => {
@@ -88,7 +91,7 @@ describe("userPresetLights", () => {
       },
       { activeSteps: [1, 2, 3] },
     );
-    const lights = userPresetLights(sw1, c, undefined);
+    const lights = userPresetLights(sw1, c, undefined, CTX);
     expect(lights.bottom?.color).toEqual({ kind: "hue", hue: "red" }); // step 1, not step 3
     expect(lights.middle?.brightness).toBe("off");
   });
@@ -101,13 +104,13 @@ describe("userPresetLights", () => {
       },
       { mode: ControlMode.Sequence, activeSteps: [1, 2] },
     );
-    expect(userPresetLights(sw1, c, undefined).bottom?.color).toEqual({ kind: "hue", hue: "red" });
+    expect(userPresetLights(sw1, c, undefined, CTX).bottom?.color).toEqual({ kind: "hue", hue: "red" });
     // After step 1 fired, the pointer is on 2; the LED still shows step 1 until step 2 fires.
-    expect(userPresetLights(sw1, c, runtime({ sequencePointer: 2 })).bottom?.color).toEqual({
+    expect(userPresetLights(sw1, c, runtime({ sequencePointer: 2 }), CTX).bottom?.color).toEqual({
       kind: "hue",
       hue: "red",
     });
-    expect(userPresetLights(sw1, c, runtime({ sequencePointer: 3 })).bottom?.color).toEqual({
+    expect(userPresetLights(sw1, c, runtime({ sequencePointer: 3 }), CTX).bottom?.color).toEqual({
       kind: "hue",
       hue: "blue",
     });
@@ -115,7 +118,7 @@ describe("userPresetLights", () => {
 
   it("ignores LED nums a switch can't show (A-D have no middle row; their legend isn't addressable)", () => {
     const c = control({ 1: { activeColor: RED_BRIGHT, inactiveColor: RED_DIM, position: 2 } });
-    expect(userPresetLights(switchSpec("swA"), c, undefined)).toEqual({});
+    expect(userPresetLights(switchSpec("swA"), c, undefined, CTX)).toEqual({});
   });
 });
 
@@ -161,27 +164,39 @@ describe("presetSelectLights", () => {
 
 describe("dawPresetLights", () => {
   it("Track lights the top text row; Transport lights the middle icon row", () => {
-    expect(dawPresetLights(sw1, SPECIAL_PRESETS.track)).toEqual({
+    expect(dawPresetLights(sw1, "track")).toEqual({
       top: { brightness: "bright", flashing: false, color: { kind: "ink" } },
     });
-    expect(dawPresetLights(sw1, SPECIAL_PRESETS.transport)).toEqual({
+    expect(dawPresetLights(sw1, "transport")).toEqual({
       middle: { brightness: "bright", flashing: false, color: { kind: "ink" } },
     });
   });
 
+  it("lights the current mode's switch (A = Track, B = Transport) light blue, and not the other", () => {
+    expect(dawPresetLights(switchSpec("swA"), "track").bottom).toEqual({
+      brightness: "bright",
+      flashing: false,
+      color: { kind: "lightBlue" },
+    });
+    expect(dawPresetLights(switchSpec("swB"), "track").bottom?.brightness).toBe("off");
+    expect(dawPresetLights(switchSpec("swB"), "transport").bottom?.color).toEqual({ kind: "lightBlue" });
+    expect(dawPresetLights(switchSpec("swA"), "transport").bottom?.brightness).toBe("off");
+  });
+
   it("back-row switches have no middle row, and their always-lit legends come from idleLights", () => {
-    expect(dawPresetLights(switchSpec("swC"), SPECIAL_PRESETS.transport)).toEqual({});
+    expect(dawPresetLights(switchSpec("swC"), "transport")).toEqual({});
   });
 });
 
 describe("presetButtonBar", () => {
-  it("flashes bright red in preset select, is solid royal blue in DAW presets, and is off otherwise", () => {
+  it("is the user-preset mode indicator: light blue on a user preset, flashing red in preset select, off in DAW presets", () => {
+    expect(presetButtonBar("user")).toEqual({ brightness: "bright", flashing: false, color: { kind: "lightBlue" } });
     expect(presetButtonBar("presetSelect")).toEqual({
       brightness: "bright",
       flashing: true,
       color: { kind: "hue", hue: "red" },
     });
-    expect(presetButtonBar("track")).toEqual({ brightness: "bright", flashing: false, color: { kind: "royalBlue" } });
-    expect(presetButtonBar("user").brightness).toBe("off");
+    expect(presetButtonBar("track").brightness).toBe("off");
+    expect(presetButtonBar("transport").brightness).toBe("off");
   });
 });

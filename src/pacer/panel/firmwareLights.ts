@@ -1,4 +1,5 @@
-import type { DeviceMode, SpecialPresetDefinition } from "../device";
+import { SPECIAL_PRESETS, type DeviceMode } from "../device";
+import type { SpecialPresetName } from "../simulator/types";
 import { bankSelectedBy, numberSelectedBy, type SwitchSpec } from "../hardware";
 import { userPresetIndex } from "../protocol/constants";
 import { inkOrColor, type SwitchLights } from "./lights";
@@ -31,29 +32,46 @@ export function presetSelectLights(spec: SwitchSpec, pendingBank: number, active
 }
 
 /**
- * Lights inside a built-in DAW preset (Track / Transport): the preset's printed legend row lights
- * in its ink on every switch that has one (see `SpecialPresetDefinition.litLegendRow`). Bars
- * stay off, since their DAW-mode behavior isn't documented.
+ * The firmware's "selected mode" indicator color. Observed: the bar of the switch for the
+ * current mode (Preset for user presets, A for Track, B for Transport) is bright light blue.
+ * Possibly Pacer hue 8 (teal, the documented default for "DAW function"); unconfirmed.
  */
-export function dawPresetLights(spec: SwitchSpec, preset: SpecialPresetDefinition): SwitchLights {
+const MODE_INDICATOR: LightState = { brightness: "bright", flashing: false, color: { kind: "lightBlue" } };
+
+/**
+ * Lights inside a built-in DAW preset (Track / Transport). Its A/B switches select Track /
+ * Transport, and by the same engagement rule as a user preset's Preset Select steps (see
+ * `isStepEngaged`), the one whose target is the current mode is lit. It shows the mode-indicator
+ * light blue (observed). The preset's printed legend row lights in its ink on every switch that
+ * has one (see `SpecialPresetDefinition.litLegendRow`). The DAW-function switches' bars stay off:
+ * their behavior isn't documented or observed yet.
+ */
+export function dawPresetLights(spec: SwitchSpec, current: SpecialPresetName): SwitchLights {
+  const preset = SPECIAL_PRESETS[current];
+  const lights: SwitchLights = {};
   const row = spec.indicators.find((i) => i.id === preset.litLegendRow);
-  if (!row || row.color.kind !== "fixed") return {};
-  return { [row.id]: { brightness: "bright", flashing: false, color: inkOrColor(row, { kind: "unspecified" }) } };
+  if (row?.color.kind === "fixed") {
+    lights[row.id] = { brightness: "bright", flashing: false, color: inkOrColor(row, { kind: "unspecified" }) };
+  }
+  const action = spec.controlId === undefined ? undefined : preset.switches[spec.controlId];
+  if (action?.kind === "goto") lights.bottom = action.preset === current ? MODE_INDICATOR : BAR_OFF;
+  return lights;
 }
 
 /**
- * [Preset]'s own bar. It flashes bright red while preset select is active (observed on
- * hardware). It's solid royal blue in Track/Transport as a "tap to return" cue (assumption),
- * and off on a user preset.
+ * [Preset]'s own bar: the firmware's indicator for "user preset mode" (all observed on hardware).
+ * - On a user preset: solid bright light blue, the same as the Track/Transport mode indicators.
+ * - In preset select: flashes bright red.
+ * - In Track/Transport: off, since that mode's own switch (A/B) is lit instead.
  */
 export function presetButtonBar(mode: DeviceMode): LightState {
   switch (mode) {
+    case "user":
+      return MODE_INDICATOR;
     case "presetSelect":
       return { brightness: "bright", flashing: true, color: { kind: "hue", hue: "red" } };
     case "track":
     case "transport":
-      return ROYAL_BLUE_BRIGHT;
-    case "user":
       return BAR_OFF;
   }
 }

@@ -1,4 +1,4 @@
-import { SPECIAL_PRESETS, type DeviceMode } from "../device";
+import type { DeviceMode } from "../device";
 import { PACER_HARDWARE, type PhysicalSwitchId, type SwitchSpec } from "../hardware";
 import type { BoardState } from "../simulator/types";
 import { displayState } from "./display";
@@ -20,18 +20,16 @@ function modeLights(spec: SwitchSpec, board: BoardState, firmware: FirmwareModeS
     case "user": {
       if (spec.controlId === undefined) return {};
       const control = board.config.presets[board.activePresetIndex]?.controls[spec.controlId];
-      return userPresetLights(
-        spec,
-        control,
-        board.controls[spec.controlId],
-        board.lastProgramChangeControlId === spec.controlId,
-      );
+      return userPresetLights(spec, control, board.controls[spec.controlId], {
+        activePresetIndex: board.activePresetIndex,
+        sentLastProgramChange: board.lastProgramChangeControlId === spec.controlId,
+      });
     }
     case "presetSelect":
       return presetSelectLights(spec, firmware.pendingBank, board.activePresetIndex);
     case "track":
     case "transport":
-      return dawPresetLights(spec, SPECIAL_PRESETS[firmware.mode]);
+      return dawPresetLights(spec, firmware.mode);
   }
 }
 

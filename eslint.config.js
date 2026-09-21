@@ -80,6 +80,24 @@ export default tseslint.config(
     },
   },
   {
+    files: ["src/pacer/editing/**/*.ts"],
+    ignores: ["src/pacer/editing/**/__tests__/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            ...noUiInDomain.patterns,
+            {
+              group: ["**/simulator/**", "**/device/**", "**/panel/**", "**/simulator", "**/device", "**/panel"],
+              message: "editing works on the config alone; it may only depend on protocol.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["src/pacer/simulator/**/*.ts"],
     ignores: ["src/pacer/simulator/**/__tests__/**"],
     rules: {

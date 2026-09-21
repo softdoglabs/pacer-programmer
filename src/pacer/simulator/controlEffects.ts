@@ -1,4 +1,5 @@
 import { ControlMode, STEPS_PER_CONTROL } from "../protocol/constants";
+import { DEFAULT_GLOBAL_CHANNEL, wireChannel } from "../protocol/globalSettings";
 import type { SwitchControl } from "../protocol/types";
 import { fireExpressionStep, fireSwitchStep, type StepSubState } from "./stepEffects";
 import type { ControlPhase, ControlRuntimeState, DeviceAction, OutgoingMidiMessage } from "./types";
@@ -32,6 +33,7 @@ function fireStepsForControl(
   phase: ControlPhase,
   stepNumbers: number[],
   runtimeState: ControlRuntimeState,
+  globalChannel: number,
 ): FiredSteps {
   const messages: OutgoingMidiMessage[] = [];
   const deviceActions: DeviceAction[] = [];
@@ -43,8 +45,13 @@ function fireStepsForControl(
     const step = control.steps[n];
     if (!step) continue;
     const subState: StepSubState = { toggle: toggleState[n], counter: stepCounters[n] };
-    const fired =
-      controlKind === "switch" ? fireSwitchStep(step, phase, subState) : fireExpressionStep(step, phase, subState);
+    const channel = wireChannel(step.channel, globalChannel);
+    const fire = controlKind === "switch" ? fireSwitchStep : fireExpressionStep;
+    const fired = fire(step, phase, subState, channel ?? 0);
+    if (channel === undefined && fired.messages.length > 0) {
+      warnings.push(`step ${n}: channel byte ${step.channel} is out of range (expected 0 = Global or 1-16)`);
+      fired.messages.length = 0;
+    }
     messages.push(...fired.messages);
     deviceActions.push(...fired.deviceActions);
     warnings.push(...fired.warnings);
@@ -59,6 +66,7 @@ function pressControl(
   control: SwitchControl,
   controlKind: ControlKind,
   runtimeState: ControlRuntimeState,
+  globalChannel: number,
 ): ControlEffect {
   const mode = control.controlMode ?? ControlMode.AllStepsAtOnce;
 
@@ -77,7 +85,7 @@ function pressControl(
     stepNumbers = activeStepNumbers(control);
   }
 
-  const fired = fireStepsForControl(control, controlKind, "press", stepNumbers, runtimeState);
+  const fired = fireStepsForControl(control, controlKind, "press", stepNumbers, runtimeState, globalChannel);
 
   return {
     messages: fired.messages,
@@ -97,6 +105,7 @@ function releaseControl(
   control: SwitchControl,
   controlKind: ControlKind,
   runtimeState: ControlRuntimeState,
+  globalChannel: number,
 ): ControlEffect {
   const mode = control.controlMode ?? ControlMode.AllStepsAtOnce;
 
@@ -109,7 +118,7 @@ function releaseControl(
     stepNumbers = activeStepNumbers(control);
   }
 
-  const fired = fireStepsForControl(control, controlKind, "release", stepNumbers, runtimeState);
+  const fired = fireStepsForControl(control, controlKind, "release", stepNumbers, runtimeState, globalChannel);
 
   return {
     messages: fired.messages,
@@ -134,12 +143,14 @@ export function resolveControl(
   controlKind: ControlKind,
   phase: ControlPhase,
   runtimeState: ControlRuntimeState,
+  /** The config's global MIDI channel (1-16), for steps set to channel 0 ("Global"). */
+  globalChannel: number = DEFAULT_GLOBAL_CHANNEL,
 ): ControlEffect {
   if (phase === "press") {
     if (runtimeState.pressed) {
       return { messages: [], deviceActions: [], warnings: ["control already held"], nextRuntimeState: runtimeState };
     }
-    return pressControl(control, controlKind, runtimeState);
+    return pressControl(control, controlKind, runtimeState, globalChannel);
   }
 
   if (!runtimeState.pressed) {
@@ -150,5 +161,5 @@ export function resolveControl(
       nextRuntimeState: runtimeState,
     };
   }
-  return releaseControl(control, controlKind, runtimeState);
+  return releaseControl(control, controlKind, runtimeState, globalChannel);
 }

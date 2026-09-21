@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ExpressionMessageType, SwitchMessageType } from "../../protocol/constants";
 import type { Step, SwitchControl } from "../../protocol/types";
-import { describeStepShort, messageTypeInfo, summarizeControl } from "../describe";
+import { channelLabel, describeStepShort, messageTypeInfo, summarizeControl } from "../describe";
 
 function step(msgType: number, data: [number, number, number], active = true): Step {
   return { channel: 0, msgType, data, active };
@@ -42,5 +42,13 @@ describe("summarizeControl", () => {
     const many: SwitchControl = { steps: {}, led: {} };
     for (let n = 1; n <= 5; n++) many.steps[n] = step(SwitchMessageType.CcTrigger, [n, 127, 0]);
     expect(summarizeControl(many, "switch", 2)).toBe("CC1 CC2 …");
+  });
+});
+
+describe("channelLabel", () => {
+  it("shows channel byte 0 as Global and 1-16 as MIDI channels", () => {
+    expect(channelLabel(0)).toBe("Global");
+    expect(channelLabel(1)).toBe("1");
+    expect(channelLabel(16)).toBe("16");
   });
 });

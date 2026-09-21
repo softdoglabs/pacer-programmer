@@ -7,6 +7,7 @@ import {
 } from "../../protocol/constants";
 import { createEmptyPacerConfig, getOrCreateControl, getOrCreatePreset, type PacerConfig } from "../../protocol/types";
 import { applyBoardEvent, createBoardState, getActiveControlIds, getControlDisplayState } from "../engine";
+import { midiMessageToBytes } from "../midiMessages";
 
 function ccToggleStep(controller: number, value1: number, value2: number) {
   return {
@@ -86,7 +87,7 @@ describe("applyBoardEvent — preset navigation", () => {
       phase: "press",
     });
 
-    expect(effect.messages).toEqual([{ kind: "programChange", channel: 1, program: 5 }]);
+    expect(effect.messages).toEqual([{ kind: "programChange", channel: 0, program: 5 }]);
     expect(effect.presetChanged).toEqual({ from: A1, to: A2 });
     expect(boardAfterJump.activePresetIndex).toBe(A2);
     expect(Object.keys(boardAfterJump.controls)).toEqual([]);
@@ -212,5 +213,49 @@ describe("applyBoardEvent: last Program Change", () => {
     board = applyBoardEvent(board, { controlId: ControlId.StompswitchA, phase: "press" }).board; // PC + jump
     expect(board.activePresetIndex).toBe(A2);
     expect(board.lastProgramChangeControlId).toBeUndefined();
+  });
+});
+
+describe("applyBoardEvent: MIDI channels", () => {
+  function configWithChannel(channel: number, globalChannel?: number) {
+    const config = createEmptyPacerConfig();
+    getOrCreateControl(getOrCreatePreset(config, A1), ControlId.Stompswitch1).steps[1] = {
+      channel,
+      msgType: SwitchMessageType.ProgramAndBank,
+      data: [7, 0, 0],
+      active: true,
+    };
+    if (globalChannel !== undefined) {
+      // Global Preset 1, Global Setting obj, Global Channel elm: [len, value]
+      config.globalFields.push({ idx: 1, obj: 0x01, elm: 0x01, data: [1, globalChannel] });
+    }
+    return config;
+  }
+  const bytesFor = (channel: number, globalChannel?: number) => {
+    const { effect } = applyBoardEvent(createBoardState(configWithChannel(channel, globalChannel), A1), {
+      controlId: ControlId.Stompswitch1,
+      phase: "press",
+    });
+    return effect.messages.map(midiMessageToBytes);
+  };
+
+  it("sends step channels 1-16 on MIDI channels 1-16 (wire nibbles 0-15)", () => {
+    expect(bytesFor(1)).toEqual([[0xc0, 7]]);
+    expect(bytesFor(10)).toEqual([[0xc9, 7]]);
+    expect(bytesFor(16)).toEqual([[0xcf, 7]]);
+  });
+
+  it("sends channel 0 ('Global') on the config's global channel, defaulting to 1", () => {
+    expect(bytesFor(0)).toEqual([[0xc0, 7]]);
+    expect(bytesFor(0, 5)).toEqual([[0xc4, 7]]);
+  });
+
+  it("drops the MIDI and warns for an out-of-range channel byte", () => {
+    const { effect } = applyBoardEvent(createBoardState(configWithChannel(17), A1), {
+      controlId: ControlId.Stompswitch1,
+      phase: "press",
+    });
+    expect(effect.messages).toEqual([]);
+    expect(effect.warnings[0]).toMatch(/channel byte 17/);
   });
 });

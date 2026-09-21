@@ -5,6 +5,7 @@ import {
   SWITCH_CONTROL_IDS,
   wrapUserPresetIndex,
 } from "../protocol/constants";
+import { globalMidiChannel } from "../protocol/globalSettings";
 import type { PacerConfig } from "../protocol/types";
 import { resolveControl, type ControlKind } from "./controlEffects";
 import {
@@ -77,7 +78,7 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
   }
 
   const runtimeState = board.controls[event.controlId] ?? createControlRuntimeState();
-  const resolved = resolveControl(control, controlKind, event.phase, runtimeState);
+  const resolved = resolveControl(control, controlKind, event.phase, runtimeState, globalMidiChannel(board.config));
 
   const {
     nextPresetIndex,

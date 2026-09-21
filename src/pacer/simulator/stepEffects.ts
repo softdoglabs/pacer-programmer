@@ -46,8 +46,14 @@ function stepRange(counter: number | undefined, start: number, end: number): { c
  * the simulator plan's data-byte-layout table (itself taken from the reference project's own
  * `MSG_TYPES_DATA_HELP`, not guessed) for stompswitches/footswitches.
  */
-export function fireSwitchStep(step: Step, phase: ControlPhase, subState: StepSubState): StepFireResult {
-  const { channel, msgType, data } = step;
+export function fireSwitchStep(
+  step: Step,
+  phase: ControlPhase,
+  subState: StepSubState,
+  /** The wire channel (0-15) to transmit on, already resolved from `step.channel` (see `wireChannel`). */
+  channel: number,
+): StepFireResult {
+  const { msgType, data } = step;
 
   switch (msgType) {
     case SwitchMessageType.Off:
@@ -185,8 +191,14 @@ export function fireSwitchStep(step: Step, phase: ControlPhase, subState: StepSu
  * Modeling a continuous pedal as digital press(=max)/release(=min) is a deliberate
  * simplification, not a hardware claim — see the plan's notes on expression pedal scope.
  */
-export function fireExpressionStep(step: Step, phase: ControlPhase, _subState: StepSubState): StepFireResult {
-  const { channel, msgType, data } = step;
+export function fireExpressionStep(
+  step: Step,
+  phase: ControlPhase,
+  _subState: StepSubState,
+  /** The wire channel (0-15) to transmit on, already resolved from `step.channel` (see `wireChannel`). */
+  channel: number,
+): StepFireResult {
+  const { msgType, data } = step;
 
   switch (msgType) {
     case ExpressionMessageType.Off:

@@ -135,3 +135,8 @@ const PRESET_MIDI_TYPE_NAMES: Partial<Record<number, string>> = {
 export function presetMidiTypeName(msgType: number): string {
   return PRESET_MIDI_TYPE_NAMES[msgType] ?? `Unknown 0x${msgType.toString(16)}`;
 }
+
+/** A step's (or preset MIDI setting's) channel byte for display: 0 is "Global", 1-16 are MIDI channels. */
+export function channelLabel(channelByte: number): string {
+  return channelByte === 0 ? "Global" : String(channelByte);
+}

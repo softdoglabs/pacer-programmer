@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { ControlMode, STEPS_PER_CONTROL, presetIndexToLabel } from "../pacer/protocol/constants";
 import type { LedConfig, Preset, Step, SwitchControl } from "../pacer/protocol/types";
 import {
+  channelLabel,
   controlKindOf,
   controlLabel,
   getControlDisplayState,
@@ -96,7 +97,7 @@ function StepRow({
       </td>
       <td className="px-1.5 py-1">{step ? (step.active ? "on" : "off") : "—"}</td>
       <td className="px-1.5 py-1 whitespace-nowrap">{step ? messageTypeInfo(kind, step.msgType).name : "—"}</td>
-      <td className="px-1.5 py-1 tabular-nums">{step ? step.channel + 1 : ""}</td>
+      <td className="px-1.5 py-1 tabular-nums">{step ? channelLabel(step.channel) : ""}</td>
       {step ? <DataCells step={step} kind={kind} /> : <td colSpan={3} />}
       {kind === "switch" && (
         <td className="space-x-1 px-1.5 py-1 whitespace-nowrap">
@@ -217,7 +218,7 @@ function PresetTab({ preset, index }: { preset?: Preset; index: number }) {
           <ul className="space-y-0.5 font-mono text-xs">
             {settings.map(([n, s]) => (
               <li key={n}>
-                #{n} {presetMidiTypeName(s!.msgType)} ch{s!.channel + 1} [{s!.data.join(", ")}]
+                #{n} {presetMidiTypeName(s!.msgType)} ch {channelLabel(s!.channel)} [{s!.data.join(", ")}]
               </li>
             ))}
           </ul>

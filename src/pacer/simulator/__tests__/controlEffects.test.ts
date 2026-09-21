@@ -25,8 +25,8 @@ describe("resolveControl — AllStepsAtOnce (default)", () => {
     };
     const effect = resolveControl(control, "switch", "press", createControlRuntimeState());
     expect(effect.messages).toEqual([
-      { kind: "controlChange", channel: 1, controller: 10, value: 127 },
-      { kind: "controlChange", channel: 1, controller: 30, value: 127 },
+      { kind: "controlChange", channel: 0, controller: 10, value: 127 },
+      { kind: "controlChange", channel: 0, controller: 30, value: 127 },
     ]);
     expect(effect.nextRuntimeState.pressed).toBe(true);
   });
@@ -35,7 +35,7 @@ describe("resolveControl — AllStepsAtOnce (default)", () => {
     const control: SwitchControl = { steps: { 1: ccStep(10, 127, 0) }, led: {} };
     const pressed = resolveControl(control, "switch", "press", createControlRuntimeState()).nextRuntimeState;
     const effect = resolveControl(control, "switch", "release", pressed);
-    expect(effect.messages).toEqual([{ kind: "controlChange", channel: 1, controller: 10, value: 0 }]);
+    expect(effect.messages).toEqual([{ kind: "controlChange", channel: 0, controller: 10, value: 0 }]);
     expect(effect.nextRuntimeState.pressed).toBe(false);
   });
 });
@@ -88,7 +88,7 @@ describe("resolveControl — ExternalStepSelect mode", () => {
     let state = createControlRuntimeState();
     for (let i = 0; i < 3; i++) {
       const pressed = resolveControl(control, "switch", "press", state);
-      expect(pressed.messages).toEqual([{ kind: "controlChange", channel: 1, controller: 1, value: 1 }]);
+      expect(pressed.messages).toEqual([{ kind: "controlChange", channel: 0, controller: 1, value: 1 }]);
       state = resolveControl(control, "switch", "release", pressed.nextRuntimeState).nextRuntimeState;
     }
   });

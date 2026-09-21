@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { decodeSysex } from "./pacer/protocol/decode";
 import { loadFactoryDefaults } from "./pacer/factoryDefaults";
 import { usePacerStore } from "./store/pacerStore";
-import { Faceplate } from "./ui/Faceplate";
+import { Faceplate } from "./ui/panel/Faceplate";
 import { Inspector } from "./ui/Inspector";
 import { MessageLog } from "./ui/MessageLog";
 import { PresetList } from "./ui/PresetList";

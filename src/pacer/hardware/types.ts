@@ -77,5 +77,7 @@ export interface SwitchSpec {
   indicators: readonly IndicatorSpec[];
   /** Which indicator a step's LED num 0 ("Default") drives. */
   defaultIndicator?: IndicatorId;
+  /** Marking printed on the faceplate below the switch: a teal badge (A-D) or a plain numeral (1-6). */
+  marking?: "badge" | "numeral";
   placement: Placement;
 }

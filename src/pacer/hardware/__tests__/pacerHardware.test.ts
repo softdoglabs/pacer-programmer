@@ -60,6 +60,11 @@ describe("PACER_HARDWARE invariants", () => {
     expect(rearControls().map((s) => s.name)).toEqual(["FS1", "FS2", "FS3", "FS4", "EXP1", "EXP2"]);
   });
 
+  it("marks A-D with badges and 1-6 with numerals", () => {
+    expect(panelRow("back").map((s) => s.marking)).toEqual([undefined, "badge", "badge", "badge", "badge"]);
+    expect(panelRow("front").every((s) => s.marking === "numeral")).toBe(true);
+  });
+
   it("only gives lights to panel switches, and every panel switch has an RGB bar", () => {
     for (const spec of ALL) {
       if (spec.placement.kind === "rear") expect(spec.indicators, spec.id).toEqual([]);

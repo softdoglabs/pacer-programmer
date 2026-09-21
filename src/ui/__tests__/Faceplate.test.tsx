@@ -152,7 +152,7 @@ describe("Faceplate (factory defaults)", () => {
     render(<App />);
     tap(switchButton("A"));
     expect(display()).toBe("↩B2");
-    expect(screen.getByRole("button", { name: "Switch C: Trk ▼" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Switch C: Previous track" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Switch 1: Solo" })).toBeTruthy();
     tap(screen.getByRole("button", { name: /^Preset button \(tap: back to B2/ }));
     expect(display()).toBe("B2");

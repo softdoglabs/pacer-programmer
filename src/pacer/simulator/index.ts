@@ -5,5 +5,4 @@ export * from "./controlEffects";
 export * from "./engine";
 export * from "./controlLabels";
 export * from "./format";
-export * from "./leds";
 export * from "./describe";

@@ -8,14 +8,15 @@ import {
   controlKindOf,
   controlLabel,
   getControlDisplayState,
-  getControlLedState,
-  ledColor,
   messageTypeInfo,
   presetMidiTypeName,
   type ControlKind,
 } from "../pacer/simulator";
 import type { DeviceMode } from "../pacer/device";
+import { indicatorForLedNum, switchSpecForControl } from "../pacer/hardware";
+import { ledColorName } from "../pacer/protocol/ledColors";
 import { usePacerStore } from "../store/pacerStore";
+import { colorCodeCss } from "./panel/palette";
 
 const MODE_NAMES: Record<number, string> = {
   [ControlMode.AllStepsAtOnce]: "All steps at once",
@@ -25,21 +26,31 @@ const MODE_NAMES: Record<number, string> = {
 
 function LedSwatch({ code, label }: { code?: number; label: string }) {
   if (code === undefined) return <span className="text-muted-foreground">·</span>;
-  const color = ledColor(code);
+  const name = ledColorName(code);
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <span
           className="inline-block size-3.5 rounded-full border border-white/20 align-middle"
-          style={{ background: color.css }}
-          aria-label={`${label}: ${color.name}`}
+          style={{ background: colorCodeCss(code) }}
+          aria-label={`${label}: ${name}`}
         />
       </TooltipTrigger>
       <TooltipContent>
-        {label}: {color.name}
+        {label}: {name}
       </TooltipContent>
     </Tooltip>
   );
+}
+
+const FACE_NAMES = { bar: "bar", text: "text row", icons: "icon row" } as const;
+
+/** Which light a step's LED num drives on this switch, per the hardware description. */
+function ledTargetName(controlId: number, ledNum: number | undefined): string {
+  const spec = switchSpecForControl(controlId);
+  const indicator = spec ? indicatorForLedNum(spec, ledNum ?? 0) : undefined;
+  if (!indicator) return "none";
+  return ledNum ? FACE_NAMES[indicator.face.kind] : `${FACE_NAMES[indicator.face.kind]} (default)`;
 }
 
 function DataCells({ step, kind }: { step: Step; kind: ControlKind }) {
@@ -64,12 +75,14 @@ function DataCells({ step, kind }: { step: Step; kind: ControlKind }) {
 
 function StepRow({
   n,
+  controlId,
   step,
   led,
   kind,
   current,
 }: {
   n: number;
+  controlId: number;
   step?: Step;
   led?: LedConfig;
   kind: ControlKind;
@@ -89,6 +102,7 @@ function StepRow({
         <td className="space-x-1 px-1.5 py-1 whitespace-nowrap">
           <LedSwatch code={led?.activeColor} label="Active" />
           <LedSwatch code={led?.inactiveColor} label="Inactive" />
+          {led && <span className="text-[10px] text-muted-foreground">{ledTargetName(controlId, led.position)}</span>}
         </td>
       )}
     </tr>
@@ -99,7 +113,6 @@ function ControlDetails({ controlId, control }: { controlId: number; control: Sw
   const board = usePacerStore((s) => s.board);
   const kind = controlKindOf(controlId) ?? "switch";
   const display = getControlDisplayState(board, controlId);
-  const led = getControlLedState(board, controlId);
   const mode = control.controlMode ?? ControlMode.AllStepsAtOnce;
   const hasLeds = Object.keys(control.led).length > 0;
 
@@ -136,6 +149,7 @@ function ControlDetails({ controlId, control }: { controlId: number; control: Sw
               <StepRow
                 key={n}
                 n={n}
+                controlId={controlId}
                 step={control.steps[n]}
                 led={control.led[n]}
                 kind={kind}
@@ -148,10 +162,10 @@ function ControlDetails({ controlId, control }: { controlId: number; control: Sw
       {mode === ControlMode.Sequence && (
         <p className="text-xs text-muted-foreground">◂ marks the step the next press fires.</p>
       )}
-      {hasLeds && led && (
+      {hasLeds && (
         <p className="text-xs text-muted-foreground">
-          LED currently shows step {led.stepNumber}'s {led.lit ? "active" : "inactive"} color. LED behavior is a best
-          guess, not hardware-verified.
+          LED: active/inactive color, then which light the step drives (its LED num). Which steps' LEDs show at once is
+          a best guess, not hardware-verified.
         </p>
       )}
     </div>

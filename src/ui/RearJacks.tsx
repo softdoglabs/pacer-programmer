@@ -1,17 +1,8 @@
-import { ControlId } from "../pacer/protocol/constants";
+import { rearControls } from "../pacer/hardware";
 import { controlKindOf, controlLabel, getControlDisplayState, summarizeControl } from "../pacer/simulator";
 import { usePacerStore } from "../store/pacerStore";
 import { cn } from "@/lib/utils";
 import { useControlPress } from "./useControlPress";
-
-const EXTERNAL_CONTROLS: { controlId: number; hint?: string }[] = [
-  { controlId: ControlId.Footswitch1 },
-  { controlId: ControlId.Footswitch2 },
-  { controlId: ControlId.Footswitch3 },
-  { controlId: ControlId.Footswitch4 },
-  { controlId: ControlId.ExpressionPedal1, hint: "hold = toe down" },
-  { controlId: ControlId.ExpressionPedal2, hint: "hold = toe down" },
-];
 
 function ExternalControl({ controlId, hint }: { controlId: number; hint?: string }) {
   const board = usePacerStore((s) => s.board);
@@ -46,9 +37,16 @@ function ExternalControl({ controlId, hint }: { controlId: number; hint?: string
 export function RearJacks() {
   return (
     <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-      {EXTERNAL_CONTROLS.map((c) => (
-        <ExternalControl key={c.controlId} {...c} />
-      ))}
+      {rearControls().map((spec) =>
+        spec.controlId === undefined ? null : (
+          <ExternalControl
+            key={spec.id}
+            controlId={spec.controlId}
+            // Expression pedals are simulated as digital: held = toe down (max), released = heel down (min).
+            hint={spec.kind === "expressionPedal" ? "hold = toe down" : undefined}
+          />
+        ),
+      )}
     </div>
   );
 }

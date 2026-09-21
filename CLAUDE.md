@@ -219,25 +219,25 @@ to validate it without a real capture that exercises it). Covered by 40+
 unit tests (synthetic configs for behavior, plus a smoke test pressing
 every control on every real factory preset).
 
-The simulator UI (`src/App.tsx`, `src/ui/`, `src/store/pacerStore.ts`) is
-built on Tailwind v4 + shadcn/ui (dark-only theme, `@/` path alias,
-components in `src/components/ui/`). Its centerpiece is `Faceplate.tsx`, a
-hand-drawn SVG of the top panel (back row Preset, A-D, display + encoder;
-front row 1-6). Each switch shows a legend summarizing its active steps
-plus an LED bar.
-- **Hit regions:** each switch is a real HTML `<button>` positioned over a
-  background SVG (body, display, markings), with its artwork in an inner
-  SVG.
-- **Press handling:** all presses, including the rear-jack buttons, go
-  through React Aria's `usePress` (`@react-aria/interactions`), not
-  hand-rolled pointer/focus code.
-- **Why not SVG elements:** `usePress` only ends a touch long-press (no
-  click on iOS/Android) for `HTMLElement` targets.
-- **Tap vs. hold on [Preset]:** decided by the device machine's timer, not
-  the UI.
-Around it: rear-jack controls (FS1-4, EXP1-2), a preset list (a direct
-jump that the hardware can't do; logged as an app action), a
-control/preset inspector, and the output log.
+**Layering** (enforced by ESLint `no-restricted-imports`; nothing under
+`src/pacer` may import React, Zustand, or UI code):
+`protocol` → `hardware` → `simulator` → `device` → `panel` → `store` / `ui`.
+
+- `src/pacer/hardware/` is a declarative description of every physical
+  control (`PACER_HARDWARE`). It records each control's programmable
+  ControlId, preset-select role (bank or number), placement, printed
+  marking, and indicator lights. For each light it records the position
+  (top/middle/bottom, matching SysEx LED num), variable (RGB) vs.
+  fixed-ink color, face (bar / text legend / icons), whether a step can
+  address it, and its idle state. Each light carries the `evidence` behind
+  it, marked confirmed or inferred. An invariants test checks the table.
+  Current facts:
+  - Front row: top = text legend, middle = icon legend, bottom = RGB bar.
+    The layout is confirmed; fixed ink is inferred.
+  - Back row (Preset, A-D): an always-lit legend over an RGB bar. Whether
+    steps can address the legend is unknown, so it's assumed not.
+  - LED num 0 ("Default") drives the bar. Inferred from the factory dump;
+    its MMC preset (D5) is the one place that targets middle (2).
 - `src/pacer/device/deviceModeMachine.ts` is the XState machine for the
   firmware's *special presets*. Preset select, Track and Transport are
   modeled as firmware-owned presets that aren't in the config. While one
@@ -253,26 +253,63 @@ control/preset inspector, and the output log.
     - A tap returns to the last user preset: it reloads from
       Track/Transport, cancels preset select, and does nothing on a user
       preset.
-  - Preset-select LEDs (`presetSelectLeds.ts`, observed on hardware) are
-    royal blue: 1-6 flash dim, except the loaded preset's number, which is
-    solid bright. [Preset]'s own LED flashes bright red. The A-D LEDs
-    (pending bank bright, others off) are assumed.
   - Factory A and B use PresetSelect's reserved targets 1 ("track") and
     2 ("transport"). The engine reports these as `specialPresetRequested`.
-  - Track/Transport switch assignments are in `specialPresets.ts`. They
-    come from the Pacer User Guide and the faceplate legends.
+  - `specialPresets.ts` holds the Track/Transport switch actions (User
+    Guide) and which printed legend row each preset lights: Track = top
+    text row, Transport = middle icon row.
   - Their DAW commands are logged symbolically; the actual Nektar DAW
     Integration / MCU bytes aren't modeled.
   - Assumptions: A/B switch between Track and Transport, and returning
     resets the user preset's runtime state.
-- `src/pacer/simulator/leds.ts` holds the LED color table (codes
-  0x01-0x18, documented) and the rules for which LED shows. Those rules
-  are an assumption: step 1, or the last-fired step in Sequence mode;
-  the active color while held or toggled on. 0x7F, used on nearly every
-  factory LED, is undocumented and rendered neutral.
+- `src/pacer/panel/` computes what the panel shows.
+  `computePanelState(board, firmwareMode)` gives every light's brightness
+  (off/dim/bright), flashing, and semantic color (Pacer hue / royal blue /
+  printed ink / unspecified), plus the display. It's built from one
+  strategy per mode:
+  - `userPresetLights`: each showing step's LED config lights the
+    indicator its LED num selects. Fixed-ink legends keep their ink and
+    take only the brightness. The undocumented 0x7F color shows bright
+    when active and dim when not.
+  - `presetSelectLights`, observed on hardware: all royal blue; 1-6 flash
+    dim except the loaded preset's number, which is solid bright; [Preset]
+    flashes bright red. The A-D behavior (pending bank bright) is assumed.
+  - `dawPresetLights`: lights the special preset's legend row.
+  - Idle lights: back-row legends are always lit.
+  - `switchHint` gives the app's own "what would a press do" annotation,
+    which is kept separate from anything the hardware displays.
+  - LED color-code decoding (hue + bright/dim) lives in
+    `protocol/ledColors.ts`.
+
+The simulator UI (`src/App.tsx`, `src/ui/`, `src/store/pacerStore.ts`) is
+built on Tailwind v4 + shadcn/ui (dark-only theme, `@/` path alias,
+components in `src/components/ui/`).
+- **The faceplate** (`src/ui/panel/Faceplate.tsx`) contains no per-switch
+  or per-mode logic. It lays out `PACER_HARDWARE` and paints
+  `computePanelState` through the generic `SwitchView`, which renders any
+  switch's text/icon legend rows and bar from its spec.
+- **`palette.ts`** is the only place semantic colors become CSS.
+  **`icons.tsx`** holds our own SVG icon drawings.
+- **Hints** are drawn as teal italic annotations below each switch, visibly
+  distinct from the printed legends.
+- **Hit regions:** each switch is a real HTML `<button>` positioned over a
+  background SVG (body, display, markings, hints), with its artwork in an
+  inner SVG.
+- **Press handling:** all presses, including the rear-jack buttons, go
+  through React Aria's `usePress` (`@react-aria/interactions`), not
+  hand-rolled pointer/focus code.
+- **Why not SVG elements:** `usePress` only ends a touch long-press (no
+  click on iOS/Android) for `HTMLElement` targets.
+- **Tap vs. hold on [Preset]:** decided by the device machine's timer, not
+  the UI.
+- **Around the faceplate:** rear-jack controls, a preset list (a direct
+  jump that the hardware can't do; logged as an app action), a
+  control/preset inspector (step table with LED colors and which light each
+  step drives), and the output log.
 - Not simulated yet: a preset's own load-time MIDI settings (shown in the
   inspector only), LED `midiController` input, and continuous expression
   pedal sweeps (press/release = max/min).
+- Checks: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm format:check`.
 
 ### Running locally
 

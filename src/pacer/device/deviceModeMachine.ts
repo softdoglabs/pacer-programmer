@@ -46,7 +46,7 @@ export type DeviceModeEvent =
 type PresetGestureEvent = { type: "PRESET_TAP" } | { type: "PRESET_HOLD" };
 
 function specialAction(preset: SpecialPresetName, controlId: number) {
-  return SPECIAL_PRESETS[preset].switches[controlId]?.action;
+  return SPECIAL_PRESETS[preset].switches[controlId];
 }
 
 function gotoTarget(preset: SpecialPresetName, controlId: number): SpecialPresetName | undefined {

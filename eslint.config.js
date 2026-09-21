@@ -9,6 +9,7 @@ import tseslint from "typescript-eslint";
  *   protocol (SysEx codec, domain types)
  *   -> hardware (static description of the physical controls)
  *   -> simulator (engine) -> device (firmware mode machine)
+ *   -> panel (what the hardware shows, computed from all of the above)
  *   -> store / ui (React, Zustand)
  * Nothing under src/pacer may depend on React, Zustand, or app code.
  */
@@ -88,6 +89,21 @@ export default tseslint.config(
           patterns: [
             ...noUiInDomain.patterns,
             { group: ["**/device/**", "**/device"], message: "simulator must not depend on device." },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/pacer/device/**/*.ts"],
+    ignores: ["src/pacer/device/**/__tests__/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            ...noUiInDomain.patterns,
+            { group: ["**/panel/**", "**/panel"], message: "device must not depend on panel." },
           ],
         },
       ],

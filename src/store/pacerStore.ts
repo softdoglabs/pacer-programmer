@@ -1,6 +1,7 @@
 import { createActor, type SnapshotFrom } from "xstate";
 import { create } from "zustand";
-import { STOMPSWITCH_IDS, deviceModeMachine, type DeviceMode } from "../pacer/device";
+import { deviceModeMachine, type DeviceMode } from "../pacer/device";
+import { isStompswitch } from "../pacer/hardware";
 import { FIRST_USER_PRESET_INDEX, presetBank, presetIndexToLabel } from "../pacer/protocol/constants";
 import { loadFactoryDefaults } from "../pacer/factoryDefaults";
 import type { PacerConfig } from "../pacer/protocol/types";
@@ -165,7 +166,7 @@ export const usePacerStore = create<PacerStore>((set, get) => {
       if (get().deviceMode.mode !== "user") {
         // Special presets only define the 10 stompswitches; external controls do nothing there.
         set((s) => ({ swallowedReleases: [...s.swallowedReleases, controlId] }));
-        if (STOMPSWITCH_IDS.includes(controlId)) deviceActor.send({ type: "SWITCH", controlId });
+        if (isStompswitch(controlId)) deviceActor.send({ type: "SWITCH", controlId });
         return;
       }
       runEngine(controlId, "press");

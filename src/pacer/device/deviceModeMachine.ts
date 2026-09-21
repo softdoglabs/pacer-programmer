@@ -1,5 +1,6 @@
 import { assign, raise, setup } from "xstate";
-import { ControlId, userPresetIndex } from "../protocol/constants";
+import { bankSelectedBy, numberSelectedBy } from "../hardware";
+import { userPresetIndex } from "../protocol/constants";
 import type { SpecialPresetName } from "../simulator/types";
 import { SPECIAL_PRESETS } from "./specialPresets";
 
@@ -43,25 +44,6 @@ export type DeviceModeEvent =
 
 /** Raised internally by the `presetButton` region. */
 type PresetGestureEvent = { type: "PRESET_TAP" } | { type: "PRESET_HOLD" };
-
-const BANK_SWITCHES: readonly number[] = [
-  ControlId.StompswitchA,
-  ControlId.StompswitchB,
-  ControlId.StompswitchC,
-  ControlId.StompswitchD,
-];
-
-const NUMBER_SWITCHES: readonly number[] = [
-  ControlId.Stompswitch1,
-  ControlId.Stompswitch2,
-  ControlId.Stompswitch3,
-  ControlId.Stompswitch4,
-  ControlId.Stompswitch5,
-  ControlId.Stompswitch6,
-];
-
-/** The 10 built-in stompswitches: the only controls special presets define. */
-export const STOMPSWITCH_IDS: readonly number[] = [...NUMBER_SWITCHES, ...BANK_SWITCHES];
 
 function specialAction(preset: SpecialPresetName, controlId: number) {
   return SPECIAL_PRESETS[preset].switches[controlId]?.action;
@@ -146,16 +128,16 @@ export const deviceModeMachine = setup({
             PRESET_TAP: { target: "user" },
             SWITCH: [
               {
-                guard: ({ event }) => BANK_SWITCHES.includes(event.controlId),
-                actions: assign({ pendingBank: ({ event }) => BANK_SWITCHES.indexOf(event.controlId) }),
+                guard: ({ event }) => bankSelectedBy(event.controlId) !== undefined,
+                actions: assign({ pendingBank: ({ event }) => bankSelectedBy(event.controlId) ?? 0 }),
               },
               {
-                guard: ({ event }) => NUMBER_SWITCHES.includes(event.controlId),
+                guard: ({ event }) => numberSelectedBy(event.controlId) !== undefined,
                 target: "user",
                 actions: {
                   type: "loadPreset",
                   params: ({ context, event }) => ({
-                    index: userPresetIndex(context.pendingBank, NUMBER_SWITCHES.indexOf(event.controlId) + 1),
+                    index: userPresetIndex(context.pendingBank, numberSelectedBy(event.controlId) ?? 1),
                   }),
                 },
               },

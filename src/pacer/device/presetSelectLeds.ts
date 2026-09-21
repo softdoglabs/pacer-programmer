@@ -1,4 +1,5 @@
-import { ControlId, userPresetIndex } from "../protocol/constants";
+import { bankSelectedBy, numberSelectedBy } from "../hardware";
+import { userPresetIndex } from "../protocol/constants";
 
 export type LedBrightness = "off" | "dim" | "bright";
 
@@ -8,22 +9,6 @@ export interface IndicatorLed {
   /** Blinks between `brightness` and off. */
   flashing: boolean;
 }
-
-const BANK_SWITCHES: readonly number[] = [
-  ControlId.StompswitchA,
-  ControlId.StompswitchB,
-  ControlId.StompswitchC,
-  ControlId.StompswitchD,
-];
-
-const NUMBER_SWITCHES: readonly number[] = [
-  ControlId.Stompswitch1,
-  ControlId.Stompswitch2,
-  ControlId.Stompswitch3,
-  ControlId.Stompswitch4,
-  ControlId.Stompswitch5,
-  ControlId.Stompswitch6,
-];
 
 /**
  * LEDs while preset select (long-hold [Preset]) is active.
@@ -40,13 +25,13 @@ export function presetSelectLed(
   pendingBank: number,
   activePresetIndex: number,
 ): IndicatorLed | undefined {
-  const bank = BANK_SWITCHES.indexOf(controlId);
-  if (bank >= 0)
+  const bank = bankSelectedBy(controlId);
+  if (bank !== undefined)
     return bank === pendingBank ? { brightness: "bright", flashing: false } : { brightness: "off", flashing: false };
 
-  const num = NUMBER_SWITCHES.indexOf(controlId);
-  if (num >= 0) {
-    const isLoadedPreset = userPresetIndex(pendingBank, num + 1) === activePresetIndex;
+  const num = numberSelectedBy(controlId);
+  if (num !== undefined) {
+    const isLoadedPreset = userPresetIndex(pendingBank, num) === activePresetIndex;
     return isLoadedPreset ? { brightness: "bright", flashing: false } : { brightness: "dim", flashing: true };
   }
   return undefined;

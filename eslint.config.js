@@ -7,6 +7,7 @@ import tseslint from "typescript-eslint";
 /**
  * Layering, enforced with import restrictions. Each layer may only import the ones before it.
  *   protocol (SysEx codec, domain types)
+ *   -> hardware (static description of the physical controls)
  *   -> simulator (engine) -> device (firmware mode machine)
  *   -> store / ui (React, Zustand)
  * Nothing under src/pacer may depend on React, Zustand, or app code.
@@ -53,6 +54,24 @@ export default tseslint.config(
             {
               group: ["**/simulator/**", "**/device/**", "**/simulator", "**/device"],
               message: "protocol is the bottom layer.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/pacer/hardware/**/*.ts"],
+    ignores: ["src/pacer/hardware/**/__tests__/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            ...noUiInDomain.patterns,
+            {
+              group: ["**/simulator/**", "**/device/**", "**/simulator", "**/device"],
+              message: "hardware is a static description; it may only depend on protocol.",
             },
           ],
         },

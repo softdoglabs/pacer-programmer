@@ -271,9 +271,11 @@ every control on every real factory preset).
     indicator its LED num selects. Fixed-ink legends keep their ink and
     take only the brightness. The undocumented 0x7F color shows bright
     when active and dim when not.
-  - `presetSelectLights`, observed on hardware: all royal blue; 1-6 flash
-    dim except the loaded preset's number, which is solid bright; [Preset]
-    flashes bright red. The A-D behavior (pending bank bright) is assumed.
+  - `presetSelectLights`, all observed on hardware:
+    - [Preset]'s bar flashes bright red.
+    - A-D: only the current bank's bar is lit, in solid bright royal blue.
+    - 1-6: they flash dim royal blue, except the loaded preset's number,
+      which is solid bright.
   - `dawPresetLights`: lights the special preset's legend row.
   - Idle lights: back-row legends are always lit.
   - `switchHint` gives the app's own "what would a press do" annotation,

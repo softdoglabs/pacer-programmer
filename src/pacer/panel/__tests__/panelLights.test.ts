@@ -129,9 +129,17 @@ describe("presetSelectLights", () => {
     expect(bar("sw3", 3)?.flashing).toBe(true);
   });
 
-  it("A-D: only the pending bank's bar is lit", () => {
-    expect(bar("swC", 2)?.brightness).toBe("bright");
-    expect(bar("swB", 2)?.brightness).toBe("off");
+  it("A-D: only the current bank's bar is lit, solid bright royal blue; the other three are off", () => {
+    const banks = ["swA", "swB", "swC", "swD"] as const;
+    for (let pending = 0; pending < 4; pending++) {
+      banks.forEach((id, bank) =>
+        expect(bar(id, pending), `${id} with bank ${pending} pending`).toEqual(
+          bank === pending
+            ? { brightness: "bright", flashing: false, color: { kind: "royalBlue" } }
+            : { brightness: "off", flashing: false, color: { kind: "unspecified" } },
+        ),
+      );
+    }
   });
 });
 

@@ -14,7 +14,7 @@ const BAR_OFF: LightState = { brightness: "off", flashing: false, color: { kind:
  * - 1-6 flash dim, except the switch for the loaded preset, which is solid bright. That
  *   switch only shows solid while the pending bank is the loaded preset's bank; in any other
  *   bank all six flash.
- * - A-D: the pending bank is solid bright and the others are off. Assumed; not observed.
+ * - A-D: the current (pending) bank's bar is solid bright and the other three are off.
  * Legends keep their idle state.
  */
 export function presetSelectLights(spec: SwitchSpec, pendingBank: number, activePresetIndex: number): SwitchLights {

@@ -40,8 +40,8 @@ const MODE_INDICATOR: LightState = { brightness: "bright", flashing: false, colo
 
 /**
  * Lights inside a built-in DAW preset (Track / Transport). Its A/B switches select Track /
- * Transport, and by the same engagement rule as a user preset's Preset Select steps (see
- * `isStepEngaged`), the one whose target is the current mode is lit. It shows the mode-indicator
+ * Transport. As with any Preset Select to Track/Transport (see `stepLight`), their lights are
+ * mode indicators, so the one for the current mode is lit. It shows the mode-indicator
  * light blue (observed). The preset's printed legend row lights in its ink on every switch that
  * has one (see `SpecialPresetDefinition.litLegendRow`). The DAW-function switches' bars stay off:
  * their behavior isn't documented or observed yet.

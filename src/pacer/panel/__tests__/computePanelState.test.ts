@@ -1,6 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ControlId, userPresetIndex } from "../../protocol/constants";
+import {
+  ControlId,
+  SwitchMessageType,
+  presetIndexToPresetSelectTarget,
+  userPresetIndex,
+} from "../../protocol/constants";
+import { createEmptyPacerConfig, getOrCreateControl, getOrCreatePreset } from "../../protocol/types";
 import { decodeSysex } from "../../protocol/decode";
 import { applyBoardEvent, createBoardState } from "../../simulator";
 import { computePanelState, switchHint, type FirmwareModeState } from "..";
@@ -39,9 +45,9 @@ describe("computePanelState (factory presets)", () => {
       return (["sw1", "swC", "swD"] as const).map((id) => panel.switches[id].lights.bottom);
     };
     const dim = (hue: string) => ({ brightness: "dim", flashing: false, color: { kind: "hue", hue } });
-    const off = (hue: string) => ({ brightness: "off", flashing: false, color: { kind: "hue", hue } });
-    // A1: Program Change -> dim orange; C/D (Preset Inc/Dec) -> off at rest. Both observed.
-    expect(bars(A1)).toEqual([dim("orange"), off("red"), off("red")]);
+    const dark = { brightness: "off", flashing: false, color: { kind: "unspecified" } };
+    // A1: Program Change -> dim orange; C/D (Preset Inc/Dec) -> dark. Both observed.
+    expect(bars(A1)).toEqual([dim("orange"), dark, dark]);
     // B1 (HELX1): MIDI CC -> dim blue (observed).
     expect(bars(userPresetIndex(1, 1))[0]).toEqual(dim("blue"));
     // A5 (NOTES): MIDI Note -> green.
@@ -85,6 +91,31 @@ describe("computePanelState (factory presets)", () => {
       expect(panel.switches.swC.lights.bottom?.brightness).toBe("off");
       expect(panel.switches.swD.lights.bottom?.brightness).toBe("off");
     }
+  });
+
+  it("a LOOPR-style preset (from a real device dump) lights like the hardware", () => {
+    const WHITE = { on: 0x17, off: 0x18 };
+    const ORANGE = { on: 0x05, off: 0x06 };
+    const loopr = createEmptyPacerConfig();
+    const preset = getOrCreatePreset(loopr, userPresetIndex(2, 1)); // C1
+    const set = (id: number, msgType: number, d0: number, colors: { on: number; off: number }) => {
+      const ctl = getOrCreateControl(preset, id);
+      ctl.steps[1] = { channel: 0, msgType, data: [d0, 127, 0], active: true };
+      ctl.led[1] = { midiController: 0, activeColor: colors.on, inactiveColor: colors.off, position: 0 };
+    };
+    set(ControlId.StompswitchA, SwitchMessageType.PresetSelect, presetIndexToPresetSelectTarget(A1), WHITE);
+    set(ControlId.StompswitchB, SwitchMessageType.CcTrigger, 52, ORANGE);
+    set(ControlId.StompswitchC, SwitchMessageType.PresetIncDec, 1, WHITE);
+    set(ControlId.StompswitchD, SwitchMessageType.PresetIncDec, 0, WHITE);
+
+    let board = createBoardState(loopr, userPresetIndex(2, 1));
+    const bar = (id: "swA" | "swB" | "swC" | "swD") => computePanelState(board, USER).switches[id].lights.bottom;
+    expect(bar("swA")).toEqual({ brightness: "bright", flashing: false, color: { kind: "hue", hue: "white" } });
+    expect(bar("swB")).toEqual({ brightness: "dim", flashing: false, color: { kind: "hue", hue: "orange" } });
+    expect(bar("swC")?.brightness).toBe("off");
+    expect(bar("swD")?.brightness).toBe("off");
+    board = applyBoardEvent(board, { controlId: ControlId.StompswitchC, phase: "press" }).board; // wraps to B6
+    expect(computePanelState(board, USER).switches.swC.lights.bottom?.brightness ?? "off").toBe("off");
   });
 
   it("D2 COLOR: each front-row bar shows its configured hue", () => {

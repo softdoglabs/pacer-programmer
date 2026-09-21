@@ -267,16 +267,30 @@ every control on every real factory preset).
   (off/dim/bright), flashing, and semantic color (Pacer hue / royal blue /
   printed ink / unspecified), plus the display. It's built from one
   strategy per mode:
-  - **The firmware LED model** (`engagement.ts`). A step's light shows
-    whether what it *selects* is currently selected ("engaged"): On color
-    when engaged, Off color otherwise.
-    - CC/Note Toggle: the toggle is on.
-    - Program Change: its switch sent the preset's last PC. The User Guide
-      on A1-A4: "the LED switch for the last sent message is fully
-      illuminated".
-    - Preset Select: its target is the current preset or mode.
-    - Preset Inc/Dec: never (observed: C/D don't light).
-    - Momentary types (CC Trigger, Note, MMC, ...): while held. Assumed.
+  - **The firmware LED model** (`engagement.ts`, `stepLight`).
+    - **Steps that send MIDI have a value state.** The manual calls the
+      colors "On/maximum value state" and "Off/minimum value state", and
+      the light shows the On or Off color:
+      - CC/Note Toggle: by the toggle bit (bank B rests dim blue).
+      - Program Change: On while its switch sent the preset's last PC
+        (User Guide on A1-A4). A1 rests dim orange.
+      - Momentary types (CC Trigger, Note, MMC, ...): On while held. At
+        rest a CC Trigger shows its Off color (observed, dim orange); the
+        held state is assumed.
+    - **Preset navigation has no value state.** Each kind has a fixed light
+      role (all observed):
+      - Preset Select to a user preset: the On color, steadily. A with
+        White/Dim White is bright white on both A1 and C1.
+      - Preset Select to Track/Transport: a mode indicator, lit light blue
+        in that mode and dark otherwise.
+      - Preset Inc/Dec: dark, even when pressed and even with explicit
+        colors.
+    - This replaced an earlier "engaged" model (Preset Select lit only when
+      its target is current), which the A-bar observation disproved. It
+      also removed a special case for factory A-D resting dark; the light
+      roles now explain that.
+    - Unknown: Preset Select whose target is the current preset, and
+      explicit colors on a Track/Transport selector.
   - `userPresetLights` applies that model to each showing step, lighting
     the indicator its LED num selects. Fixed-ink legends keep their ink and
     take only the brightness.
@@ -286,15 +300,11 @@ every control on every real factory preset).
       `defaultLedColors.ts`: PC = orange, CC = blue, Note = green,
       Preset Select/Inc-Dec = red, MMC = yellow, Relay = lavender,
       NRPN = purple, Step Select = pink.
-    - Exception: factory A-D (Preset Select/Inc-Dec, Default color) are
-      off at rest, not dim red (observed). Modeled as "preset navigation
-      rests off". The factory data can't rule out "back-row bars ignore
-      Default colors" instead.
   - **Mode indicators, observed:** the bar of the switch for the current
     mode is solid bright light blue: Preset on a user preset, A in Track,
-    B in Transport. The others are off. In the DAW presets this falls out
-    of the same engagement rule (their A/B select Track/Transport).
-    Preset's bar is the firmware's user-preset-mode indicator.
+    B in Transport. The others are off. Preset's bar is the firmware's
+    user-preset-mode indicator. A/B come from the Track/Transport selector
+    role above.
   - `presetSelectLights`, all observed on hardware:
     - [Preset]'s bar flashes bright red.
     - A-D: only the current bank's bar is lit, in solid bright royal blue.

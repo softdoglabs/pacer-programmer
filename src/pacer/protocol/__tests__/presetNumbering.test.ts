@@ -63,6 +63,13 @@ describe("preset numbering", () => {
     const name = (idx: number) => config.presets[idx]?.name;
     expect(name(CURRENT_PRESET_INDEX)).toBe(name(userPresetIndex(0, 1)));
     // User Guide: A1-A4 program change, A5 MIDI notes, A6 relays.
-    expect([1, 2, 3, 4, 5, 6].map((n) => name(userPresetIndex(0, n)))).toEqual(["PRGM1", "PRGM2", "PRGM3", "PRGM4", "NOTES", "RELAY"]);
+    expect([1, 2, 3, 4, 5, 6].map((n) => name(userPresetIndex(0, n)))).toEqual([
+      "PRGM1",
+      "PRGM2",
+      "PRGM3",
+      "PRGM4",
+      "NOTES",
+      "RELAY",
+    ]);
   });
 });

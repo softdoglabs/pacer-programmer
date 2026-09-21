@@ -74,7 +74,12 @@ interface SwitchArtProps {
 
 /** Positions an element over the background SVG, in its coordinate space. */
 function overlayStyle(x: number, y: number, w: number, h: number): CSSProperties {
-  return { left: `${(x / WIDTH) * 100}%`, top: `${(y / HEIGHT) * 100}%`, width: `${(w / WIDTH) * 100}%`, height: `${(h / HEIGHT) * 100}%` };
+  return {
+    left: `${(x / WIDTH) * 100}%`,
+    top: `${(y / HEIGHT) * 100}%`,
+    width: `${(w / WIDTH) * 100}%`,
+    height: `${(h / HEIGHT) * 100}%`,
+  };
 }
 
 function SwitchArt(props: SwitchArtProps) {
@@ -95,8 +100,21 @@ function SwitchArt(props: SwitchArtProps) {
       data-led-flashing={props.indicator?.flashing}
       {...props.pressProps}
     >
-      <svg viewBox={`0 0 ${HOUSING_W} ${HOUSING_H}`} className="block size-full" opacity={props.dimmed ? 0.55 : 1} aria-hidden>
-        <rect className="housing" width={HOUSING_W} height={HOUSING_H} rx={14} fill="#111113" stroke="#000" strokeWidth={4} />
+      <svg
+        viewBox={`0 0 ${HOUSING_W} ${HOUSING_H}`}
+        className="block size-full"
+        opacity={props.dimmed ? 0.55 : 1}
+        aria-hidden
+      >
+        <rect
+          className="housing"
+          width={HOUSING_W}
+          height={HOUSING_H}
+          rx={14}
+          fill="#111113"
+          stroke="#000"
+          strokeWidth={4}
+        />
         <rect x={12} y={12} width={HOUSING_W - 24} height={70} rx={6} fill="#050506" />
         <text x={22} y={32} fontSize={14} fill="#8b8b93" fontFamily="ui-sans-serif, system-ui">
           {props.name}
@@ -124,7 +142,16 @@ function SwitchArt(props: SwitchArtProps) {
           className={props.ledBlink ? "pacer-led-flash" : undefined}
         />
         <g className="pad">
-          <rect x={22} y={114} width={HOUSING_W - 44} height={108} rx={12} fill={pressed ? "#141416" : "#1d1d20"} stroke="#000" strokeWidth={3} />
+          <rect
+            x={22}
+            y={114}
+            width={HOUSING_W - 44}
+            height={108}
+            rx={12}
+            fill={pressed ? "#141416" : "#1d1d20"}
+            stroke="#000"
+            strokeWidth={3}
+          />
           <rect x={34} y={126} width={HOUSING_W - 68} height={84} rx={9} fill={pressed ? "#1a1a1d" : "#27272b"} />
         </g>
       </svg>
@@ -157,11 +184,15 @@ function specialPresetLook(
 ): SwitchLook | undefined {
   if (mode.mode === "presetSelect") {
     const legend = isBankSwitch ? `BANK ${name}` : `${"ABCD"[mode.pendingBank]}${name}`;
-    const indicator = presetSelectLed(controlId, mode.pendingBank, activePresetIndex) ?? { brightness: "off", flashing: false };
+    const indicator = presetSelectLed(controlId, mode.pendingBank, activePresetIndex) ?? {
+      brightness: "off",
+      flashing: false,
+    };
     return {
       legend,
       legendColor: PRESET_BLUE,
-      ledCss: indicator.brightness === "bright" ? PRESET_LED : indicator.brightness === "dim" ? PRESET_LED_DIM : LED_OFF,
+      ledCss:
+        indicator.brightness === "bright" ? PRESET_LED : indicator.brightness === "dim" ? PRESET_LED_DIM : LED_OFF,
       ledGlow: indicator.brightness === "bright",
       ledBlink: indicator.flashing,
       indicator,
@@ -171,7 +202,15 @@ function specialPresetLook(
   }
   if (mode.mode === "track" || mode.mode === "transport") {
     const entry = SPECIAL_PRESETS[mode.mode].switches[controlId];
-    if (!entry) return { legend: "—", legendColor: "#55555c", ledCss: LED_OFF, ledGlow: false, dimmed: true, title: "No function" };
+    if (!entry)
+      return {
+        legend: "—",
+        legendColor: "#55555c",
+        ledCss: LED_OFF,
+        ledGlow: false,
+        dimmed: true,
+        title: "No function",
+      };
     const isCurrentMode = entry.action.kind === "goto" && entry.action.preset === mode.mode;
     return {
       legend: entry.legend,
@@ -179,13 +218,26 @@ function specialPresetLook(
       ledCss: isCurrentMode ? MODE_LED : entry.action.kind === "goto" ? LED_OFF : DAW_LED,
       ledGlow: isCurrentMode,
       dimmed: false,
-      title: entry.action.kind === "daw" ? `DAW: ${entry.action.command}` : `Switch to the built-in ${entry.legend} preset`,
+      title:
+        entry.action.kind === "daw" ? `DAW: ${entry.action.command}` : `Switch to the built-in ${entry.legend} preset`,
     };
   }
   return undefined;
 }
 
-function StompSwitch({ controlId, name, col, rowY, badge }: { controlId: number; name: string; col: number; rowY: number; badge: boolean }) {
+function StompSwitch({
+  controlId,
+  name,
+  col,
+  rowY,
+  badge,
+}: {
+  controlId: number;
+  name: string;
+  col: number;
+  rowY: number;
+  badge: boolean;
+}) {
   const board = usePacerStore((s) => s.board);
   const selected = usePacerStore((s) => s.selectedControlId === controlId);
   const deviceMode = usePacerStore((s) => s.deviceMode);
@@ -259,7 +311,11 @@ function PresetSwitch() {
       indicator={led}
       pressed={held}
       ariaLabel={inSpecial ? `Preset button (tap: back to ${lastPreset}; ${holdHint})` : `Preset button (${holdHint})`}
-      title={inSpecial ? `Preset. Tap: back to ${lastPreset}. Hold ${PRESET_HOLD_MS / 1000}s: preset select.` : `Preset. ${holdHint}.`}
+      title={
+        inSpecial
+          ? `Preset. Tap: back to ${lastPreset}. Hold ${PRESET_HOLD_MS / 1000}s: preset select.`
+          : `Preset. ${holdHint}.`
+      }
       pressProps={pressProps}
     />
   );
@@ -308,8 +364,20 @@ function Display() {
   return (
     <g transform={`translate(${x} ${BACK_ROW_Y})`} aria-live="polite">
       <rect width={HOUSING_W} height={130} rx={8} fill="#060606" stroke="#000" strokeWidth={4} />
-      <g fill={DISPLAY_RED} filter="url(#display-glow)" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace" fontWeight={700}>
-        <text x={HOUSING_W / 2} y={56} textAnchor="middle" fontSize={40} letterSpacing={4} style={{ whiteSpace: "pre" }}>
+      <g
+        fill={DISPLAY_RED}
+        filter="url(#display-glow)"
+        fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+        fontWeight={700}
+      >
+        <text
+          x={HOUSING_W / 2}
+          y={56}
+          textAnchor="middle"
+          fontSize={40}
+          letterSpacing={4}
+          style={{ whiteSpace: "pre" }}
+        >
           {line1}
         </text>
         <text
@@ -335,7 +403,12 @@ function Display() {
 
 export function Faceplate() {
   return (
-    <div className="relative w-full select-none touch-none" style={{ aspectRatio: `${WIDTH} / ${HEIGHT}` }} role="group" aria-label="Pacer faceplate">
+    <div
+      className="relative w-full select-none touch-none"
+      style={{ aspectRatio: `${WIDTH} / ${HEIGHT}` }}
+      role="group"
+      aria-label="Pacer faceplate"
+    >
       <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="absolute inset-0 size-full">
         <defs>
           <filter id="led-glow" x="-30%" y="-200%" width="160%" height="500%">
@@ -354,7 +427,17 @@ export function Faceplate() {
           </filter>
         </defs>
         <rect width={WIDTH} height={HEIGHT} rx={28} fill="#3a3b3e" />
-        <rect x={12} y={12} width={WIDTH - 24} height={HEIGHT - 24} rx={20} fill="none" stroke="#5fa99b" strokeWidth={3} opacity={0.8} />
+        <rect
+          x={12}
+          y={12}
+          width={WIDTH - 24}
+          height={HEIGHT - 24}
+          rx={20}
+          fill="none"
+          stroke="#5fa99b"
+          strokeWidth={3}
+          opacity={0.8}
+        />
 
         <Markings />
         <Display />
@@ -365,7 +448,14 @@ export function Faceplate() {
         <StompSwitch key={sw.controlId} controlId={sw.controlId} name={sw.name} col={i + 1} rowY={BACK_ROW_Y} badge />
       ))}
       {FRONT_ROW.map((sw, i) => (
-        <StompSwitch key={sw.controlId} controlId={sw.controlId} name={sw.name} col={i} rowY={FRONT_ROW_Y} badge={false} />
+        <StompSwitch
+          key={sw.controlId}
+          controlId={sw.controlId}
+          name={sw.name}
+          col={i}
+          rowY={FRONT_ROW_Y}
+          badge={false}
+        />
       ))}
     </div>
   );

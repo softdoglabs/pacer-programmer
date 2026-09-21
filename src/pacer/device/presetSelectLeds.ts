@@ -35,9 +35,14 @@ const NUMBER_SWITCHES: readonly number[] = [
  *   in the User Guide or confirmed on hardware.
  * Undefined for controls preset select doesn't use.
  */
-export function presetSelectLed(controlId: number, pendingBank: number, activePresetIndex: number): IndicatorLed | undefined {
+export function presetSelectLed(
+  controlId: number,
+  pendingBank: number,
+  activePresetIndex: number,
+): IndicatorLed | undefined {
   const bank = BANK_SWITCHES.indexOf(controlId);
-  if (bank >= 0) return bank === pendingBank ? { brightness: "bright", flashing: false } : { brightness: "off", flashing: false };
+  if (bank >= 0)
+    return bank === pendingBank ? { brightness: "bright", flashing: false } : { brightness: "off", flashing: false };
 
   const num = NUMBER_SWITCHES.indexOf(controlId);
   if (num >= 0) {

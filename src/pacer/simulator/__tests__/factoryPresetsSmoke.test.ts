@@ -39,7 +39,10 @@ describe("simulator engine against the real factory-presets fixture", () => {
       for (const controlId of allControlIds) {
         const pressResult = applyBoardEvent(board, { controlId, phase: "press" });
         for (const msg of pressResult.effect.messages) {
-          expect(isValidMidiMessage(msg), `invalid message from preset ${presetIndex} control 0x${controlId.toString(16)}: ${JSON.stringify(msg)}`).toBe(true);
+          expect(
+            isValidMidiMessage(msg),
+            `invalid message from preset ${presetIndex} control 0x${controlId.toString(16)}: ${JSON.stringify(msg)}`,
+          ).toBe(true);
         }
         // Only release if the press didn't jump us to a different preset (see engine.ts / the plan's A13 note).
         if (pressResult.board.activePresetIndex === board.activePresetIndex) {

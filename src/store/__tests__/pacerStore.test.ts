@@ -141,10 +141,11 @@ describe("pacerStore: built-in Track/Transport presets", () => {
     tap(ControlId.StompswitchD);
     tap(ControlId.StompswitchC);
     expect(store().board.activePresetIndex).toBe(A4); // C/D no longer change presets
-    expect(store().log.slice(logLength).flatMap((e) => e.lines)).toEqual([
-      expect.stringContaining("Next track"),
-      expect.stringContaining("Previous track"),
-    ]);
+    expect(
+      store()
+        .log.slice(logLength)
+        .flatMap((e) => e.lines),
+    ).toEqual([expect.stringContaining("Next track"), expect.stringContaining("Previous track")]);
 
     tapPreset();
     expect(store().deviceMode.mode).toBe("user");

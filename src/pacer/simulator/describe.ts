@@ -1,4 +1,9 @@
-import { ExpressionMessageType, PresetMidiMessageType, PresetSelectTarget, SwitchMessageType } from "../protocol/constants";
+import {
+  ExpressionMessageType,
+  PresetMidiMessageType,
+  PresetSelectTarget,
+  SwitchMessageType,
+} from "../protocol/constants";
 import type { Step, SwitchControl } from "../protocol/types";
 import type { ControlKind } from "./controlEffects";
 

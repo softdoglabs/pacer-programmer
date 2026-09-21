@@ -55,7 +55,11 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
   if (!controlKind) {
     return {
       board,
-      effect: { messages: [], relayActions: [], warnings: [`0x${event.controlId.toString(16)} is not a switch or expression pedal control id`] },
+      effect: {
+        messages: [],
+        relayActions: [],
+        warnings: [`0x${event.controlId.toString(16)} is not a switch or expression pedal control id`],
+      },
     };
   }
 
@@ -64,7 +68,11 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
   if (!control) {
     return {
       board,
-      effect: { messages: [], relayActions: [], warnings: [`control 0x${event.controlId.toString(16)} is not configured on the active preset`] },
+      effect: {
+        messages: [],
+        relayActions: [],
+        warnings: [`control 0x${event.controlId.toString(16)} is not configured on the active preset`],
+      },
     };
   }
 
@@ -77,13 +85,18 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
     warning: navWarning,
   } = resolvePresetNavigation(board.activePresetIndex, resolved.deviceActions);
   const warnings = navWarning ? [...resolved.warnings, navWarning] : resolved.warnings;
-  const relayActions = resolved.deviceActions.filter((a): a is Extract<DeviceAction, { kind: "relay" }> => a.kind === "relay");
+  const relayActions = resolved.deviceActions.filter(
+    (a): a is Extract<DeviceAction, { kind: "relay" }> => a.kind === "relay",
+  );
 
   if (specialPreset) {
     // Leaving for a firmware DAW preset: the board (and its runtime state) stays exactly as it
     // was, since that's the preset the firmware comes back to. The pressed control's own state
     // change is discarded, like any other preset-changing press.
-    return { board, effect: { messages: resolved.messages, relayActions, specialPresetRequested: specialPreset, warnings } };
+    return {
+      board,
+      effect: { messages: resolved.messages, relayActions, specialPresetRequested: specialPreset, warnings },
+    };
   }
 
   if (nextPresetIndex !== undefined && nextPresetIndex !== board.activePresetIndex) {
@@ -146,6 +159,6 @@ export function getControlDisplayState(board: BoardState, controlId: number): Co
     exists: true,
     pressed: runtime?.pressed ?? false,
     activeToggleSteps,
-    sequencePointer: control.controlMode === ControlMode.Sequence ? runtime?.sequencePointer ?? 1 : undefined,
+    sequencePointer: control.controlMode === ControlMode.Sequence ? (runtime?.sequencePointer ?? 1) : undefined,
   };
 }

@@ -70,7 +70,9 @@ export function splitSysexMessages(bytes: Uint8Array): RawMessage[] {
     const payload = body.subarray(4); // cmd, tgt, idx, [obj, elm, ...data, checksum]
 
     if (payload.length < 3) {
-      throw new SysexDecodeError(`message at byte ${start} is too short to contain cmd/tgt/idx (${payload.length} bytes)`);
+      throw new SysexDecodeError(
+        `message at byte ${start} is too short to contain cmd/tgt/idx (${payload.length} bytes)`,
+      );
     }
 
     const cmd = payload[0]!;
@@ -88,9 +90,7 @@ export function splitSysexMessages(bytes: Uint8Array): RawMessage[] {
     const covered = payload.subarray(0, payload.length - 1);
     const expected = computeChecksum(covered);
     if (expected !== checksumByte) {
-      throw new SysexDecodeError(
-        `checksum mismatch at byte ${start}: expected ${expected}, got ${checksumByte}`,
-      );
+      throw new SysexDecodeError(`checksum mismatch at byte ${start}: expected ${expected}, got ${checksumByte}`);
     }
 
     const obj = payload[3]!;

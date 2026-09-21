@@ -1,4 +1,10 @@
-import { BANK_COUNT, PRESETS_PER_BANK, isUserPresetIndex, presetIndexToLabel, userPresetIndex } from "../pacer/protocol/constants";
+import {
+  BANK_COUNT,
+  PRESETS_PER_BANK,
+  isUserPresetIndex,
+  presetIndexToLabel,
+  userPresetIndex,
+} from "../pacer/protocol/constants";
 import { useShallow } from "zustand/react/shallow";
 import { usePacerStore } from "../store/pacerStore";
 import { cn } from "@/lib/utils";
@@ -45,7 +51,9 @@ export function PresetList() {
       </div>
       {extraSlots.length > 0 && (
         <div>
-          <div className="px-2 pb-1 text-xs font-medium text-muted-foreground">Other slots: CUR is the device's working copy of the active preset, not a front-panel preset</div>
+          <div className="px-2 pb-1 text-xs font-medium text-muted-foreground">
+            Other slots: CUR is the device's working copy of the active preset, not a front-panel preset
+          </div>
           <div className="flex flex-wrap gap-1">
             {extraSlots.map((i) => (
               <PresetButton key={i} index={i} />

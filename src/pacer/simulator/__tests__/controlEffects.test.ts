@@ -5,7 +5,12 @@ import { resolveControl } from "../controlEffects";
 import { createControlRuntimeState } from "../types";
 
 function ccStep(controller: number, down: number, up: number, active = true) {
-  return { channel: 1, msgType: SwitchMessageType.CcTrigger, data: [controller, down, up] as [number, number, number], active };
+  return {
+    channel: 1,
+    msgType: SwitchMessageType.CcTrigger,
+    data: [controller, down, up] as [number, number, number],
+    active,
+  };
 }
 
 describe("resolveControl — AllStepsAtOnce (default)", () => {
@@ -46,7 +51,9 @@ describe("resolveControl — Sequence mode", () => {
     const controllersOrEmpty: (number | null)[] = [];
     for (let i = 0; i < 7; i++) {
       const pressed = resolveControl(control, "switch", "press", state);
-      controllersOrEmpty.push(pressed.messages.length > 0 ? (pressed.messages[0] as { controller: number }).controller : null);
+      controllersOrEmpty.push(
+        pressed.messages.length > 0 ? (pressed.messages[0] as { controller: number }).controller : null,
+      );
       state = resolveControl(control, "switch", "release", pressed.nextRuntimeState).nextRuntimeState;
     }
     // presses 1-3 hit populated steps; 4-6 hit empty slots (still consume a press, no message);

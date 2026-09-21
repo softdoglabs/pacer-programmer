@@ -208,6 +208,10 @@ describe("fireExpressionStep", () => {
   it("NrpnCoarse/Fine fire on press only, nothing on release (no documented 'min' to fall back to)", () => {
     const coarse = step(ExpressionMessageType.NrpnCoarse, [100, 1, 2]);
     expect(fireExpressionStep(coarse, "press", noSubState).messages.length).toBe(3);
-    expect(fireExpressionStep(coarse, "release", noSubState)).toEqual({ messages: [], deviceActions: [], warnings: [] });
+    expect(fireExpressionStep(coarse, "release", noSubState)).toEqual({
+      messages: [],
+      deviceActions: [],
+      warnings: [],
+    });
   });
 });

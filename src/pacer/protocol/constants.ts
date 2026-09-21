@@ -79,10 +79,7 @@ export const SWITCH_CONTROL_IDS: readonly number[] = [
   ControlId.Footswitch4,
 ];
 
-export const EXPRESSION_PEDAL_CONTROL_IDS: readonly number[] = [
-  ControlId.ExpressionPedal1,
-  ControlId.ExpressionPedal2,
-];
+export const EXPRESSION_PEDAL_CONTROL_IDS: readonly number[] = [ControlId.ExpressionPedal1, ControlId.ExpressionPedal2];
 
 /** Element id of a control's "control mode" setting (fires all steps at once / sequence / external step select). */
 export const CONTROL_MODE_ELEMENT = 0x60;
@@ -171,7 +168,8 @@ export function isUserPresetIndex(idx: number): boolean {
 /** SysEx `idx` of a user preset, from its 0-based bank (A=0 .. D=3) and 1-based number (1-6). */
 export function userPresetIndex(bank: number, num: number): number {
   if (!Number.isInteger(bank) || bank < 0 || bank >= BANK_COUNT) throw new RangeError(`bank ${bank} out of range`);
-  if (!Number.isInteger(num) || num < 1 || num > PRESETS_PER_BANK) throw new RangeError(`preset number ${num} out of range`);
+  if (!Number.isInteger(num) || num < 1 || num > PRESETS_PER_BANK)
+    throw new RangeError(`preset number ${num} out of range`);
   return FIRST_USER_PRESET_INDEX + bank * PRESETS_PER_BANK + (num - 1);
 }
 

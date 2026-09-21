@@ -34,7 +34,9 @@ function ExternalControl({ controlId, hint }: { controlId: number; hint?: string
       {...pressProps}
     >
       <span className="text-xs text-muted-foreground">{controlLabel(controlId)}</span>
-      <span className="truncate font-mono text-sm font-semibold">{summarizeControl(control, controlKindOf(controlId)!)}</span>
+      <span className="truncate font-mono text-sm font-semibold">
+        {summarizeControl(control, controlKindOf(controlId)!)}
+      </span>
       {hint && <span className="text-[10px] text-muted-foreground">{hint}</span>}
     </button>
   );

@@ -79,8 +79,14 @@ function specialPresetState(name: SpecialPresetName) {
     on: {
       PRESET_TAP: { target: "#mode.user", actions: "returnToLastPreset" },
       SWITCH: [
-        { guard: ({ event }: { event: SwitchEvent }) => gotoTarget(name, event.controlId) === "track", target: "#mode.track" },
-        { guard: ({ event }: { event: SwitchEvent }) => gotoTarget(name, event.controlId) === "transport", target: "#mode.transport" },
+        {
+          guard: ({ event }: { event: SwitchEvent }) => gotoTarget(name, event.controlId) === "track",
+          target: "#mode.track",
+        },
+        {
+          guard: ({ event }: { event: SwitchEvent }) => gotoTarget(name, event.controlId) === "transport",
+          target: "#mode.transport",
+        },
         {
           guard: ({ event }: { event: SwitchEvent }) => specialAction(name, event.controlId)?.kind === "daw",
           actions: {
@@ -120,7 +126,10 @@ export const deviceModeMachine = setup({
       initial: "user",
       // Hold enters preset select from anywhere, starting at the bank of the preset [Preset] was pressed on.
       on: {
-        PRESET_HOLD: { target: ".presetSelect", actions: assign({ pendingBank: ({ context }) => context.bankAtPress }) },
+        PRESET_HOLD: {
+          target: ".presetSelect",
+          actions: assign({ pendingBank: ({ context }) => context.bankAtPress }),
+        },
       },
       states: {
         user: {

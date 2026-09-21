@@ -149,7 +149,8 @@ export const usePacerStore = create<PacerStore>((set, get) => {
         log: appendLog(s.log, { kind: "control", title: `${controlLabel(controlId)} — ${phase}`, lines }),
       };
     });
-    if (effect.specialPresetRequested) deviceActor.send({ type: "ENTER_SPECIAL", preset: effect.specialPresetRequested });
+    if (effect.specialPresetRequested)
+      deviceActor.send({ type: "ENTER_SPECIAL", preset: effect.specialPresetRequested });
   }
 
   return {
@@ -207,7 +208,12 @@ export const usePacerStore = create<PacerStore>((set, get) => {
 
     loadConfig: (config, source, initialPresetIndex = FIRST_USER_PRESET_INDEX) => {
       resetDeviceActor();
-      set({ board: createBoardState(config, initialPresetIndex), configSource: source, log: [], swallowedReleases: [] });
+      set({
+        board: createBoardState(config, initialPresetIndex),
+        configSource: source,
+        log: [],
+        swallowedReleases: [],
+      });
     },
 
     clearLog: () => set({ log: [] }),

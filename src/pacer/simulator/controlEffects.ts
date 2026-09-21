@@ -43,7 +43,8 @@ function fireStepsForControl(
     const step = control.steps[n];
     if (!step) continue;
     const subState: StepSubState = { toggle: toggleState[n], counter: stepCounters[n] };
-    const fired = controlKind === "switch" ? fireSwitchStep(step, phase, subState) : fireExpressionStep(step, phase, subState);
+    const fired =
+      controlKind === "switch" ? fireSwitchStep(step, phase, subState) : fireExpressionStep(step, phase, subState);
     messages.push(...fired.messages);
     deviceActions.push(...fired.deviceActions);
     warnings.push(...fired.warnings);
@@ -54,7 +55,11 @@ function fireStepsForControl(
   return { messages, deviceActions, warnings, toggleState, stepCounters };
 }
 
-function pressControl(control: SwitchControl, controlKind: ControlKind, runtimeState: ControlRuntimeState): ControlEffect {
+function pressControl(
+  control: SwitchControl,
+  controlKind: ControlKind,
+  runtimeState: ControlRuntimeState,
+): ControlEffect {
   const mode = control.controlMode ?? ControlMode.AllStepsAtOnce;
 
   let stepNumbers: number[];
@@ -88,7 +93,11 @@ function pressControl(control: SwitchControl, controlKind: ControlKind, runtimeS
   };
 }
 
-function releaseControl(control: SwitchControl, controlKind: ControlKind, runtimeState: ControlRuntimeState): ControlEffect {
+function releaseControl(
+  control: SwitchControl,
+  controlKind: ControlKind,
+  runtimeState: ControlRuntimeState,
+): ControlEffect {
   const mode = control.controlMode ?? ControlMode.AllStepsAtOnce;
 
   let stepNumbers: number[];
@@ -134,7 +143,12 @@ export function resolveControl(
   }
 
   if (!runtimeState.pressed) {
-    return { messages: [], deviceActions: [], warnings: ["release without matching press"], nextRuntimeState: runtimeState };
+    return {
+      messages: [],
+      deviceActions: [],
+      warnings: ["release without matching press"],
+      nextRuntimeState: runtimeState,
+    };
   }
   return releaseControl(control, controlKind, runtimeState);
 }

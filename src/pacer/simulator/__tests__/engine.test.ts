@@ -1,19 +1,39 @@
 import { describe, expect, it } from "vitest";
-import { ControlId, SwitchMessageType, presetIndexToPresetSelectTarget, userPresetIndex } from "../../protocol/constants";
+import {
+  ControlId,
+  SwitchMessageType,
+  presetIndexToPresetSelectTarget,
+  userPresetIndex,
+} from "../../protocol/constants";
 import { createEmptyPacerConfig, getOrCreateControl, getOrCreatePreset, type PacerConfig } from "../../protocol/types";
 import { applyBoardEvent, createBoardState, getActiveControlIds, getControlDisplayState } from "../engine";
 
 function ccToggleStep(controller: number, value1: number, value2: number) {
-  return { channel: 1, msgType: SwitchMessageType.CcToggle, data: [controller, value1, value2] as [number, number, number], active: true };
+  return {
+    channel: 1,
+    msgType: SwitchMessageType.CcToggle,
+    data: [controller, value1, value2] as [number, number, number],
+    active: true,
+  };
 }
 
 function programAndBankStep(program: number) {
-  return { channel: 1, msgType: SwitchMessageType.ProgramAndBank, data: [program, 0, 0] as [number, number, number], active: true };
+  return {
+    channel: 1,
+    msgType: SwitchMessageType.ProgramAndBank,
+    data: [program, 0, 0] as [number, number, number],
+    active: true,
+  };
 }
 
 function presetSelectStep(targetIndex: number) {
   const target = presetIndexToPresetSelectTarget(targetIndex);
-  return { channel: 1, msgType: SwitchMessageType.PresetSelect, data: [target, 0, 0] as [number, number, number], active: true };
+  return {
+    channel: 1,
+    msgType: SwitchMessageType.PresetSelect,
+    data: [target, 0, 0] as [number, number, number],
+    active: true,
+  };
 }
 
 const A1 = userPresetIndex(0, 1);
@@ -21,7 +41,12 @@ const A2 = userPresetIndex(0, 2);
 const D6 = userPresetIndex(3, 6);
 
 function presetIncDecStep(direction: 0 | 1) {
-  return { channel: 1, msgType: SwitchMessageType.PresetIncDec, data: [direction, 0, 0] as [number, number, number], active: true };
+  return {
+    channel: 1,
+    msgType: SwitchMessageType.PresetIncDec,
+    data: [direction, 0, 0] as [number, number, number],
+    active: true,
+  };
 }
 
 /**
@@ -56,7 +81,10 @@ describe("applyBoardEvent — preset navigation", () => {
     const { board: boardWithToggle } = applyBoardEvent(board0, { controlId: ControlId.Stompswitch1, phase: "press" });
     expect(getControlDisplayState(boardWithToggle, ControlId.Stompswitch1).activeToggleSteps).toEqual([1]);
 
-    const { board: boardAfterJump, effect } = applyBoardEvent(boardWithToggle, { controlId: ControlId.StompswitchA, phase: "press" });
+    const { board: boardAfterJump, effect } = applyBoardEvent(boardWithToggle, {
+      controlId: ControlId.StompswitchA,
+      phase: "press",
+    });
 
     expect(effect.messages).toEqual([{ kind: "programChange", channel: 1, program: 5 }]);
     expect(effect.presetChanged).toEqual({ from: A1, to: A2 });
@@ -96,10 +124,16 @@ describe("applyBoardEvent — preset navigation", () => {
     const last = getOrCreatePreset(config, D6);
     getOrCreateControl(last, ControlId.Footswitch1).steps[1] = presetIncDecStep(0); // next
 
-    const { board: prevBoard } = applyBoardEvent(createBoardState(config, A1), { controlId: ControlId.Footswitch1, phase: "press" });
+    const { board: prevBoard } = applyBoardEvent(createBoardState(config, A1), {
+      controlId: ControlId.Footswitch1,
+      phase: "press",
+    });
     expect(prevBoard.activePresetIndex).toBe(D6);
 
-    const { board: nextBoard } = applyBoardEvent(createBoardState(config, D6), { controlId: ControlId.Footswitch1, phase: "press" });
+    const { board: nextBoard } = applyBoardEvent(createBoardState(config, D6), {
+      controlId: ControlId.Footswitch1,
+      phase: "press",
+    });
     expect(nextBoard.activePresetIndex).toBe(A1);
   });
 });

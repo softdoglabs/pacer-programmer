@@ -36,6 +36,8 @@ function buildControlModeMessage(idx: number, controlId: number, mode: number): 
 /** Encodes a step's 6 sub-fields as the fixed 23-byte window `decodeStepFields` expects: 5 filler'd fields + a final unfillered one. */
 function buildStepMessage(idx: number, controlId: number, stepNumber: number, step: Step): Uint8Array {
   const base = (stepNumber - 1) * 6 + 1;
+  // One elm/len/value[/reserved] field per row, mirroring the wire format.
+  // prettier-ignore
   const fields = [
     base, 1, step.channel, 0,
     base + 1, 1, step.msgType, 0,
@@ -50,6 +52,8 @@ function buildStepMessage(idx: number, controlId: number, stepNumber: number, st
 /** Encodes a preset MIDI setting's 5 sub-fields as the fixed 19-byte window `decodeMidiSettingFields` expects. */
 function buildMidiSettingMessage(idx: number, settingNumber: number, setting: PresetMidiSetting): Uint8Array {
   const base = (settingNumber - 1) * 6 + 1;
+  // One elm/len/value[/reserved] field per row, mirroring the wire format.
+  // prettier-ignore
   const fields = [
     base, 1, setting.channel, 0,
     base + 1, 1, setting.msgType, 0,
@@ -63,6 +67,8 @@ function buildMidiSettingMessage(idx: number, settingNumber: number, setting: Pr
 /** Encodes a step's 4 LED sub-fields (midi ctrl, active color, inactive color, position). Unset fields default to 0. */
 function buildLedMessage(idx: number, controlId: number, stepNumber: number, led: LedConfig): Uint8Array {
   const base = 0x40 + (stepNumber - 1) * 4;
+  // One elm/len/value[/reserved] field per row, mirroring the wire format.
+  // prettier-ignore
   const fields = [
     base, 1, led.midiController ?? 0, 0,
     base + 1, 1, led.activeColor ?? 0, 0,

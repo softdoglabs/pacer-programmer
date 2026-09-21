@@ -62,7 +62,19 @@ function DataCells({ step, kind }: { step: Step; kind: ControlKind }) {
   );
 }
 
-function StepRow({ n, step, led, kind, current }: { n: number; step?: Step; led?: LedConfig; kind: ControlKind; current: boolean }) {
+function StepRow({
+  n,
+  step,
+  led,
+  kind,
+  current,
+}: {
+  n: number;
+  step?: Step;
+  led?: LedConfig;
+  kind: ControlKind;
+  current: boolean;
+}) {
   return (
     <tr className={cn("border-t", current && "bg-primary/10", !step?.active && "text-muted-foreground")}>
       <td className="px-1.5 py-1 font-semibold tabular-nums">
@@ -96,9 +108,13 @@ function ControlDetails({ controlId, control }: { controlId: number; control: Sw
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="secondary">{MODE_NAMES[mode] ?? `Mode 0x${mode.toString(16)}`}</Badge>
         {display.pressed && <Badge>held</Badge>}
-        {display.activeToggleSteps.length > 0 && <Badge variant="outline">toggled on: step {display.activeToggleSteps.join(", ")}</Badge>}
+        {display.activeToggleSteps.length > 0 && (
+          <Badge variant="outline">toggled on: step {display.activeToggleSteps.join(", ")}</Badge>
+        )}
         {mode === ControlMode.ExternalStepSelect && (
-          <span className="text-xs text-warning">Simulated as always firing step 1 (cross-control step targeting not modeled yet).</span>
+          <span className="text-xs text-warning">
+            Simulated as always firing step 1 (cross-control step targeting not modeled yet).
+          </span>
         )}
       </div>
       <div className="overflow-x-auto">
@@ -129,11 +145,13 @@ function ControlDetails({ controlId, control }: { controlId: number; control: Sw
           </tbody>
         </table>
       </div>
-      {mode === ControlMode.Sequence && <p className="text-xs text-muted-foreground">◂ marks the step the next press fires.</p>}
+      {mode === ControlMode.Sequence && (
+        <p className="text-xs text-muted-foreground">◂ marks the step the next press fires.</p>
+      )}
       {hasLeds && led && (
         <p className="text-xs text-muted-foreground">
-          LED currently shows step {led.stepNumber}'s {led.lit ? "active" : "inactive"} color. LED behavior is a best guess, not
-          hardware-verified.
+          LED currently shows step {led.stepNumber}'s {led.lit ? "active" : "inactive"} color. LED behavior is a best
+          guess, not hardware-verified.
         </p>
       )}
     </div>
@@ -161,7 +179,10 @@ function ControlTab() {
 }
 
 function PresetTab({ preset, index }: { preset?: Preset; index: number }) {
-  if (!preset) return <p className="text-sm text-muted-foreground">Slot {presetIndexToLabel(index)} isn't in the loaded config.</p>;
+  if (!preset)
+    return (
+      <p className="text-sm text-muted-foreground">Slot {presetIndexToLabel(index)} isn't in the loaded config.</p>
+    );
   const settings = Object.entries(preset.midiSettings)
     .map(([n, s]) => [Number(n), s] as const)
     .filter(([, s]) => s !== undefined && presetMidiTypeName(s.msgType) !== "Off")
@@ -187,7 +208,9 @@ function PresetTab({ preset, index }: { preset?: Preset; index: number }) {
             ))}
           </ul>
         )}
-        <p className="mt-1 text-xs text-muted-foreground">Shown for reference; the simulator doesn't send these on preset change yet.</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Shown for reference; the simulator doesn't send these on preset change yet.
+        </p>
       </div>
     </div>
   );
@@ -196,7 +219,8 @@ function PresetTab({ preset, index }: { preset?: Preset; index: number }) {
 const SPECIAL_MODE_NOTES: Partial<Record<DeviceMode, string>> = {
   presetSelect: "Preset select is active: A-D pick a bank, 1-6 load a preset, [Preset] cancels.",
   track: "The built-in Track preset (DAW control) is active. Its switches are fixed by the firmware, not the config.",
-  transport: "The built-in Transport preset (DAW control) is active. Its switches are fixed by the firmware, not the config.",
+  transport:
+    "The built-in Transport preset (DAW control) is active. Its switches are fixed by the firmware, not the config.",
 };
 
 export function Inspector() {

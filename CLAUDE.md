@@ -372,6 +372,35 @@ no hover-only UI, for tablets.
   click on iOS/Android) for `HTMLElement` targets.
 - **Tap vs. hold on [Preset]:** decided by the device machine's timer, not
   the UI.
+- **Programming interface (first slice):**
+  - **Play/Edit** switch in the header. In Edit mode, tapping a switch
+    (or a rear-jack control) selects it for editing and fires nothing;
+    [Preset] does nothing. The faceplate gets a dashed outline.
+  - **Editor** (`ui/editor/`): the preset name (5 chars), then the selected
+    control's mode (All at once / Sequence / External step) and a card per
+    configured (active) step. Step 1 is always shown. "+ Add step"
+    activates the next free step and is disabled once all 6 are in use;
+    steps 2-6 have a remove (✕) button that deactivates them.
+    - Each card has a type picker grouped as
+      Send MIDI / Pacer actions, and labeled fields per type (a target
+      picker for Preset Select, a direction for Inc/Dec, a channel with
+      Global).
+    - For lit switches: the LED target light (only the ones that switch
+      has) and On/Off color swatch grids (Default, Off, 12 hues in bright
+      and dim).
+    - Wide screens show the editor in the side column; narrow ones
+      (tablet portrait) put it right under the faceplate
+      (`useMediaQuery`, rendered in one place only).
+  - **Edits** are pure functions (`src/pacer/editing`) applied to the live
+    config, so the simulator previews them. There's undo/redo (buttons,
+    ⌘Z / ⇧⌘Z) and an "unsaved" badge.
+  - **Save** opens a dialog: "Save as new snapshot" (the default, "Edited
+    from …") or "Save over" the open snapshot (not the factory defaults).
+    Opening, importing, pulling, or deleting the open snapshot asks before
+    discarding unsaved edits.
+  - Not built yet: Send to Pacer, preset load-time MIDI settings,
+    expression pedal ranges beyond step data, and copy/paste of
+    steps/switches.
 - **Sessions:** loading a configuration (opening a snapshot, importing,
   pulling) starts a fresh simulator session.
   - `freshSession` in the store rebuilds all per-session state, and the

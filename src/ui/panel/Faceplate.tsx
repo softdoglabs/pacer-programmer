@@ -2,6 +2,7 @@ import { usePress } from "react-aria";
 import { useMemo, type CSSProperties } from "react";
 import { panelRow, type SwitchSpec } from "@/pacer/hardware";
 import { computePanelState, switchHint, type DisplayState, type SwitchPanelState } from "@/pacer/panel";
+import { cn } from "@/lib/utils";
 import { usePacerStore } from "@/store/pacerStore";
 import { useControlPress } from "../useControlPress";
 import { HOUSING_H, HOUSING_W, SwitchView } from "./SwitchView";
@@ -73,7 +74,9 @@ function StompPanelSwitch({ spec, controlId, state, hint }: PanelSwitchProps & {
 function PresetPanelSwitch({ spec, state, hint }: PanelSwitchProps) {
   const onPressStart = usePacerStore((s) => s.presetButtonDown);
   const onPressEnd = usePacerStore((s) => s.presetButtonUp);
-  const { pressProps } = usePress({ onPressStart, onPressEnd });
+  // [Preset] isn't programmable, so in Edit mode it does nothing.
+  const editing = usePacerStore((s) => s.uiMode === "edit");
+  const { pressProps } = usePress({ onPressStart, onPressEnd, isDisabled: editing });
   const { x, y } = placementOf(spec);
   return (
     <SwitchView
@@ -181,6 +184,7 @@ function Hint({ spec, hint }: { spec: SwitchSpec; hint: string | undefined }) {
 const PANEL_SWITCHES: readonly SwitchSpec[] = [...panelRow("back"), ...panelRow("front")];
 
 export function Faceplate() {
+  const editing = usePacerStore((s) => s.uiMode === "edit");
   const board = usePacerStore((s) => s.board);
   const deviceMode = usePacerStore((s) => s.deviceMode);
   const panel = useMemo(() => computePanelState(board, deviceMode), [board, deviceMode]);
@@ -197,10 +201,13 @@ export function Faceplate() {
 
   return (
     <div
-      className="relative w-full select-none touch-none"
+      className={cn(
+        "relative w-full select-none touch-none rounded-[2%]",
+        editing && "outline-2 outline-offset-4 outline-dashed outline-primary",
+      )}
       style={{ aspectRatio: `${WIDTH} / ${HEIGHT}` }}
       role="group"
-      aria-label="Pacer faceplate"
+      aria-label={editing ? "Pacer faceplate (editing: tap a switch to program it)" : "Pacer faceplate"}
     >
       <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="absolute inset-0 size-full">
         <defs>

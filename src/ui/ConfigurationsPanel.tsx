@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
+import { ModalDialog } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import type { LibraryEntry } from "../library/configLibrary";
 import { formatFirmwareVersion, isNektar, type DeviceIdentity } from "../pacer/protocol/identity";
 import type { DeviceInfoView } from "../store/configurationsSlice";
+import { hasUnsavedEdits } from "../store/editingSlice";
 import { usePacerStore } from "../store/pacerStore";
 import { PortSelect } from "./PortSelect";
 
@@ -96,7 +98,10 @@ function OpenArea({
   );
 }
 
-function EntryRow({ entry }: { entry: LibraryEntry }) {
+/** Runs an action that replaces the working config, asking first if there are unsaved edits. */
+type Guard = (action: () => void) => void;
+
+function EntryRow({ entry, guard }: { entry: LibraryEntry; guard: Guard }) {
   const active = usePacerStore((s) => s.activeConfigId === entry.id);
   const openSavedConfig = usePacerStore((s) => s.openSavedConfig);
   const renameSavedConfig = usePacerStore((s) => s.renameSavedConfig);
@@ -144,7 +149,7 @@ function EntryRow({ entry }: { entry: LibraryEntry }) {
           name={entry.name}
           detail={describeSource(entry)}
           active={active}
-          onOpen={() => openSavedConfig(entry.id)}
+          onOpen={() => guard(() => openSavedConfig(entry.id))}
         />
       )}
       <div className="flex gap-1">
@@ -168,7 +173,13 @@ function EntryRow({ entry }: { entry: LibraryEntry }) {
         <Button
           size="sm"
           variant={confirmingDelete ? "destructive" : "ghost"}
-          onPress={() => (confirmingDelete ? deleteSavedConfig(entry.id) : setConfirmingDelete(true))}
+          onPress={() =>
+            confirmingDelete
+              ? active
+                ? guard(() => deleteSavedConfig(entry.id)) // deleting the open one reopens the factory defaults
+                : deleteSavedConfig(entry.id)
+              : setConfirmingDelete(true)
+          }
         >
           {confirmingDelete ? "Confirm delete" : "Delete"}
         </Button>
@@ -255,17 +266,27 @@ export function ConfigurationsPanel() {
   const pullFromPacer = usePacerStore((s) => s.pullFromPacer);
   const openFactoryDefaults = usePacerStore((s) => s.openFactoryDefaults);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const unsaved = usePacerStore(hasUnsavedEdits);
+  const configSource = usePacerStore((s) => s.configSource);
+  const [pending, setPending] = useState<() => void>();
+  const guard: Guard = (action) => (unsaved ? setPending(() => action) : action());
 
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
-    if (file) importSyxFile(file.name, new Uint8Array(await file.arrayBuffer()));
+    if (!file) return;
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    guard(() => importSyxFile(file.name, bytes));
   }
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" isDisabled={!canPull || pull.status === "pulling"} onPress={() => void pullFromPacer()}>
+        <Button
+          size="sm"
+          isDisabled={!canPull || pull.status === "pulling"}
+          onPress={() => guard(() => void pullFromPacer())}
+        >
           {pull.status === "pulling" ? "Pulling…" : "Pull from Pacer"}
         </Button>
         <Button size="sm" variant="outline" onPress={() => fileInputRef.current?.click()}>
@@ -287,13 +308,36 @@ export function ConfigurationsPanel() {
             name="Factory defaults"
             detail="Built in · read-only"
             active={activeConfigId === undefined}
-            onOpen={openFactoryDefaults}
+            onOpen={() => guard(openFactoryDefaults)}
           />
         </li>
         {library.entries.map((entry) => (
-          <EntryRow key={entry.id} entry={entry} />
+          <EntryRow key={entry.id} entry={entry} guard={guard} />
         ))}
       </ul>
+      <ModalDialog
+        isOpen={pending !== undefined}
+        onOpenChange={(open) => !open && setPending(undefined)}
+        title={`Discard unsaved changes to “${configSource}”?`}
+      >
+        <p className="text-sm text-muted-foreground">
+          Your edits haven't been saved. Save them from the header first if you want to keep them.
+        </p>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onPress={() => setPending(undefined)}>
+            Keep editing
+          </Button>
+          <Button
+            variant="destructive"
+            onPress={() => {
+              pending?.();
+              setPending(undefined);
+            }}
+          >
+            Discard and continue
+          </Button>
+        </div>
+      </ModalDialog>
     </div>
   );
 }

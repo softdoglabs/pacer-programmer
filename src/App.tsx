@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { usePacerStore } from "./store/pacerStore";
 import { ConfigurationsPanel } from "./ui/ConfigurationsPanel";
 import { Faceplate } from "./ui/panel/Faceplate";
+import { EditToolbar } from "./ui/editor/EditToolbar";
+import { EditorPanel } from "./ui/editor/EditorPanel";
 import { Inspector } from "./ui/Inspector";
+import { useMediaQuery } from "./ui/useMediaQuery";
 import { MessageLog } from "./ui/MessageLog";
 import { MidiOutputControl } from "./ui/MidiOutputControl";
 import { PresetList } from "./ui/PresetList";
@@ -22,6 +25,11 @@ function Section({ title, children, className }: { title: string; children: Reac
 export function App() {
   const configSource = usePacerStore((s) => s.configSource);
   const sessionId = usePacerStore((s) => s.sessionId);
+  const uiMode = usePacerStore((s) => s.uiMode);
+  // Wide screens keep the editor in the side column; narrow ones (tablet portrait, phones) put it
+  // right under the faceplate so it's next to the switch you tapped. Rendered in one place only.
+  const wide = useMediaQuery("(min-width: 1024px)");
+  const editorBelowFaceplate = uiMode === "edit" && !wide;
   const resetMidiState = usePacerStore((s) => s.resetMidiState);
 
   return (
@@ -33,6 +41,7 @@ export function App() {
             {configSource}
           </Badge>
           <div className="ml-auto flex flex-wrap items-center gap-2">
+            <EditToolbar />
             <MidiOutputControl />
           </div>
         </header>
@@ -42,6 +51,11 @@ export function App() {
             {/* Simulator views are keyed on the session, so a configuration switch remounts them. */}
             <Fragment key={`sim-${sessionId}`}>
               <Faceplate />
+              {editorBelowFaceplate && (
+                <section aria-label="Editor" className="rounded-lg border bg-card p-3">
+                  <EditorPanel />
+                </section>
+              )}
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <Button size="sm" variant="outline" onPress={resetMidiState}>
                   Reset MIDI state
@@ -63,9 +77,11 @@ export function App() {
             </Section>
           </div>
           <aside className="flex min-h-0 flex-col gap-4 max-lg:h-[70vh]" key={`aside-${sessionId}`}>
-            <div className="rounded-lg border bg-card p-3">
-              <Inspector />
-            </div>
+            {!editorBelowFaceplate && (
+              <div className="min-h-0 overflow-y-auto rounded-lg border bg-card p-3 lg:max-h-[65vh]">
+                {uiMode === "edit" ? <EditorPanel /> : <Inspector />}
+              </div>
+            )}
             <MessageLog />
           </aside>
         </main>

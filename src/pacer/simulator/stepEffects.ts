@@ -2,6 +2,7 @@ import {
   ExpressionMessageType,
   PresetSelectTarget,
   SwitchMessageType,
+  presetSelectTargetToIndex,
 } from "../protocol/constants";
 import type { Step } from "../protocol/types";
 import { cc, channelAftertouch, mmc, noteOff, noteOn, pitchBend, programChange } from "./midiMessages";
@@ -154,11 +155,12 @@ export function fireSwitchStep(step: Step, phase: ControlPhase, subState: StepSu
       const [target] = data;
       if (target === 1) return { ...empty(), deviceActions: [{ kind: "specialPreset", preset: "track" }] };
       if (target === 2) return { ...empty(), deviceActions: [{ kind: "specialPreset", preset: "transport" }] };
-      if (target < 3) {
+      const targetIndex = presetSelectTargetToIndex(target);
+      if (targetIndex === undefined) {
         const label = PresetSelectTarget[target] ?? String(target);
         return warn(`PresetSelect target "${label}" isn't simulated yet`);
       }
-      return { ...empty(), deviceActions: [{ kind: "presetJump", targetIndex: target - 3 }] };
+      return { ...empty(), deviceActions: [{ kind: "presetJump", targetIndex }] };
     }
 
     case SwitchMessageType.PresetIncDec: {

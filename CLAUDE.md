@@ -92,9 +92,9 @@ JSON.
   step's `msg_type` byte can be one of several *Pacer-internal control
   actions* rather than a real outgoing MIDI message. The one #3 above
   depends on is `MSG_SW_PRESET_SELECT` (`0x62`, "Preset Select") — its
-  `data[0]` is a target preset index, `(bank * 6) + num` with Bank A=0,
-  B=1, C=2, D=3 (offset by a few reserved low values: Current/Track/
-  Transport). Triggering it switches the Pacer to that preset immediately;
+  `data[0]` is a target: 0 = Current, 1 = Track, 2 = Transport, 3-26 =
+  A1-D6 (so a user preset's target is its SysEx `idx` + 2; see the
+  numbering helpers in `src/pacer/protocol/constants.ts`). Triggering it switches the Pacer to that preset immediately;
   nothing is sent on the MIDI wire for this action itself — it's invisible
   to connected gear. There's also `MSG_SW_PRESET_INC_DEC` (`0x56`) for
   relative next/previous preset navigation. A control's other steps in the
@@ -132,12 +132,19 @@ JSON.
   (channel, msg type, 3 data bytes, active) always arrive together as one
   fixed-shape message; same for a preset's MIDI setting's 5 sub-fields,
   and a step's 4 LED sub-fields.
-- **A 25th preset-shaped slot exists** beyond the 24 user presets (idx
-  0-23 = A1-D6): idx 24, named "SEQNC" in the factory dump. Not reachable
-  from the front panel's A-D bank/1-6 preset selection; purpose unknown
-  (name suggests it's tied to the "Sequence" control mode, see below).
-  Our data model doesn't hardcode a preset count, so this isn't a special
-  case in code — it's just another entry in the preset map.
+- **Preset numbering (SysEx `idx`): 0 = "Current", 1-24 = A1-D6.**
+  - Confirmed from the reference editor's `presetIndexToXY` and the factory
+    dump. Slot 0 duplicates A1's "PRGM1", and A1-A6 = PRGM1-4 / NOTES /
+    RELAY matches the User Guide's factory list.
+  - "Current" is the device's working copy of the active preset, not a
+    front-panel preset.
+  - An earlier version of this code treated idx 0 as A1, which shifted
+    every label by one and made every Preset Select jump land one preset
+    early. It also produced a supposed "mystery 25th slot" (really D6,
+    "SEQNC").
+  - The dump's factory set is newer than the manual's list. D1 is
+    "G-MST", and the rest of bank D moved down one: COLOR D2, KBDTL D3,
+    GM CC D4, MMC D5, SEQNC D6.
 - **Not every control supports every field.** Stompswitches (1-6, A-D) get
   a control-mode field, 6 steps, and 6 LED entries. Footswitches (1-4) and
   expression pedals get a control-mode field and 6 steps, but never LED

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createActor } from "xstate";
-import { ControlId } from "../../protocol/constants";
+import { ControlId, userPresetIndex } from "../../protocol/constants";
 import { PRESET_HOLD_MS, deviceModeMachine } from "../deviceModeMachine";
 
 beforeEach(() => vi.useFakeTimers());
@@ -69,7 +69,7 @@ describe("deviceModeMachine: preset select", () => {
     const { holdPreset, sw, calls, mode } = start();
     holdPreset(2);
     sw(ControlId.Stompswitch4);
-    expect(calls).toEqual(["load 15"]); // C4
+    expect(calls).toEqual([`load ${userPresetIndex(2, 4)}`]); // C4
     expect(mode()).toBe("user");
   });
 
@@ -80,7 +80,7 @@ describe("deviceModeMachine: preset select", () => {
     sw(ControlId.StompswitchB);
     expect(mode()).toBe("presetSelect");
     sw(ControlId.Stompswitch6);
-    expect(calls).toEqual(["load 11"]); // B6
+    expect(calls).toEqual([`load ${userPresetIndex(1, 6)}`]); // B6
   });
 
   it("a tap cancels without loading or reloading anything", () => {
@@ -113,7 +113,7 @@ describe("deviceModeMachine: built-in Track/Transport presets", () => {
     holdPreset(3);
     expect(mode()).toBe("presetSelect");
     sw(ControlId.Stompswitch2);
-    expect(calls).toEqual(["load 19"]); // D2
+    expect(calls).toEqual([`load ${userPresetIndex(3, 2)}`]); // D2
   });
 
   it("Transport maps 1-6 to transport commands", () => {

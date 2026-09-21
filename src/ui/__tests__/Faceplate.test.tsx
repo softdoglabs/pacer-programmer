@@ -2,6 +2,7 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PRESET_HOLD_MS } from "../../pacer/device";
+import { userPresetIndex } from "../../pacer/protocol/constants";
 import { loadFactoryDefaults } from "../../pacer/factoryDefaults";
 import { usePacerStore } from "../../store/pacerStore";
 import { App } from "../../App";
@@ -119,7 +120,7 @@ describe("Faceplate (factory defaults)", () => {
   });
 
   it("preset select: 1-6 flash dim except the loaded preset's number (solid bright); [Preset] flashes", () => {
-    act(() => usePacerStore.getState().jumpToPreset(2)); // A3
+    act(() => usePacerStore.getState().jumpToPreset(userPresetIndex(0, 3))); // A3
     vi.useFakeTimers();
     render(<App />);
     const preset = screen.getByRole("button", { name: /^Preset button/ });
@@ -147,7 +148,7 @@ describe("Faceplate (factory defaults)", () => {
   });
 
   it("A enters the Track preset; a [Preset] tap returns to the remembered preset", () => {
-    act(() => usePacerStore.getState().jumpToPreset(7)); // B2
+    act(() => usePacerStore.getState().jumpToPreset(userPresetIndex(1, 2))); // B2
     render(<App />);
     tap(switchButton("A"));
     expect(display()).toBe("↩B2");

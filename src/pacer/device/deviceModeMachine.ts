@@ -1,5 +1,5 @@
 import { assign, raise, setup } from "xstate";
-import { ControlId } from "../protocol/constants";
+import { ControlId, userPresetIndex } from "../protocol/constants";
 import type { SpecialPresetName } from "../simulator/types";
 import { SPECIAL_PRESETS } from "./specialPresets";
 
@@ -145,7 +145,9 @@ export const deviceModeMachine = setup({
                 target: "user",
                 actions: {
                   type: "loadPreset",
-                  params: ({ context, event }) => ({ index: context.pendingBank * 6 + NUMBER_SWITCHES.indexOf(event.controlId) }),
+                  params: ({ context, event }) => ({
+                    index: userPresetIndex(context.pendingBank, NUMBER_SWITCHES.indexOf(event.controlId) + 1),
+                  }),
                 },
               },
             ],

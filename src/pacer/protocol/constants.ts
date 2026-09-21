@@ -144,12 +144,63 @@ export const PresetMidiMessageType = {
 } as const;
 export type PresetMidiMessageType = (typeof PresetMidiMessageType)[keyof typeof PresetMidiMessageType];
 
-/**
- * Target preset encoding used inside a `PresetSelect` step's data byte:
- * `(bank * 6) + num`, offset by three reserved low values. This is *not* the
- * same numbering as the `idx` field used to address a preset in a SysEx
- * message — see the module doc comment above.
+/*
+ * Preset numbering. Confirmed against the reference editor's source (`presetIndexToXY`,
+ * `PRESET_TARGET`) and the factory dump, whose slot 0 duplicates A1's "PRGM1" and whose
+ * A1-A6 names match the User Guide's factory list only when A1 = 1.
+ *
+ * - A preset's SysEx `idx`: 0 = "Current" (the device's working copy of the active preset),
+ *   1-24 = A1-D6.
+ * - A PresetSelect step's target byte: 0 = current, 1 = track, 2 = transport, 3-26 = A1-D6.
+ *   So for user presets, target = idx + 2.
  */
+
+/** SysEx preset `idx` of the device's working copy of the active preset (not a front-panel preset). */
+export const CURRENT_PRESET_INDEX = 0;
+export const BANK_COUNT = 4;
+export const PRESETS_PER_BANK = 6;
+/** The 24 user presets, A1-D6. */
+export const PRESET_COUNT = BANK_COUNT * PRESETS_PER_BANK;
+export const FIRST_USER_PRESET_INDEX = 1;
+export const LAST_USER_PRESET_INDEX = FIRST_USER_PRESET_INDEX + PRESET_COUNT - 1;
+
+export function isUserPresetIndex(idx: number): boolean {
+  return Number.isInteger(idx) && idx >= FIRST_USER_PRESET_INDEX && idx <= LAST_USER_PRESET_INDEX;
+}
+
+/** SysEx `idx` of a user preset, from its 0-based bank (A=0 .. D=3) and 1-based number (1-6). */
+export function userPresetIndex(bank: number, num: number): number {
+  if (!Number.isInteger(bank) || bank < 0 || bank >= BANK_COUNT) throw new RangeError(`bank ${bank} out of range`);
+  if (!Number.isInteger(num) || num < 1 || num > PRESETS_PER_BANK) throw new RangeError(`preset number ${num} out of range`);
+  return FIRST_USER_PRESET_INDEX + bank * PRESETS_PER_BANK + (num - 1);
+}
+
+/** 0-based bank (A=0 .. D=3) of a user preset's SysEx `idx`, or undefined for non-user slots like Current. */
+export function presetBank(idx: number): number | undefined {
+  return isUserPresetIndex(idx) ? Math.floor((idx - FIRST_USER_PRESET_INDEX) / PRESETS_PER_BANK) : undefined;
+}
+
+/** 1-based number within its bank (1-6) of a user preset's SysEx `idx`, or undefined for non-user slots. */
+export function presetNumber(idx: number): number | undefined {
+  return isUserPresetIndex(idx) ? ((idx - FIRST_USER_PRESET_INDEX) % PRESETS_PER_BANK) + 1 : undefined;
+}
+
+/** Bank letter + number ("A1" .. "D6") for a SysEx preset `idx`; "CUR" for the Current slot. */
+export function presetIndexToLabel(idx: number): string {
+  if (idx === CURRENT_PRESET_INDEX) return "CUR";
+  const bank = presetBank(idx);
+  const num = presetNumber(idx);
+  if (bank === undefined || num === undefined) return `#${idx}`;
+  return `${"ABCD"[bank]}${num}`;
+}
+
+/** Wraps a user preset `idx` into A1-D6 (so D6 + 1 = A1 and A1 - 1 = D6). */
+export function wrapUserPresetIndex(idx: number): number {
+  const offset = idx - FIRST_USER_PRESET_INDEX;
+  return FIRST_USER_PRESET_INDEX + (((offset % PRESET_COUNT) + PRESET_COUNT) % PRESET_COUNT);
+}
+
+/** Labels for a PresetSelect step's target byte (see above). */
 export const PresetSelectTarget = [
   "current",
   "track",
@@ -180,17 +231,19 @@ export const PresetSelectTarget = [
   "D6",
 ] as const;
 
-/**
- * Bank letter + number for a preset's own `idx` (0-based: A1=0 .. D6=23). Slots beyond the
- * 24 user presets (e.g. idx 24, "SEQNC" in the factory dump) have no front-panel label and
- * are shown by index instead.
- */
-export function presetIndexToLabel(idx: number): string {
-  if (idx < 0 || idx >= PRESET_COUNT) return `#${idx}`;
-  const bank = "ABCD"[Math.floor(idx / 6)];
-  const num = (idx % 6) + 1;
-  return `${bank}${num}`;
+/** The PresetSelect target byte for A1; user preset targets run A1-D6 from here. */
+export const PRESET_SELECT_FIRST_USER_TARGET = 3;
+
+/** SysEx preset `idx` a PresetSelect target byte jumps to, or undefined for the reserved targets (current/track/transport). */
+export function presetSelectTargetToIndex(target: number): number | undefined {
+  const idx = target - PRESET_SELECT_FIRST_USER_TARGET + FIRST_USER_PRESET_INDEX;
+  return isUserPresetIndex(idx) ? idx : undefined;
 }
 
-export const PRESET_COUNT = 24;
+/** The PresetSelect target byte that jumps to a user preset's SysEx `idx`. */
+export function presetIndexToPresetSelectTarget(idx: number): number {
+  if (!isUserPresetIndex(idx)) throw new RangeError(`idx ${idx} is not a user preset`);
+  return idx - FIRST_USER_PRESET_INDEX + PRESET_SELECT_FIRST_USER_TARGET;
+}
+
 export const STEPS_PER_CONTROL = 6;

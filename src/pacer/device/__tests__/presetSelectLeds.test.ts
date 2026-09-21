@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { ControlId } from "../../protocol/constants";
+import { ControlId, userPresetIndex } from "../../protocol/constants";
 import { presetButtonLed, presetSelectLed } from "../presetSelectLeds";
 
 const NUMBERS = [1, 2, 3, 4, 5, 6].map((n) => ControlId.Stompswitch1 + n - 1);
-const B3 = 8;
+const B3 = userPresetIndex(1, 3);
 
 describe("presetSelectLed", () => {
   it("on the loaded preset's bank: that number is solid bright, the other five flash dim", () => {

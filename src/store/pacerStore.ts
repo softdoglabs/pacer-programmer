@@ -1,7 +1,7 @@
 import { createActor, type SnapshotFrom } from "xstate";
 import { create } from "zustand";
 import { STOMPSWITCH_IDS, deviceModeMachine, type DeviceMode } from "../pacer/device";
-import { presetIndexToLabel } from "../pacer/protocol/constants";
+import { FIRST_USER_PRESET_INDEX, presetBank, presetIndexToLabel } from "../pacer/protocol/constants";
 import { loadFactoryDefaults } from "../pacer/factoryDefaults";
 import type { PacerConfig } from "../pacer/protocol/types";
 import {
@@ -153,7 +153,7 @@ export const usePacerStore = create<PacerStore>((set, get) => {
   }
 
   return {
-    board: createBoardState(loadFactoryDefaults(), 0),
+    board: createBoardState(loadFactoryDefaults(), FIRST_USER_PRESET_INDEX),
     configSource: "Factory defaults",
     log: [],
     deviceMode: toDeviceModeView(deviceActor.getSnapshot()),
@@ -182,8 +182,8 @@ export const usePacerStore = create<PacerStore>((set, get) => {
     },
 
     presetButtonDown: () => {
-      // Clamped: slots past D6 (e.g. idx 24) aren't in any front-panel bank.
-      const currentBank = Math.min(Math.floor(get().board.activePresetIndex / 6), 3);
+      // The Current slot isn't in any front-panel bank; start from bank A then.
+      const currentBank = presetBank(get().board.activePresetIndex) ?? 0;
       deviceActor.send({ type: "PRESET_DOWN", currentBank });
     },
 
@@ -205,7 +205,7 @@ export const usePacerStore = create<PacerStore>((set, get) => {
 
     selectControl: (controlId) => set({ selectedControlId: controlId }),
 
-    loadConfig: (config, source, initialPresetIndex = 0) => {
+    loadConfig: (config, source, initialPresetIndex = FIRST_USER_PRESET_INDEX) => {
       resetDeviceActor();
       set({ board: createBoardState(config, initialPresetIndex), configSource: source, log: [], swallowedReleases: [] });
     },

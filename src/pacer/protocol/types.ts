@@ -39,7 +39,7 @@ export interface PresetMidiSetting {
 }
 
 export interface Preset {
-  /** 0-based, A1=0 .. D6=23 — see `presetIndexToLabel`. */
+  /** SysEx preset `idx`: 0 = Current (working copy), 1-24 = A1-D6. See `presetIndexToLabel`. */
   index: number;
   name?: string;
   /** Keyed by ControlId. */
@@ -67,7 +67,7 @@ export interface OpaqueGlobalField {
  * simulator) reads comes from this structure; nothing else is persisted.
  */
 export interface PacerConfig {
-  /** Keyed by preset index (0-23). Sparse: a partial dump may only touch some presets. */
+  /** Keyed by SysEx preset `idx` (0 = Current, 1-24 = A1-D6). Sparse: a partial dump may only touch some presets. */
   presets: Partial<Record<number, Preset>>;
   globalFields: OpaqueGlobalField[];
 }

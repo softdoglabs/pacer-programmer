@@ -1,12 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PRESET_HOLD_MS } from "../../pacer/device";
 import { loadFactoryDefaults } from "../../pacer/factoryDefaults";
-import { ControlId, SwitchMessageType } from "../../pacer/protocol/constants";
+import { ControlId, SwitchMessageType, userPresetIndex } from "../../pacer/protocol/constants";
 import { createEmptyPacerConfig, getOrCreateControl, getOrCreatePreset } from "../../pacer/protocol/types";
 import { usePacerStore } from "../pacerStore";
 
 const store = () => usePacerStore.getState();
-const COLOR_PRESET = 20; // D3 "COLOR": switches 1-6 are CC toggles
+const A1 = userPresetIndex(0, 1);
+const A3 = userPresetIndex(0, 3);
+const A4 = userPresetIndex(0, 4);
+const A5 = userPresetIndex(0, 5);
+const B1 = userPresetIndex(1, 1);
+const B3 = userPresetIndex(1, 3);
+const B5 = userPresetIndex(1, 5);
+const COLOR_PRESET = userPresetIndex(3, 2); // D2 "COLOR": switches 1-6 are CC toggles
 
 function tap(controlId: number) {
   store().press(controlId);
@@ -30,7 +37,7 @@ function allLines() {
 
 beforeEach(() => {
   vi.useFakeTimers();
-  store().loadConfig(loadFactoryDefaults(), "Factory defaults", 3); // A4
+  store().loadConfig(loadFactoryDefaults(), "Factory defaults", A4);
 });
 afterEach(() => vi.useRealTimers());
 
@@ -38,8 +45,8 @@ describe("pacerStore: user presets", () => {
   it("starts on the factory defaults", () => {
     usePacerStore.setState(usePacerStore.getInitialState());
     expect(store().configSource).toBe("Factory defaults");
-    expect(store().board.activePresetIndex).toBe(0);
-    expect(store().board.config.presets[0]?.name).toBe("PRGM1");
+    expect(store().board.activePresetIndex).toBe(A1);
+    expect(store().board.config.presets[A1]?.name).toBe("PRGM1");
   });
 
   it("routes presses and releases to the engine", () => {
@@ -53,17 +60,17 @@ describe("pacerStore: user presets", () => {
 
   it("C/D step through presets, swallowing the preset-changing press's release", () => {
     tap(ControlId.StompswitchD);
-    expect(store().board.activePresetIndex).toBe(4);
+    expect(store().board.activePresetIndex).toBe(A5);
     tap(ControlId.StompswitchC);
     tap(ControlId.StompswitchC);
-    expect(store().board.activePresetIndex).toBe(2);
+    expect(store().board.activePresetIndex).toBe(A3);
     expect(allLines().some((l) => l.includes("warning"))).toBe(false);
     expect(store().swallowedReleases).toEqual([]);
   });
 
   it("doesn't log a second warning when releasing an unconfigured control", () => {
     const config = createEmptyPacerConfig();
-    getOrCreateControl(getOrCreatePreset(config, 0), ControlId.Stompswitch1).steps[1] = {
+    getOrCreateControl(getOrCreatePreset(config, A1), ControlId.Stompswitch1).steps[1] = {
       channel: 0,
       msgType: SwitchMessageType.CcTrigger,
       data: [1, 127, 0],
@@ -77,8 +84,8 @@ describe("pacerStore: user presets", () => {
   it("jumpToPreset resets runtime state and logs an app entry", () => {
     store().jumpToPreset(COLOR_PRESET);
     tap(ControlId.Stompswitch2);
-    store().jumpToPreset(6);
-    expect(store().board.activePresetIndex).toBe(6);
+    store().jumpToPreset(B1);
+    expect(store().board.activePresetIndex).toBe(B1);
     expect(store().board.controls).toEqual({});
     expect(store().log.at(-1)?.kind).toBe("app");
   });
@@ -91,10 +98,10 @@ describe("pacerStore: preset select", () => {
     expect(store().deviceMode).toEqual({ mode: "presetSelect", pendingBank: 0, presetButtonDown: false });
     tap(ControlId.StompswitchB);
     expect(store().deviceMode.pendingBank).toBe(1);
-    expect(store().board.activePresetIndex).toBe(3);
+    expect(store().board.activePresetIndex).toBe(A4);
     tap(ControlId.Stompswitch1);
     expect(store().deviceMode.mode).toBe("user");
-    expect(store().board.activePresetIndex).toBe(6);
+    expect(store().board.activePresetIndex).toBe(B1);
     expect(store().log.map((e) => e.kind)).toEqual(["firmware"]);
     expect(store().swallowedReleases).toEqual([]);
   });
@@ -107,10 +114,10 @@ describe("pacerStore: preset select", () => {
   });
 
   it("a bare 1-6 loads that number in the current bank", () => {
-    store().jumpToPreset(8); // B3
+    store().jumpToPreset(B3);
     holdPreset();
     tap(ControlId.Stompswitch5);
-    expect(store().board.activePresetIndex).toBe(10); // B5
+    expect(store().board.activePresetIndex).toBe(B5);
   });
 
   it("a tap cancels selection and switches work normally again", () => {
@@ -128,12 +135,12 @@ describe("pacerStore: built-in Track/Transport presets", () => {
     tap(ControlId.Stompswitch1); // leave some state behind on A4
     tap(ControlId.StompswitchA);
     expect(store().deviceMode.mode).toBe("track");
-    expect(store().board.activePresetIndex).toBe(3);
+    expect(store().board.activePresetIndex).toBe(A4);
 
     const logLength = store().log.length;
     tap(ControlId.StompswitchD);
     tap(ControlId.StompswitchC);
-    expect(store().board.activePresetIndex).toBe(3); // C/D no longer change presets
+    expect(store().board.activePresetIndex).toBe(A4); // C/D no longer change presets
     expect(store().log.slice(logLength).flatMap((e) => e.lines)).toEqual([
       expect.stringContaining("Next track"),
       expect.stringContaining("Previous track"),
@@ -141,7 +148,7 @@ describe("pacerStore: built-in Track/Transport presets", () => {
 
     tapPreset();
     expect(store().deviceMode.mode).toBe("user");
-    expect(store().board.activePresetIndex).toBe(3);
+    expect(store().board.activePresetIndex).toBe(A4);
     expect(store().swallowedReleases).toEqual([]);
   });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ControlId, ControlMode, SwitchMessageType } from "../../protocol/constants";
+import { ControlId, ControlMode, FIRST_USER_PRESET_INDEX, SwitchMessageType } from "../../protocol/constants";
 import { createEmptyPacerConfig, getOrCreateControl, getOrCreatePreset, type PacerConfig } from "../../protocol/types";
 import { applyBoardEvent, createBoardState } from "../engine";
 import { LED_COLOR_DEFAULT, getControlLedState, ledColor } from "../leds";
@@ -9,7 +9,7 @@ const S1 = ControlId.Stompswitch1;
 
 function configWith(mode: ControlMode, msgType: number): PacerConfig {
   const config = createEmptyPacerConfig();
-  const control = getOrCreateControl(getOrCreatePreset(config, 0), S1);
+  const control = getOrCreateControl(getOrCreatePreset(config, FIRST_USER_PRESET_INDEX), S1);
   control.controlMode = mode;
   for (let n = 1; n <= 3; n++) {
     control.steps[n] = { channel: 0, msgType, data: [20 + n, 0, 127], active: true };

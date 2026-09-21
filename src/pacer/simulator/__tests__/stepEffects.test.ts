@@ -145,12 +145,15 @@ describe("fireSwitchStep", () => {
     ]);
   });
 
-  it("PresetSelect jumps to targetIndex = target - 3 for target >= 3", () => {
+  it("PresetSelect targets 3..26 jump to A1..D6 (SysEx idx 1..24)", () => {
     const s = step(SwitchMessageType.PresetSelect, [3, 0, 0]); // A1
-    expect(fireSwitchStep(s, "press", noSubState).deviceActions).toEqual([{ kind: "presetJump", targetIndex: 0 }]);
+    expect(fireSwitchStep(s, "press", noSubState).deviceActions).toEqual([{ kind: "presetJump", targetIndex: 1 }]);
 
     const last = step(SwitchMessageType.PresetSelect, [26, 0, 0]); // D6
-    expect(fireSwitchStep(last, "press", noSubState).deviceActions).toEqual([{ kind: "presetJump", targetIndex: 23 }]);
+    expect(fireSwitchStep(last, "press", noSubState).deviceActions).toEqual([{ kind: "presetJump", targetIndex: 24 }]);
+
+    const outOfRange = step(SwitchMessageType.PresetSelect, [27, 0, 0]);
+    expect(fireSwitchStep(outOfRange, "press", noSubState).warnings.length).toBe(1);
   });
 
   it("PresetIncDec: 0 -> next, nonzero -> prev", () => {

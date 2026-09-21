@@ -1,4 +1,4 @@
-import { ControlId } from "../protocol/constants";
+import { ControlId, userPresetIndex } from "../protocol/constants";
 
 export type LedBrightness = "off" | "dim" | "bright";
 
@@ -41,7 +41,7 @@ export function presetSelectLed(controlId: number, pendingBank: number, activePr
 
   const num = NUMBER_SWITCHES.indexOf(controlId);
   if (num >= 0) {
-    const isLoadedPreset = pendingBank * 6 + num === activePresetIndex;
+    const isLoadedPreset = userPresetIndex(pendingBank, num + 1) === activePresetIndex;
     return isLoadedPreset ? { brightness: "bright", flashing: false } : { brightness: "dim", flashing: true };
   }
   return undefined;

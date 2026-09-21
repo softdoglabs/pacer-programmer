@@ -23,11 +23,10 @@ describe("factory-presets.syx", () => {
       .map(Number)
       .sort((a, b) => a - b);
 
-    // 24 user presets (A1-D6) plus one extra non-user-facing slot (idx 24, "SEQNC")
-    // the protocol itself addresses — see CLAUDE.md hardware background notes.
+    // idx 0 = "Current" (the working copy of the active preset), 1-24 = A1-D6.
     expect(presetIndices).toEqual(Array.from({ length: 25 }, (_, i) => i));
-    expect(config.presets[0]?.name).toBe("PRGM1");
-    expect(config.presets[24]?.name).toBe("SEQNC");
+    expect(config.presets[1]?.name).toBe("PRGM1"); // A1
+    expect(config.presets[24]?.name).toBe("SEQNC"); // D6
   });
 
   it("decodes a stompswitch's full step/mode/LED configuration", () => {

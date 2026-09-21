@@ -1,4 +1,10 @@
-import { ControlMode, EXPRESSION_PEDAL_CONTROL_IDS, PRESET_COUNT, SWITCH_CONTROL_IDS } from "../protocol/constants";
+import {
+  ControlMode,
+  EXPRESSION_PEDAL_CONTROL_IDS,
+  FIRST_USER_PRESET_INDEX,
+  SWITCH_CONTROL_IDS,
+  wrapUserPresetIndex,
+} from "../protocol/constants";
 import type { PacerConfig } from "../protocol/types";
 import { resolveControl, type ControlKind } from "./controlEffects";
 import {
@@ -10,7 +16,7 @@ import {
   type SpecialPresetName,
 } from "./types";
 
-export function createBoardState(config: PacerConfig, initialPresetIndex = 0): BoardState {
+export function createBoardState(config: PacerConfig, initialPresetIndex = FIRST_USER_PRESET_INDEX): BoardState {
   return { config, activePresetIndex: initialPresetIndex, controls: {} };
 }
 
@@ -18,10 +24,6 @@ export function controlKindOf(controlId: number): ControlKind | undefined {
   if (SWITCH_CONTROL_IDS.includes(controlId)) return "switch";
   if (EXPRESSION_PEDAL_CONTROL_IDS.includes(controlId)) return "expressionPedal";
   return undefined;
-}
-
-function wrapPresetIndex(index: number): number {
-  return ((index % PRESET_COUNT) + PRESET_COUNT) % PRESET_COUNT;
 }
 
 /** Resolves at most one preset-navigation action into a concrete target index. Extra ones warn and are ignored. */
@@ -45,7 +47,7 @@ function resolvePresetNavigation(
     return { nextPresetIndex: action.targetIndex, warning };
   }
   const delta = action.direction === "next" ? 1 : -1;
-  return { nextPresetIndex: wrapPresetIndex(activePresetIndex + delta), warning };
+  return { nextPresetIndex: wrapUserPresetIndex(activePresetIndex + delta), warning };
 }
 
 export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: BoardState; effect: BoardEffect } {

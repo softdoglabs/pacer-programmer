@@ -178,7 +178,9 @@ describe("pacerStore: built-in Track/Transport presets", () => {
 
 describe("pacerStore: MIDI output", () => {
   // Reset the MIDI slice between tests (the connection itself lives in the store's closure).
-  beforeEach(() => usePacerStore.setState({ midi: { status: "disconnected", outputs: [], sysexEnabled: false } }));
+  beforeEach(() =>
+    usePacerStore.setState({ midi: { status: "disconnected", outputs: [], inputs: [], sysexEnabled: false } }),
+  );
 
   async function connect(ports: FakeOutput[], sysex = true) {
     const access = new FakeMidiAccess(ports, sysex);
@@ -227,7 +229,7 @@ describe("pacerStore: MIDI output", () => {
     await store().connectMidi(undefined);
     // In Node there's no navigator.requestMIDIAccess, so the default requester is unavailable.
     expect(store().midi.status).toBe("unsupported");
-    usePacerStore.setState({ midi: { status: "disconnected", outputs: [], sysexEnabled: false } });
+    usePacerStore.setState({ midi: { status: "disconnected", outputs: [], inputs: [], sysexEnabled: false } });
     await store().connectMidi(async () => {
       throw new Error("nope");
     });

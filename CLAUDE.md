@@ -347,7 +347,28 @@ components in `src/components/ui/`).
     (`protocol/globalSettings.ts`), 1-16 = MIDI channels 1-16.
   - Not sent yet: DAW-preset commands (their bytes aren't modeled) and
     preset load-time MIDI (not simulated).
-  - Receiving from the Pacer (dumps, live input) is the next step.
+- **Pulling from the Pacer** (`src/midi/pacerDump.ts`):
+  - It sends the full-dump request (`Get` / Full Backup,
+    `protocol/requests.ts`) and collects the Pacer's `Set` replies. The
+    reply is 4762 messages on current firmware, the same format as the
+    factory fixture.
+  - There's no end marker, so completion is detected by the stream going
+    quiet. It fails clearly if the Pacer never answers.
+  - The Pacer's ports are auto-detected by name (/pacer/i) and can be
+    overridden.
+- **Saved configurations** (`src/library/configLibrary.ts`,
+  `store/configurationsSlice.ts`, `ui/ConfigurationsPanel.tsx`):
+  - Every pull and every `.syx` import becomes an immutable snapshot in
+    localStorage. It holds the raw SysEx bytes as received, plus name,
+    source, date and preset count.
+  - Snapshots can be opened, renamed, exported as `.syx`, or deleted. The
+    built-in factory defaults are always listed.
+  - The last-opened configuration is reopened on reload.
+  - Raw bytes rather than the JSON mirror: they're canonical and lossless,
+    and about 3x smaller, which matters because localStorage allows about
+    5 MB (~25 dumps).
+  - Editing snapshots comes with the programming interface. Writing back
+    to the device isn't built yet.
 - Not simulated yet: a preset's own load-time MIDI settings (shown in the
   inspector only), LED `midiController` input, and continuous expression
   pedal sweeps (press/release = max/min).

@@ -15,13 +15,15 @@ import {
   type ControlPhase,
   type OutgoingMidiMessage,
 } from "../pacer/simulator";
+import { MemoryStorage, browserStorage } from "../library/configLibrary";
 import {
   browserMidiRequester,
   connectMidi,
   type MidiAccessRequester,
   type MidiConnection,
-  type MidiOutputInfo,
+  type MidiPortInfo,
 } from "../midi/webMidi";
+import { createConfigurationsSlice, type ConfigurationsSlice } from "./configurationsSlice";
 
 export interface LogEntry {
   id: number;
@@ -41,22 +43,23 @@ export type MidiStatus = "disconnected" | "connecting" | "connected" | "unsuppor
 
 export interface MidiView {
   status: MidiStatus;
-  /** Connected output ports (refreshed as devices come and go). */
-  outputs: MidiOutputInfo[];
+  /** Connected ports (refreshed as devices come and go). */
+  outputs: MidiPortInfo[];
+  inputs: MidiPortInfo[];
   /** Where simulated presses are sent. Undefined = don't send (the default, so nothing surprising hits real gear). */
   outputId?: string;
   sysexEnabled: boolean;
   error?: string;
 }
 
-interface PacerStore {
+export interface PacerStore extends ConfigurationsSlice {
   /**
    * The loaded config and the current *user* preset. While a firmware special preset (preset
    * select, Track, Transport) is active, this still points at the last user preset: that's what
    * [Preset] returns to.
    */
   board: BoardState;
-  /** Where the loaded config came from, for display ("Factory defaults", a file name, ...). */
+  /** Display name of the open configuration ("Factory defaults", a saved snapshot's name). */
   configSource: string;
   log: LogEntry[];
   deviceMode: DeviceModeView;
@@ -175,18 +178,22 @@ export const usePacerStore = create<PacerStore>((set, get) => {
     return `(warning) ${failures.length} of ${messages.length} message(s) not sent to ${name}: ${reasons}`;
   }
 
-  function refreshMidiOutputs() {
+  function refreshMidiPorts() {
     if (!midiConnection) return;
     const outputs = midiConnection.outputs();
+    const inputs = midiConnection.inputs();
     const { outputId } = get().midi;
     const lost = outputId !== undefined && !outputs.some((o) => o.id === outputId);
     set((s) => ({
-      midi: { ...s.midi, outputs, outputId: lost ? undefined : outputId },
+      midi: { ...s.midi, outputs, inputs, outputId: lost ? undefined : outputId },
       log: lost
         ? appendLog(s.log, { kind: "app", title: "MIDI", lines: ["Output disconnected; sending stopped"] })
         : s.log,
     }));
+    get().refreshPacerPorts();
   }
+
+  const storage = browserStorage();
 
   function runEngine(controlId: number, phase: ControlPhase) {
     const { board, effect } = applyBoardEvent(get().board, { controlId, phase });
@@ -209,6 +216,11 @@ export const usePacerStore = create<PacerStore>((set, get) => {
   }
 
   return {
+    ...createConfigurationsSlice(set, get, {
+      storage: storage ?? new MemoryStorage(),
+      persistent: storage !== undefined,
+      midiConnection: () => midiConnection,
+    }),
     board: createBoardState(loadFactoryDefaults(), FIRST_USER_PRESET_INDEX),
     configSource: "Factory defaults",
     log: [],
@@ -273,7 +285,7 @@ export const usePacerStore = create<PacerStore>((set, get) => {
 
     clearLog: () => set({ log: [] }),
 
-    midi: { status: "disconnected", outputs: [], sysexEnabled: false },
+    midi: { status: "disconnected", outputs: [], inputs: [], sysexEnabled: false },
 
     connectMidi: async (requester) => {
       const { status } = get().midi;
@@ -289,18 +301,15 @@ export const usePacerStore = create<PacerStore>((set, get) => {
           return;
         case "connected":
           midiConnection = result.connection;
-          midiConnection.onPortsChanged(refreshMidiOutputs);
-          set((s) => ({
-            midi: {
-              ...s.midi,
-              status: "connected",
-              outputs: result.connection.outputs(),
-              sysexEnabled: result.connection.sysexEnabled,
-            },
-          }));
+          midiConnection.onPortsChanged(refreshMidiPorts);
+          set((s) => ({ midi: { ...s.midi, status: "connected", sysexEnabled: result.connection.sysexEnabled } }));
+          refreshMidiPorts();
       }
     },
 
     selectMidiOutput: (outputId) => set((s) => ({ midi: { ...s.midi, outputId } })),
   };
 });
+
+// Reopen whatever configuration was open on the last visit (a per-browser convenience).
+usePacerStore.getState().restoreLastOpened();

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PRESET_HOLD_MS } from "../../pacer/device";
 import { userPresetIndex } from "../../pacer/protocol/constants";
@@ -36,12 +37,37 @@ describe("Faceplate (factory defaults)", () => {
     expect(screen.getByRole("button", { name: "Switch D: P+" })).toBeTruthy();
   });
 
-  it("the Factory defaults button reloads the factory config", () => {
+  it("the Configurations panel lists saved snapshots and switches between them", async () => {
+    const fixture = new Uint8Array(readFileSync("fixtures/factory-presets.syx"));
+    act(() => usePacerStore.getState().importSyxFile("gig-rig.syx", fixture));
     render(<App />);
-    tap(switchButton("D"));
-    expect(display()).toBe("A2");
-    fireEvent.click(screen.getByRole("button", { name: "Factory defaults" }));
-    expect(display()).toBe("A1");
+    const list = screen.getByRole("list", { name: "Saved configurations" });
+    expect(within(list).getByText("gig-rig")).toBeTruthy();
+    expect(within(list).getByText(/Imported gig-rig.syx .* 24 presets/)).toBeTruthy();
+
+    // Rename inline.
+    fireEvent.click(within(list).getByRole("button", { name: "Rename" }));
+    const input = within(list).getByRole("textbox", { name: "Configuration name" });
+    fireEvent.change(input, { target: { value: "Friday gig" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(within(list).getByText("Friday gig")).toBeTruthy();
+
+    // Clicking a row opens it (and only in the simulator).
+    fireEvent.click(within(list).getByRole("button", { name: /^Factory defaults/ }));
+    expect(usePacerStore.getState().activeConfigId).toBeUndefined();
+    expect(
+      within(list)
+        .getByRole("button", { name: /^Factory defaults/ })
+        .getAttribute("aria-current"),
+    ).toBe("true");
+    fireEvent.click(within(list).getByRole("button", { name: /^Friday gig/ }));
+    expect(usePacerStore.getState().configSource).toBe("Friday gig");
+    fireEvent.click(within(list).getByRole("button", { name: /^Factory defaults/ }));
+
+    // Delete the snapshot (two clicks).
+    fireEvent.click(within(list).getByRole("button", { name: "Delete" }));
+    fireEvent.click(within(list).getByRole("button", { name: "Confirm delete" }));
+    expect(within(list).queryByText("Friday gig")).toBeNull();
   });
 
   it("pressing a switch logs its MIDI output and marks it held", () => {

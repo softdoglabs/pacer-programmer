@@ -73,6 +73,13 @@ function snapshotName(date: Date): string {
   return `Pacer ${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+/** While presets are being written (and committed), nothing else may be sent to the Pacer (see pacerWrite.ts). */
+export function isSendingToPacer(s: Pick<PacerStore, "send">): boolean {
+  return s.send.status === "sending" || s.send.status === "verifying";
+}
+
+const WAIT_FOR_SEND = "Wait for the send to the Pacer to finish.";
+
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
@@ -141,6 +148,10 @@ export function createConfigurationsSlice(
     checkFirmware: async () => {
       const connection = deps.midiConnection();
       const { inputId, outputId } = get().pacerPorts;
+      if (isSendingToPacer(get())) {
+        set({ deviceInfo: { kind: "error", message: WAIT_FOR_SEND } });
+        return;
+      }
       if (!connection || !inputId || !outputId) {
         set({ deviceInfo: { kind: "error", message: "Connect MIDI and choose the Pacer's ports first." } });
         return;
@@ -171,6 +182,10 @@ export function createConfigurationsSlice(
       const connection = deps.midiConnection();
       const { inputId, outputId } = get().pacerPorts;
       if (get().pull.status === "pulling") return;
+      if (isSendingToPacer(get())) {
+        set({ pull: { status: "error", received: 0, expected: EXPECTED_FULL_DUMP_MESSAGES, error: WAIT_FOR_SEND } });
+        return;
+      }
       if (!connection || !inputId || !outputId) {
         set({
           pull: {

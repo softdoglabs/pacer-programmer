@@ -6,6 +6,7 @@ import { ModalDialog } from "@/components/ui/dialog";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { hasUnsavedEdits, type UiMode } from "../../store/editingSlice";
 import { usePacerStore } from "../../store/pacerStore";
+import { SendToPacer } from "./SendToPacer";
 
 function isTextInput(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA"].includes(target.tagName));
@@ -62,7 +63,7 @@ function SaveDialog({ isOpen, onOpenChange }: { isOpen: boolean; onOpenChange: (
   );
 }
 
-/** Header controls for the programming interface: Play/Edit, undo/redo, and save. */
+/** Header controls for the programming interface: Play/Edit, undo/redo, save, and send to the Pacer. */
 export function EditToolbar() {
   const uiMode = usePacerStore((s) => s.uiMode);
   const setUiMode = usePacerStore((s) => s.setUiMode);
@@ -107,6 +108,7 @@ export function EditToolbar() {
         Save…
       </Button>
       <SaveDialog isOpen={saving} onOpenChange={setSaving} />
+      <SendToPacer />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { ModalDialog } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import type { LibraryEntry } from "../library/configLibrary";
 import { formatFirmwareVersion, isNektar, type DeviceIdentity } from "../pacer/protocol/identity";
-import type { DeviceInfoView } from "../store/configurationsSlice";
+import { isSendingToPacer, type DeviceInfoView } from "../store/configurationsSlice";
 import { hasUnsavedEdits } from "../store/editingSlice";
 import { usePacerStore } from "../store/pacerStore";
 import { PortSelect } from "./PortSelect";
@@ -196,6 +196,7 @@ function PullControls() {
   const cancelPull = usePacerStore((s) => s.cancelPull);
   const deviceInfo = usePacerStore((s) => s.deviceInfo);
   const checkFirmware = usePacerStore((s) => s.checkFirmware);
+  const sending = usePacerStore(isSendingToPacer);
 
   if (midi.status !== "connected") {
     return (
@@ -228,7 +229,7 @@ function PullControls() {
         <Button
           size="sm"
           variant="ghost"
-          isDisabled={!pacerPorts.inputId || !pacerPorts.outputId || deviceInfo.kind === "querying"}
+          isDisabled={!pacerPorts.inputId || !pacerPorts.outputId || deviceInfo.kind === "querying" || sending}
           onPress={() => void checkFirmware()}
         >
           Check firmware
@@ -264,6 +265,7 @@ export function ConfigurationsPanel() {
   );
   const importSyxFile = usePacerStore((s) => s.importSyxFile);
   const pullFromPacer = usePacerStore((s) => s.pullFromPacer);
+  const sending = usePacerStore(isSendingToPacer);
   const openFactoryDefaults = usePacerStore((s) => s.openFactoryDefaults);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const unsaved = usePacerStore(hasUnsavedEdits);
@@ -284,7 +286,7 @@ export function ConfigurationsPanel() {
       <div className="flex flex-wrap items-center gap-2">
         <Button
           size="sm"
-          isDisabled={!canPull || pull.status === "pulling"}
+          isDisabled={!canPull || pull.status === "pulling" || sending}
           onPress={() => guard(() => void pullFromPacer())}
         >
           {pull.status === "pulling" ? "Pulling…" : "Pull from Pacer"}

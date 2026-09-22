@@ -27,6 +27,7 @@ import {
 } from "../midi/webMidi";
 import { createConfigurationsSlice, type ConfigurationsSlice } from "./configurationsSlice";
 import { createEditingSlice, type EditHistory, type EditingSlice } from "./editingSlice";
+import { createSendSlice, type SendSlice } from "./sendSlice";
 
 export interface LogEntry {
   id: number;
@@ -55,7 +56,7 @@ export interface MidiView {
   error?: string;
 }
 
-export interface PacerStore extends ConfigurationsSlice, EditingSlice {
+export interface PacerStore extends ConfigurationsSlice, EditingSlice, SendSlice {
   /**
    * The loaded config and the current *user* preset. While a firmware special preset (preset
    * select, Track, Transport) is active, this still points at the last user preset: that's what
@@ -122,6 +123,7 @@ function freshSession(config: PacerConfig, initialPresetIndex: number) {
     sessionId: nextSessionId++,
     board: createBoardState(config, initialPresetIndex),
     savedConfig: config,
+    sendBaseline: config,
     editHistory: { past: [], future: [] } as EditHistory,
     log: [] as LogEntry[],
     swallowedReleases: [] as number[],
@@ -242,6 +244,7 @@ export const usePacerStore = create<PacerStore>((set, get) => {
 
   return {
     ...createEditingSlice(set, get),
+    ...createSendSlice(set, get, { midiConnection: () => midiConnection }),
     ...createConfigurationsSlice(set, get, {
       storage: storage ?? new MemoryStorage(),
       persistent: storage !== undefined,

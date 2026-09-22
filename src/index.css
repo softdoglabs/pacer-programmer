@@ -24,6 +24,7 @@
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.72 0.1 180);
   --warning: oklch(0.8 0.15 80);
+  --success: oklch(0.75 0.15 150);
   color-scheme: dark;
 }
 
@@ -51,6 +52,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-warning: var(--warning);
+  --color-success: var(--success);
 }
 
 @layer base {

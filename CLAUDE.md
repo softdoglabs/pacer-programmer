@@ -398,7 +398,38 @@ no hover-only UI, for tablets.
     from …") or "Save over" the open snapshot (not the factory defaults).
     Opening, importing, pulling, or deleting the open snapshot asks before
     discarding unsaved edits.
-  - Not built yet: Send to Pacer, preset load-time MIDI settings,
+  - **Send to Pacer** (header, `ui/editor/SendToPacer.tsx`,
+    `store/sendSlice.ts`, `midi/pacerWrite.ts`): writes user presets of the
+    working config to the device.
+    - Scope: "Changed" (the default: presets that differ from
+      `sendBaseline`, which is the config as opened, updated with each
+      preset successfully sent since), "This preset", or "All 24". The
+      dialog lists exactly which presets get overwritten and needs an
+      explicit confirm.
+    - Only preset Set messages (`encodePresetMessages`) to idx 1-24.
+      Never global settings, never the Current slot (idx 0), whose write
+      semantics are unknown.
+    - Paced at 10 ms per message, like the reference editor's dump upload.
+      Cancelable; a partial send is reported as such.
+    - **Then a 1 s settle, during which nothing else goes to the Pacer**
+      (`PACER_WRITE_SETTLE_MS`; pull, read-back and "Check firmware" are
+      blocked). Found on hardware: after preset writes, a full-dump
+      request within ~200 ms makes the Pacer drop the writes and fill the
+      written preset with D6's contents, so the preset gets corrupted. With
+      300 ms or more, writes always land. Writes look buffered and
+      committed only once the input goes quiet (see pacerWrite.ts). The
+      first version of the read-back sent its dump request immediately,
+      which corrupted the owner's A1. The store tests' fake Pacer models
+      this behavior. Re-confirmed on firmware 1.01.12, for presets that
+      aren't loaded too.
+    - Optional verify (on by default): re-pulls the full dump and compares
+      the sent presets (`mismatchedPresets`).
+    - Confirmed on hardware: single-message and full-preset writes land
+      in exactly the addressed slot (idx 1-24), for the active preset too.
+      Writing the active preset's slot doesn't update the Current working
+      copy (idx 0). Presumably the new version runs once that preset is
+      loaded again (not yet observed).
+  - Not built yet: preset load-time MIDI settings,
     expression pedal ranges beyond step data, and copy/paste of
     steps/switches.
 - **Sessions:** loading a configuration (opening a snapshot, importing,
@@ -445,9 +476,13 @@ no hover-only UI, for tablets.
     the pulled snapshot.
   - Confirmed on hardware: the Pacer answers (Nektar, family 9319, model
     8273). Its 4 version bytes are ASCII digits ("0101"), shown as text;
-    non-printable version bytes are shown as numbers. How "0101" maps to
-    Nektar's version names (e.g. "v10112") is unknown. No reply is treated
+    non-printable version bytes are shown as numbers. No reply is treated
     as normal, not as an error.
+  - **The version bytes don't identify a firmware build.** The reply is
+    byte-identical before and after updating to 1.01.12: "0101" is only the
+    "1.01" part, so the app can't tell builds apart, and neither can a
+    dump (identical message counts, layout and contents across the
+    update).
 - **Saved configurations** (`src/library/configLibrary.ts`,
   `store/configurationsSlice.ts`, `ui/ConfigurationsPanel.tsx`):
   - Every pull and every `.syx` import becomes an immutable snapshot in
@@ -459,8 +494,8 @@ no hover-only UI, for tablets.
   - Raw bytes rather than the JSON mirror: they're canonical and lossless,
     and about 3x smaller, which matters because localStorage allows about
     5 MB (~25 dumps).
-  - Editing snapshots comes with the programming interface. Writing back
-    to the device isn't built yet.
+  - Edits are saved as new snapshots or over the open one (see Save
+    above); sending to the device is separate (see Send to Pacer).
 - Not simulated yet: a preset's own load-time MIDI settings (shown in the
   inspector only), LED `midiController` input, and continuous expression
   pedal sweeps (press/release = max/min).
@@ -485,9 +520,9 @@ real Pacer over USB enables live send/receive against the device.
   pedal/relay** settings, or start scoped to the 24 built-in presets only.
 - Framing/checksum/field layout is now verified against a real factory
   dump (see hardware background above); what's *not* yet verified is
-  writing to real hardware (only decode + re-encode has been tested, never
-  an actual device round-trip over Web MIDI) or the Global-config field
-  semantics (currently preserved opaquely, not decoded).
+  writing Global settings or the Current slot (idx 0), and the
+  Global-config field semantics (currently preserved opaquely, not
+  decoded). Preset writes over Web MIDI are confirmed (see Send to Pacer).
 - Licensing: `francoisgeorgy/pacer-editor` is GPLv3. We're treating its
   documented protocol facts (message type IDs, element layout) as
   unencumbered — the same facts anyone would recover from staring at a

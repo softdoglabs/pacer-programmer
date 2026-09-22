@@ -21,7 +21,7 @@ export const PACER_HUES = [
 export type PacerHue = (typeof PACER_HUES)[number];
 
 export const LED_COLOR_OFF = 0x00;
-/** Used on nearly every factory LED entry. Undocumented; presumably "firmware default color". */
+/** Used on nearly every factory LED entry: the message type's own color (User Guide p.12 chart 2). */
 export const LED_COLOR_DEFAULT = 0x7f;
 
 export type DecodedLedColor =
@@ -45,7 +45,7 @@ export function ledColorName(code: number): string {
     case "off":
       return "Off";
     case "default":
-      return "Default (0x7F, undocumented)";
+      return "Default (message type color)";
     case "unknown":
       return `Unknown (0x${color.code.toString(16)})`;
     case "hue": {

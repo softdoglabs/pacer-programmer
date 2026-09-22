@@ -93,14 +93,39 @@ describe("programming interface", () => {
     expect(screen.getByRole("region", { name: "Step 3" })).toBeTruthy();
   });
 
-  it("picks LED colors from the swatches", () => {
+  it("picks LED colors from the swatches, labeled by what makes each color show", () => {
     render(<App />);
     enterEditMode();
     tap(screen.getByRole("button", { name: /^Switch 1:/ }));
     const step1 = screen.getByRole("region", { name: "Step 1" });
-    const onColor = within(step1).getByRole("radiogroup", { name: /On color/ });
-    fireEvent.click(within(onColor).getByRole("radio", { name: "2A Red" }));
+    // Factory A1 switch 1 is a Program Change, so the first color shows while that program is active.
+    const first = within(step1).getByRole("radiogroup", { name: /While this program is active/ });
+    fireEvent.click(within(first).getByRole("radio", { name: "2A Red" }));
     expect(store().board.config.presets[A1]!.controls[ControlId.Stompswitch1]!.led[1]!.activeColor).toBe(0x03);
+  });
+
+  it("marks the step that lights the switch, and says why the others don't", () => {
+    render(<App />);
+    enterEditMode();
+    tap(screen.getByRole("button", { name: /^Switch 1:/ }));
+    // A second step fires too, but in All-at-once mode only step 1's light shows.
+    fireEvent.click(screen.getByRole("button", { name: /Add step/ }));
+    const [step1, step2] = screen.getAllByRole("region", { name: /^Step [12]$/ });
+    expect(within(step1!).getByText("lights the switch")).toBeTruthy();
+    expect(within(step2!).queryByText("lights the switch")).toBeNull();
+    expect(within(step2!).getByText(/a switch lights one step at a time/)).toBeTruthy();
+  });
+
+  it("offers only the lights a switch has: A-D have a bar and their legend, not three rows", () => {
+    render(<App />);
+    enterEditMode();
+    tap(screen.getByRole("button", { name: /^Switch A:/ }));
+    const lights = within(screen.getByRole("region", { name: "Step 1" })).getByRole("radiogroup", { name: "Light" });
+    expect(
+      within(lights)
+        .getAllByRole("radio")
+        .map((r) => r.textContent),
+    ).toEqual(["Bar", "Text legend"]);
   });
 
   it("asks before discarding unsaved edits when switching configurations", () => {

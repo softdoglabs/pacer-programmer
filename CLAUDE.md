@@ -410,13 +410,20 @@ no hover-only UI, for tablets.
     configured (active) step. Step 1 is always shown. "+ Add step"
     activates the next free step and is disabled once all 6 are in use;
     steps 2-6 have a remove (✕) button that deactivates them.
+    - The card of the step that currently lights the switch is badged
+      "lights the switch"; the others explain why their colors don't show
+      (All-at-once) or when they will (Sequence). Same rule as the panel
+      (`showingStep`).
     - Each card has a type picker grouped as
       Send MIDI / Pacer actions, and labeled fields per type (a target
       picker for Preset Select, a direction for Inc/Dec, a channel with
       Global).
-    - For lit switches: the LED target light (only the ones that switch
-      has) and On/Off color swatch grids (Default, Off, 12 hues in bright
-      and dim).
+    - For lit switches: the LED target (one option per light the switch
+      really has — LED nums 0 and 1 are the same bar, and A-D have nothing
+      on 3) and two color swatch grids (Default, Off, 12 hues in bright and
+      dim). The swatches are labeled by what makes each color show, e.g.
+      "While CC 52 = 127" / "Otherwise", since the pair isn't a plain
+      on/off (see the LED model above).
     - Wide screens show the editor in the side column; narrow ones
       (tablet portrait) put it right under the faceplate
       (`useMediaQuery`, rendered in one place only).

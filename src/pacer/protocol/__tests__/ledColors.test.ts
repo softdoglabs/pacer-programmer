@@ -20,7 +20,7 @@ describe("LED color codes", () => {
     expect(ledColorName(0x04)).toBe("2B Dim Red");
     expect(ledColorName(0x18)).toBe("12B Dim White");
     expect(ledColorName(0)).toBe("Off");
-    expect(ledColorName(LED_COLOR_DEFAULT)).toMatch(/undocumented/);
+    expect(ledColorName(LED_COLOR_DEFAULT)).toMatch(/message type color/);
     expect(ledColorName(0x50)).toMatch(/Unknown/);
   });
 });

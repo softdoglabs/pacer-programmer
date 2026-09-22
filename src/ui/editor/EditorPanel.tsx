@@ -5,6 +5,7 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { PRESET_NAME_LENGTH, renamePreset, setControlMode, updateStep } from "../../pacer/editing";
 import { switchSpecForControl } from "../../pacer/hardware";
 import { ControlMode, STEPS_PER_CONTROL, presetIndexToLabel } from "../../pacer/protocol/constants";
+import { showingStep } from "../../pacer/panel";
 import { controlKindOf, controlLabel } from "../../pacer/simulator";
 import { usePacerStore } from "../../store/pacerStore";
 import { StepCard } from "./StepCard";
@@ -49,6 +50,9 @@ function ControlEditor({ controlId }: { controlId: number }) {
   const kind = controlKindOf(controlId) ?? "switch";
   const spec = switchSpecForControl(controlId);
   const mode = control?.controlMode ?? ControlMode.AllStepsAtOnce;
+  // Which step's LED config the switch is showing right now (see the LED model in CLAUDE.md).
+  const runtime = usePacerStore((s) => s.board.controls[controlId]);
+  const litStep = control ? showingStep(control, runtime) : undefined;
   // Step 1 always exists (a control needs at least one step); others show only while in use.
   // Removing a step just turns it off, so its settings come back if it's added again.
   const stepNumbers = Array.from({ length: STEPS_PER_CONTROL }, (_, i) => i + 1);
@@ -84,6 +88,8 @@ function ControlEditor({ controlId }: { controlId: number }) {
           n={n}
           step={control?.steps[n]}
           led={control?.led[n]}
+          drivesLight={n === litStep}
+          mode={mode}
         />
       ))}
       <Button

@@ -21,7 +21,7 @@ import type { LightState } from "./types";
  *
  * External step select isn't simulated (cross-control targeting is unverified), so it shows step 1.
  */
-function showingStep(control: SwitchControl, runtime: ControlRuntimeState | undefined): number | undefined {
+export function showingStep(control: SwitchControl, runtime: ControlRuntimeState | undefined): number | undefined {
   const mode = control.controlMode ?? ControlMode.AllStepsAtOnce;
   const active = activeSteps(control);
   if (mode === ControlMode.Sequence && runtime)

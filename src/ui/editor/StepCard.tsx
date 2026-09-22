@@ -1,10 +1,16 @@
 import { NumberField } from "@/components/ui/number-field";
 import { Select, type SelectGroup } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { setStepType, updateStep, updateStepLed, type ControlKind } from "../../pacer/editing";
 import { indicatorForLedNum, type SwitchSpec } from "../../pacer/hardware";
-import { ExpressionMessageType, PresetSelectTarget, SwitchMessageType } from "../../pacer/protocol/constants";
+import {
+  ControlMode,
+  ExpressionMessageType,
+  PresetSelectTarget,
+  SwitchMessageType,
+} from "../../pacer/protocol/constants";
 import type { LedConfig, Step } from "../../pacer/protocol/types";
 import { messageTypeInfo } from "../../pacer/simulator";
 import { usePacerStore } from "../../store/pacerStore";
@@ -83,7 +89,7 @@ const PRESET_TARGET_OPTIONS: SelectGroup[] = [
   },
 ];
 
-const LED_TARGET_NAMES = { bar: "Bar", text: "Text row", icons: "Icon row" } as const;
+const LED_TARGET_NAMES = { bar: "Bar", text: "Text legend", icons: "Icon legend" } as const;
 
 function typeOptions(kind: ControlKind): SelectGroup[] {
   const groups = kind === "switch" ? SWITCH_TYPE_GROUPS : EXPRESSION_TYPE_GROUPS;
@@ -134,38 +140,66 @@ function DataFields({ kind, step, onData }: { kind: ControlKind; step: Step; onD
   );
 }
 
+/**
+ * What each of a step's two colors means. The firmware shows the first while the step's MIDI
+ * matches its own data (for a CC step: while the controller holds data[1]), the second otherwise
+ * — so "On/Off" only reads correctly when the pressed value sits in data[1]. See CLAUDE.md's LED
+ * model.
+ */
+function colorLabels(kind: ControlKind, step: Step): [string, string] {
+  if (kind !== "switch") return ["Color", "Second color"];
+  switch (step.msgType) {
+    case SwitchMessageType.CcToggle:
+    case SwitchMessageType.CcTrigger:
+      return [`While CC ${step.data[0]} = ${step.data[1]}`, "Otherwise"];
+    case SwitchMessageType.Note:
+    case SwitchMessageType.NoteToggle:
+      return ["While the note is on", "Otherwise"];
+    case SwitchMessageType.ProgramAndBank:
+      return ["While this program is active", "Otherwise"];
+    case SwitchMessageType.PresetSelect:
+      return ["Color", "Unused: this type always shows the first color"];
+    default:
+      return ["On color", "Off color"];
+  }
+}
+
 function LedFields({
   spec,
+  kind,
+  step,
   led,
   onLed,
 }: {
   spec: SwitchSpec;
+  kind: ControlKind;
+  step: Step;
   led: LedConfig | undefined;
   onLed: (patch: Partial<LedConfig>) => void;
 }) {
-  const defaultIndicator = indicatorForLedNum(spec, 0);
-  const targets = [
-    { id: "0", label: `Default${defaultIndicator ? ` (${LED_TARGET_NAMES[defaultIndicator.face.kind]})` : ""}` },
-    ...[1, 2, 3].flatMap((num) => {
-      const indicator = indicatorForLedNum(spec, num);
-      return indicator ? [{ id: String(num), label: LED_TARGET_NAMES[indicator.face.kind] }] : [];
-    }),
-  ];
+  const [firstLabel, secondLabel] = colorLabels(kind, step);
+  // LED nums 0 and 1 both light the bar, and a switch has no light for some nums at all
+  // (A-D have nothing on 3), so offer one option per light the switch really has.
+  const seen = new Set<string>();
+  const targets = [0, 1, 2, 3].flatMap((num) => {
+    const indicator = indicatorForLedNum(spec, num);
+    if (!indicator || seen.has(indicator.id)) return [];
+    seen.add(indicator.id);
+    return [{ id: String(num), label: LED_TARGET_NAMES[indicator.face.kind] }];
+  });
+  // A config using num 1 (the bar) selects the same option as num 0.
+  const selected = indicatorForLedNum(spec, led?.position ?? 0);
+  const value = targets.find((t) => indicatorForLedNum(spec, Number(t.id))?.id === selected?.id)?.id ?? "0";
   return (
     <div className="space-y-2 border-t pt-2">
-      <ToggleGroup
-        label="Light"
-        options={targets}
-        value={String(led?.position ?? 0)}
-        onChange={(v) => onLed({ position: Number(v) })}
-      />
+      <ToggleGroup label="Light" options={targets} value={value} onChange={(v) => onLed({ position: Number(v) })} />
       <SwatchPicker
-        label="On color"
+        label={firstLabel}
         value={led?.activeColor ?? 0x7f}
         onChange={(activeColor) => onLed({ activeColor })}
       />
       <SwatchPicker
-        label="Off color"
+        label={secondLabel}
         value={led?.inactiveColor ?? 0x7f}
         onChange={(inactiveColor) => onLed({ inactiveColor })}
       />
@@ -182,6 +216,8 @@ export function StepCard({
   n,
   step,
   led,
+  drivesLight,
+  mode,
 }: {
   presetIndex: number;
   controlId: number;
@@ -190,6 +226,9 @@ export function StepCard({
   n: number;
   step: Step | undefined;
   led: LedConfig | undefined;
+  /** Whether this is the step whose LED config the switch is showing (see `showingStep`). */
+  drivesLight: boolean;
+  mode: ControlMode;
 }) {
   const applyEdit = usePacerStore((s) => s.applyEdit);
   const hasLights = kind === "switch" && spec !== undefined && spec.indicators.some((i) => i.addressable);
@@ -198,6 +237,7 @@ export function StepCard({
     <section aria-label={`Step ${n}`} className="space-y-3 rounded-md border bg-card p-3">
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-sm font-semibold">Step {n}</span>
+        {drivesLight && hasLights && <Badge variant="outline">lights the switch</Badge>}
         <Select
           label={`Step ${n} type`}
           labelVisible={false}
@@ -234,11 +274,22 @@ export function StepCard({
             onData={(data) => applyEdit((c) => updateStep(c, presetIndex, controlId, n, { data }))}
           />
           {hasLights && (
-            <LedFields
-              spec={spec}
-              led={led}
-              onLed={(patch) => applyEdit((c) => updateStepLed(c, presetIndex, controlId, n, patch))}
-            />
+            <>
+              {!drivesLight && (
+                <p className="border-t pt-2 text-xs text-muted-foreground">
+                  {mode === ControlMode.Sequence
+                    ? "Shows while this step is the next to fire."
+                    : "Not shown: a switch lights one step at a time, and in All-at-once mode that's the first step."}
+                </p>
+              )}
+              <LedFields
+                spec={spec}
+                kind={kind}
+                step={step}
+                led={led}
+                onLed={(patch) => applyEdit((c) => updateStepLed(c, presetIndex, controlId, n, patch))}
+              />
+            </>
           )}
         </>
       )}

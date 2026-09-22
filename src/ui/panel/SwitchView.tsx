@@ -1,6 +1,7 @@
 import type { CSSProperties, DOMAttributes } from "react";
 import type { IndicatorSpec, SwitchSpec } from "@/pacer/hardware";
 import type { SwitchPanelState } from "@/pacer/panel";
+import { EditBadge, NoEditBadge } from "./EditBadge";
 import { IconGlyph } from "./icons";
 import { paintLight } from "./palette";
 
@@ -94,8 +95,13 @@ export interface SwitchViewProps {
   spec: SwitchSpec;
   state: SwitchPanelState;
   /** Where the housing sits over the faceplate background (see Faceplate's overlayStyle). */
-  style: CSSProperties;
+  /** Position over the faceplate's background. Omitted when the switch is rendered on its own. */
+  style?: CSSProperties;
   selected: boolean;
+  /** Edit mode: this switch can be tapped to program it, which the badge shows. */
+  editable?: boolean;
+  /** Edit mode: this switch isn't programmable at all ([Preset]), so it's disabled and says so. */
+  uneditable?: boolean;
   ariaLabel: string;
   title: string;
   /** From React Aria's `usePress`. */
@@ -106,7 +112,17 @@ export interface SwitchViewProps {
  * One physical switch, rendered from its hardware spec (which lights it has, what's printed on
  * them) and its current panel state (what's lit). Knows nothing about presets or modes.
  */
-export function SwitchView({ spec, state, style, selected, ariaLabel, title, pressProps }: SwitchViewProps) {
+export function SwitchView({
+  spec,
+  state,
+  style,
+  selected,
+  editable = false,
+  uneditable = false,
+  ariaLabel,
+  title,
+  pressProps,
+}: SwitchViewProps) {
   const legendRows = spec.indicators.filter((i) => i.face.kind !== "bar");
   const bar = spec.indicators.find((i) => i.face.kind === "bar");
   const barLight = bar ? state.lights[bar.id] : undefined;
@@ -114,17 +130,21 @@ export function SwitchView({ spec, state, style, selected, ariaLabel, title, pre
   return (
     <button
       type="button"
-      className="pacer-switch absolute rounded-[7%] p-0"
+      className={`pacer-switch rounded-[7%] p-0 ${style ? "absolute" : "relative block size-full"}`}
       style={style}
       title={title}
       aria-label={ariaLabel}
       aria-pressed={state.pressed}
       data-pressed={state.pressed}
       data-selected={selected}
+      data-editable={editable}
       data-led={barLight?.brightness ?? "off"}
       data-led-flashing={barLight?.flashing ?? false}
+      disabled={uneditable}
       {...pressProps}
     >
+      {editable && <EditBadge />}
+      {uneditable && <NoEditBadge title="Not programmable" />}
       <svg viewBox={`0 0 ${HOUSING_W} ${HOUSING_H}`} className="block size-full" aria-hidden>
         <rect
           className="housing"

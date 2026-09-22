@@ -191,14 +191,28 @@ export function fireSwitchStep(
  * Modeling a continuous pedal as digital press(=max)/release(=min) is a deliberate
  * simplification, not a hardware claim — see the plan's notes on expression pedal scope.
  */
+/** Where the pedal is, 0 (heel) to 1 (toe): given explicitly for a sweep, else the phase's end. */
+function pedalPosition(phase: ControlPhase, position: number | undefined): number {
+  if (position !== undefined) return Math.min(1, Math.max(0, position));
+  return phase === "release" ? 0 : 1;
+}
+
+/** A continuous control's value at `position`, between the step's own minimum and maximum. */
+function sweep(min: number, max: number, position: number): number {
+  return Math.round(min + (max - min) * position);
+}
+
 export function fireExpressionStep(
   step: Step,
   phase: ControlPhase,
   _subState: StepSubState,
   /** The wire channel (0-15) to transmit on, already resolved from `step.channel` (see `wireChannel`). */
   channel: number,
+  /** How far the pedal is pushed (see `pedalPosition`). */
+  position?: number,
 ): StepFireResult {
   const { msgType, data } = step;
+  const at = pedalPosition(phase, position);
 
   switch (msgType) {
     case ExpressionMessageType.Off:
@@ -206,17 +220,17 @@ export function fireExpressionStep(
 
     case ExpressionMessageType.MidiCc: {
       const [controller, min, max] = data;
-      return { ...empty(), messages: [cc(channel, controller, phase === "press" ? max : min)] };
+      return { ...empty(), messages: [cc(channel, controller, sweep(min, max, at))] };
     }
 
     case ExpressionMessageType.PitchBend: {
       const [, min, max] = data;
-      return { ...empty(), messages: [pitchBend(channel, phase === "press" ? max : min)] };
+      return { ...empty(), messages: [pitchBend(channel, sweep(min, max, at))] };
     }
 
     case ExpressionMessageType.ChannelAftertouch: {
       const [, min, max] = data;
-      return { ...empty(), messages: [channelAftertouch(channel, phase === "press" ? max : min)] };
+      return { ...empty(), messages: [channelAftertouch(channel, sweep(min, max, at))] };
     }
 
     case ExpressionMessageType.NrpnCoarse: {

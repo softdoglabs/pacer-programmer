@@ -97,10 +97,14 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
   }
 
   const runtimeState = board.controls[event.controlId] ?? createControlRuntimeState();
-  const resolved = resolveControl(control, controlKind, event.phase, runtimeState, {
-    globalChannel: globalMidiChannel(board.config),
-    midi: board.midi,
-  });
+  const resolved = resolveControl(
+    control,
+    controlKind,
+    event.phase,
+    runtimeState,
+    { globalChannel: globalMidiChannel(board.config), midi: board.midi },
+    event.position,
+  );
   const midi = recordMidi(board.midi, resolved.messages);
 
   const {

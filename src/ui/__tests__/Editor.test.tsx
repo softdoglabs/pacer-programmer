@@ -30,9 +30,15 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+/** The support panels (log, presets, configurations, rear jacks) live behind tabs. */
+function openTab(name: string) {
+  fireEvent.click(screen.getByRole("tab", { name }));
+}
+
 function enterEditMode() {
   fireEvent.click(screen.getByRole("radio", { name: "Edit" }));
   expect(store().uiMode).toBe("edit");
+  expect(store().selectedControlId).toBeUndefined(); // starts at the faceplate
 }
 
 describe("programming interface", () => {
@@ -49,10 +55,12 @@ describe("programming interface", () => {
     ]);
   });
 
-  it("renames the preset, shows it on the display, and undoes", () => {
+  it("renames the preset on the display itself, and undoes", () => {
     render(<App />);
     enterEditMode();
-    const field = screen.getByRole("textbox", { name: /Preset A1/ });
+    // The display carries the pencil badge; tapping it turns into the name field.
+    fireEvent.click(screen.getByRole("button", { name: /Rename preset A1/ }));
+    const field = screen.getByRole("textbox", { name: /Preset A1 name/ });
     fireEvent.change(field, { target: { value: "LOOP" } });
     fireEvent.keyDown(field, { key: "Enter" });
     expect(store().board.config.presets[A1]!.name).toBe("LOOP ");
@@ -73,6 +81,8 @@ describe("programming interface", () => {
     fireEvent.click(screen.getByRole("option", { name: "CC Toggle" }));
     const step = store().board.config.presets[A1]!.controls[ControlId.Stompswitch1]!.steps[2]!;
     expect(step).toMatchObject({ active: true, data: [0, 0, 127] });
+    // Closing the switch's editor returns to the faceplate, which shows what it now sends.
+    fireEvent.click(screen.getByRole("button", { name: /Back to faceplate/ }));
     expect(screen.getByRole("button", { name: "Switch 1: PC0 CC0⇅" })).toBeTruthy();
   });
 
@@ -104,6 +114,72 @@ describe("programming interface", () => {
     expect(store().board.config.presets[A1]!.controls[ControlId.Stompswitch1]!.led[1]!.activeColor).toBe(0x03);
   });
 
+  it("entering Edit mode starts at the faceplate, and closing a switch stays in Edit mode", () => {
+    render(<App />);
+    tap(screen.getByRole("button", { name: /^Switch 2:/ })); // pressed in Play mode: not a choice to program it
+    expect(store().selectedControlId).toBe(ControlId.Stompswitch2);
+    enterEditMode();
+    expect(screen.queryByRole("region", { name: "Step 1" })).toBeNull();
+
+    tap(screen.getByRole("button", { name: /^Switch 1:/ }));
+    expect(screen.getByRole("region", { name: "Step 1" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Back to faceplate/ }));
+    expect(store().uiMode).toBe("edit");
+    expect(store().selectedControlId).toBeUndefined();
+    expect(screen.getByRole("button", { name: /^Switch 1:/ })).toBeTruthy();
+  });
+
+  it("the control in the editor is live: pressing it fires the simulator", () => {
+    render(<App />);
+    enterEditMode();
+    tap(screen.getByRole("button", { name: /^Switch 1:/ }));
+    expect(store().log).toEqual([]); // selecting it for editing fires nothing
+
+    tap(screen.getByRole("button", { name: /^Try 1:/ }));
+    expect(store().log.map((e) => e.title)).toContain("Stomp 1 — press");
+    expect(
+      store()
+        .log.flatMap((e) => e.lines)
+        .join(" "),
+    ).toContain("Program Change");
+    expect(store().selectedControlId).toBe(ControlId.Stompswitch1); // trying it doesn't change what's open
+  });
+
+  it("expression pedals are swept, not pressed: moving one sends its value", () => {
+    render(<App />);
+    const pedal = screen.getByRole("slider", { name: /Expression 1: heel to toe/ });
+    fireEvent.change(pedal, { target: { value: "50" } });
+    // Factory A1's EXP1 is CC 7 over its full range: halfway is about half the range.
+    const lines = store()
+      .log.flatMap((e) => e.lines)
+      .join(" ");
+    expect(lines).toMatch(/CC#7 = 6[0-9]/);
+    fireEvent.change(pedal, { target: { value: "100" } });
+    expect(
+      store()
+        .log.flatMap((e) => e.lines)
+        .join(" "),
+    ).toMatch(/CC#7 = 127/);
+  });
+
+  it("[Preset] is disabled in Edit mode: it can't be programmed", () => {
+    render(<App />);
+    enterEditMode();
+    const preset = screen.getByRole("button", { name: /Preset button/ });
+    expect(preset.hasAttribute("disabled")).toBe(true);
+    expect(preset.getAttribute("aria-label")).toContain("not programmable");
+    fireEvent.click(preset);
+    expect(store().selectedControlId).toBeUndefined();
+  });
+
+  it("the pencil badge opens a control that isn't itself a button (an expression pedal)", () => {
+    render(<App />);
+    enterEditMode();
+    fireEvent.click(screen.getByRole("button", { name: "Program Expression 1" }));
+    expect(store().selectedControlId).toBe(ControlId.ExpressionPedal1);
+    expect(screen.getByRole("heading", { name: "Expression 1" })).toBeTruthy();
+  });
+
   it("marks the step that lights the switch, and says why the others don't", () => {
     render(<App />);
     enterEditMode();
@@ -133,10 +209,12 @@ describe("programming interface", () => {
     act(() => store().importSyxFile("other.syx", fixture));
     render(<App />);
     enterEditMode();
-    const field = screen.getByRole("textbox", { name: /Preset A1/ });
+    fireEvent.click(screen.getByRole("button", { name: /Rename preset A1/ }));
+    const field = screen.getByRole("textbox", { name: /Preset A1 name/ });
     fireEvent.change(field, { target: { value: "EDIT" } });
     fireEvent.keyDown(field, { key: "Enter" });
 
+    openTab("Configurations");
     const list = screen.getByRole("list", { name: "Saved configurations" });
     fireEvent.click(within(list).getByRole("button", { name: /^Factory defaults/ }));
     expect(screen.getByRole("dialog", { name: /Discard unsaved changes to “other”/ })).toBeTruthy();

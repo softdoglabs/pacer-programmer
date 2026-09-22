@@ -7,15 +7,17 @@ import { usePacerStore } from "../store/pacerStore";
  * - Play mode: pressing simulates the switch, and also selects it in the inspector.
  * - Edit mode: pressing only selects it for editing. Nothing fires, so no MIDI is sent and the
  *   preset doesn't change.
+ * - `live`: always simulates, whatever the mode. The editor renders one control this way so you
+ *   can try the settings you're editing (see `LiveControl`).
  */
-export function useControlPress(controlId: number) {
+export function useControlPress(controlId: number, { live = false }: { live?: boolean } = {}) {
   const press = usePacerStore((s) => s.press);
   const release = usePacerStore((s) => s.release);
   const selectControl = usePacerStore((s) => s.selectControl);
-  const editing = usePacerStore((s) => s.uiMode === "edit");
+  const editing = usePacerStore((s) => s.uiMode === "edit") && !live;
   return usePress({
     onPressStart: () => {
-      selectControl(controlId);
+      if (!live) selectControl(controlId);
       if (!editing) press(controlId);
     },
     onPressEnd: () => {

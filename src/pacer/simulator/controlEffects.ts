@@ -57,6 +57,8 @@ function fireStepsForControl(
   stepNumbers: number[],
   runtimeState: ControlRuntimeState,
   device: DeviceContext,
+  /** Expression pedals: how far it's pushed (see `fireExpressionStep`). */
+  position?: number,
 ): FiredSteps {
   const messages: OutgoingMidiMessage[] = [];
   const deviceActions: DeviceAction[] = [];
@@ -70,8 +72,10 @@ function fireStepsForControl(
     if (!step) continue;
     const subState: StepSubState = { counter: stepCounters[n], midi };
     const channel = wireChannel(step.channel, device.globalChannel);
-    const fire = controlKind === "switch" ? fireSwitchStep : fireExpressionStep;
-    const fired = fire(step, phase, subState, channel ?? 0);
+    const fired =
+      controlKind === "switch"
+        ? fireSwitchStep(step, phase, subState, channel ?? 0)
+        : fireExpressionStep(step, phase, subState, channel ?? 0, position);
     if (channel === undefined && fired.messages.length > 0) {
       warnings.push(`step ${n}: channel byte ${step.channel} is out of range (expected 0 = Global or 1-16)`);
       fired.messages.length = 0;
@@ -91,6 +95,7 @@ function pressControl(
   controlKind: ControlKind,
   runtimeState: ControlRuntimeState,
   device: DeviceContext,
+  position?: number,
 ): ControlEffect {
   const mode = control.controlMode ?? ControlMode.AllStepsAtOnce;
 
@@ -112,7 +117,7 @@ function pressControl(
     stepNumbers = activeStepNumbers(control);
   }
 
-  const fired = fireStepsForControl(control, controlKind, "press", stepNumbers, runtimeState, device);
+  const fired = fireStepsForControl(control, controlKind, "press", stepNumbers, runtimeState, device, position);
 
   return {
     messages: fired.messages,
@@ -132,6 +137,7 @@ function releaseControl(
   controlKind: ControlKind,
   runtimeState: ControlRuntimeState,
   device: DeviceContext,
+  position?: number,
 ): ControlEffect {
   const mode = control.controlMode ?? ControlMode.AllStepsAtOnce;
 
@@ -144,7 +150,7 @@ function releaseControl(
     stepNumbers = activeStepNumbers(control);
   }
 
-  const fired = fireStepsForControl(control, controlKind, "release", stepNumbers, runtimeState, device);
+  const fired = fireStepsForControl(control, controlKind, "release", stepNumbers, runtimeState, device, position);
 
   return {
     messages: fired.messages,
@@ -169,12 +175,33 @@ export function resolveControl(
   phase: ControlPhase,
   runtimeState: ControlRuntimeState,
   device: DeviceContext = DEFAULT_DEVICE_CONTEXT,
+  /** Expression pedals: 0 (heel down) to 1 (toe down); see `BoardEvent`. */
+  position?: number,
 ): ControlEffect {
+  // A sweep fires the pedal's steps at its new position without changing whether it's "held".
+  if (phase === "move") {
+    const fired = fireStepsForControl(
+      control,
+      controlKind,
+      "move",
+      activeStepNumbers(control),
+      runtimeState,
+      device,
+      position,
+    );
+    return {
+      messages: fired.messages,
+      deviceActions: fired.deviceActions,
+      warnings: fired.warnings,
+      nextRuntimeState: { ...runtimeState, stepCounters: fired.stepCounters },
+    };
+  }
+
   if (phase === "press") {
     if (runtimeState.pressed) {
       return { messages: [], deviceActions: [], warnings: ["control already held"], nextRuntimeState: runtimeState };
     }
-    return pressControl(control, controlKind, runtimeState, device);
+    return pressControl(control, controlKind, runtimeState, device, position);
   }
 
   if (!runtimeState.pressed) {
@@ -185,5 +212,5 @@ export function resolveControl(
       nextRuntimeState: runtimeState,
     };
   }
-  return releaseControl(control, controlKind, runtimeState, device);
+  return releaseControl(control, controlKind, runtimeState, device, position);
 }

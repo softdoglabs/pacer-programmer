@@ -19,6 +19,8 @@ const SIZES = {
 export interface ButtonProps extends AriaButtonProps {
   variant?: keyof typeof VARIANTS;
   size?: keyof typeof SIZES;
+  /** Native tooltip, for icon-only buttons whose label isn't visible. */
+  title?: string;
 }
 
 /** A React Aria button (press handling that works for mouse, touch, pen and keyboard). */

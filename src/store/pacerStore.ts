@@ -84,6 +84,8 @@ export interface PacerStore extends ConfigurationsSlice, EditingSlice, SendSlice
   selectedControlId?: number;
   press: (controlId: number) => void;
   release: (controlId: number) => void;
+  /** An expression pedal swept to a position (0 = heel down, 1 = toe down). */
+  movePedal: (controlId: number, position: number) => void;
   /** [Preset] is a tap-vs-hold switch (see deviceModeMachine.ts), so it needs both edges. */
   presetButtonDown: () => void;
   presetButtonUp: () => void;
@@ -222,8 +224,8 @@ export const usePacerStore = create<PacerStore>((set, get) => {
 
   const storage = browserStorage();
 
-  function runEngine(controlId: number, phase: ControlPhase) {
-    const { board, effect } = applyBoardEvent(get().board, { controlId, phase });
+  function runEngine(controlId: number, phase: ControlPhase, position?: number) {
+    const { board, effect } = applyBoardEvent(get().board, { controlId, phase, position });
     const sentLine = sendMidi(effect.messages);
     set((s) => {
       // The engine drops a preset-changing press's matching release (runtime state resets on
@@ -263,6 +265,8 @@ export const usePacerStore = create<PacerStore>((set, get) => {
       }
       runEngine(controlId, "press");
     },
+
+    movePedal: (controlId, position) => runEngine(controlId, "move", position),
 
     release: (controlId) => {
       const { swallowedReleases, board } = get();

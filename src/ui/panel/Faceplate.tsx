@@ -1,10 +1,12 @@
 import { usePress } from "react-aria";
-import { useMemo, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { panelRow, type SwitchSpec } from "@/pacer/hardware";
+import { PRESET_NAME_LENGTH, renamePreset } from "@/pacer/editing";
+import { presetIndexToLabel } from "@/pacer/protocol/constants";
 import { computePanelState, switchHint, type DisplayState, type SwitchPanelState } from "@/pacer/panel";
-import { cn } from "@/lib/utils";
 import { usePacerStore } from "@/store/pacerStore";
 import { useControlPress } from "../useControlPress";
+import { EditBadge } from "./EditBadge";
 import { HOUSING_H, HOUSING_W, SwitchView } from "./SwitchView";
 
 /*
@@ -53,6 +55,7 @@ interface PanelSwitchProps {
 function StompPanelSwitch({ spec, controlId, state, hint }: PanelSwitchProps & { controlId: number }) {
   const { pressProps } = useControlPress(controlId);
   const selected = usePacerStore((s) => s.selectedControlId === controlId);
+  const editing = usePacerStore((s) => s.uiMode === "edit");
   const { x, y } = placementOf(spec);
   return (
     <SwitchView
@@ -60,6 +63,7 @@ function StompPanelSwitch({ spec, controlId, state, hint }: PanelSwitchProps & {
       state={state}
       style={overlayStyle(x, y, HOUSING_W, HOUSING_H)}
       selected={selected}
+      editable={editing}
       ariaLabel={`Switch ${spec.name}: ${hint ?? "—"}`}
       title={hint ? `${spec.name}: ${hint}` : `${spec.name}: not configured on this preset`}
       pressProps={pressProps}
@@ -84,7 +88,8 @@ function PresetPanelSwitch({ spec, state, hint }: PanelSwitchProps) {
       state={state}
       style={overlayStyle(x, y, HOUSING_W, HOUSING_H)}
       selected={false}
-      ariaLabel={`Preset button (${hint})`}
+      uneditable={editing}
+      ariaLabel={editing ? "Preset button (not programmable)" : `Preset button (${hint})`}
       title={`Preset: ${hint}`}
       pressProps={pressProps}
     />
@@ -183,6 +188,56 @@ function Hint({ spec, hint }: { spec: SwitchSpec; hint: string | undefined }) {
 
 const PANEL_SWITCHES: readonly SwitchSpec[] = [...panelRow("back"), ...panelRow("front")];
 
+const DISPLAY_BOX = { w: HOUSING_W, h: 130 };
+
+/**
+ * The preset's name, edited on the display itself: in Edit mode the display takes a pencil badge,
+ * and tapping it turns into a 5-character field over the same spot.
+ */
+function DisplayNameEditor() {
+  const presetIndex = usePacerStore((s) => s.board.activePresetIndex);
+  const name = usePacerStore((s) => s.board.config.presets[s.board.activePresetIndex]?.name ?? "");
+  const applyEdit = usePacerStore((s) => s.applyEdit);
+  const [draft, setDraft] = useState<string>();
+  const style = overlayStyle(colX(DISPLAY_COL), ROW_Y.back, DISPLAY_BOX.w, DISPLAY_BOX.h);
+  const commit = () => {
+    if (draft !== undefined && draft.trimEnd() !== name.trimEnd())
+      applyEdit((c) => renamePreset(c, presetIndex, draft));
+    setDraft(undefined);
+  };
+
+  if (draft === undefined) {
+    return (
+      <button
+        type="button"
+        className="absolute rounded-[4%] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        style={style}
+        title={`Rename preset ${presetIndexToLabel(presetIndex)}`}
+        aria-label={`Rename preset ${presetIndexToLabel(presetIndex)} (currently ${name.trim() || "unnamed"})`}
+        onClick={() => setDraft(name.trimEnd())}
+      >
+        <EditBadge />
+      </button>
+    );
+  }
+  return (
+    <input
+      autoFocus
+      value={draft}
+      maxLength={PRESET_NAME_LENGTH}
+      aria-label={`Preset ${presetIndexToLabel(presetIndex)} name`}
+      className="absolute rounded-[4%] border-2 border-primary bg-black text-center font-mono font-bold tracking-[0.2em] text-[#ff3322] uppercase outline-none"
+      style={{ ...style, fontSize: "min(4vw, 2.2rem)" }}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") commit();
+        if (e.key === "Escape") setDraft(undefined);
+      }}
+    />
+  );
+}
+
 export function Faceplate() {
   const editing = usePacerStore((s) => s.uiMode === "edit");
   const board = usePacerStore((s) => s.board);
@@ -201,10 +256,7 @@ export function Faceplate() {
 
   return (
     <div
-      className={cn(
-        "relative w-full select-none touch-none rounded-[2%]",
-        editing && "outline-2 outline-offset-4 outline-dashed outline-primary",
-      )}
+      className="relative w-full touch-none rounded-[2%] select-none"
       style={{ aspectRatio: `${WIDTH} / ${HEIGHT}` }}
       role="group"
       aria-label={editing ? "Pacer faceplate (editing: tap a switch to program it)" : "Pacer faceplate"}
@@ -254,6 +306,7 @@ export function Faceplate() {
         <Display display={panel.display} />
       </svg>
 
+      {editing && <DisplayNameEditor />}
       {PANEL_SWITCHES.map((spec) =>
         spec.kind === "presetSwitch" ? (
           <PresetPanelSwitch key={spec.id} spec={spec} state={panel.switches[spec.id]} hint={hints.get(spec.id)} />

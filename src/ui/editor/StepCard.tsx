@@ -193,16 +193,19 @@ function LedFields({
   return (
     <div className="space-y-2 border-t pt-2">
       <ToggleGroup label="Light" options={targets} value={value} onChange={(v) => onLed({ position: Number(v) })} />
-      <SwatchPicker
-        label={firstLabel}
-        value={led?.activeColor ?? 0x7f}
-        onChange={(activeColor) => onLed({ activeColor })}
-      />
-      <SwatchPicker
-        label={secondLabel}
-        value={led?.inactiveColor ?? 0x7f}
-        onChange={(inactiveColor) => onLed({ inactiveColor })}
-      />
+      {/* Side by side once the card is wide enough for both grids (container query). */}
+      <div className="grid gap-3 @3xl:grid-cols-2">
+        <SwatchPicker
+          label={firstLabel}
+          value={led?.activeColor ?? 0x7f}
+          onChange={(activeColor) => onLed({ activeColor })}
+        />
+        <SwatchPicker
+          label={secondLabel}
+          value={led?.inactiveColor ?? 0x7f}
+          onChange={(inactiveColor) => onLed({ inactiveColor })}
+        />
+      </div>
     </div>
   );
 }
@@ -234,7 +237,7 @@ export function StepCard({
   const hasLights = kind === "switch" && spec !== undefined && spec.indicators.some((i) => i.addressable);
 
   return (
-    <section aria-label={`Step ${n}`} className="space-y-3 rounded-md border bg-card p-3">
+    <section aria-label={`Step ${n}`} className="@container space-y-3 rounded-md border bg-card p-3">
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-sm font-semibold">Step {n}</span>
         {drivesLight && hasLights && <Badge variant="outline">lights the switch</Badge>}

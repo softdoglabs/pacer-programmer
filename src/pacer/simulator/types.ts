@@ -30,7 +30,12 @@ export type DeviceAction =
   | { kind: "presetRelative"; direction: "next" | "prev" }
   | { kind: "relay"; relayIndex: number; mode: number };
 
-export type ControlPhase = "press" | "release";
+/**
+ * "press"/"release" are a switch's edges; an expression pedal also reports "move", carrying how
+ * far it's pushed. A press is toe-down (position 1) and a release heel-down (position 0), so a
+ * pedal simulated as a button still behaves as before.
+ */
+export type ControlPhase = "press" | "release" | "move";
 
 /** Per-control runtime state, scoped to the currently active preset (reset whenever it changes). */
 export interface ControlRuntimeState {
@@ -66,6 +71,8 @@ export interface BoardState {
 export interface BoardEvent {
   controlId: number;
   phase: ControlPhase;
+  /** Expression pedals only: 0 (heel down) to 1 (toe down). Defaults to the phase's end of the range. */
+  position?: number;
 }
 
 export interface BoardEffect {

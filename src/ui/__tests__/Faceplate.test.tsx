@@ -18,6 +18,11 @@ function tap(el: Element) {
 const display = () => screen.getByTestId("display-line2").textContent;
 const switchButton = (name: string) => screen.getByRole("button", { name: new RegExp(`^Switch ${name}:`) });
 
+/** The support panels (log, presets, configurations, rear jacks) live behind tabs. */
+function openTab(name: string) {
+  fireEvent.click(screen.getByRole("tab", { name }));
+}
+
 beforeEach(() => {
   globalThis.ResizeObserver ??= class {
     observe() {}
@@ -47,6 +52,7 @@ describe("Faceplate (factory defaults)", () => {
     fireEvent.pointerDown(sw1, pointer); // held (and selected in the inspector) when the config changes
     expect(usePacerStore.getState().selectedControlId).toBeDefined();
 
+    openTab("Configurations");
     const list = screen.getByRole("list", { name: "Saved configurations" });
     fireEvent.click(within(list).getByRole("button", { name: /^other/ }));
     fireEvent.pointerUp(sw1, pointer);
@@ -64,6 +70,7 @@ describe("Faceplate (factory defaults)", () => {
     const fixture = new Uint8Array(readFileSync("fixtures/factory-presets.syx"));
     act(() => usePacerStore.getState().importSyxFile("gig-rig.syx", fixture));
     render(<App />);
+    openTab("Configurations");
     const list = screen.getByRole("list", { name: "Saved configurations" });
     expect(within(list).getByText("gig-rig")).toBeTruthy();
     expect(within(list).getByText(/Imported gig-rig.syx .* 24 presets$/)).toBeTruthy(); // no firmware for files
@@ -192,6 +199,7 @@ describe("Faceplate (factory defaults)", () => {
   it("the inspector shows the pressed control's steps", () => {
     render(<App />);
     tap(switchButton("2"));
+    openTab("Inspector");
     expect(screen.getByRole("heading", { name: "Stomp 2" })).toBeTruthy();
     expect(screen.getByText("All steps at once")).toBeTruthy();
   });

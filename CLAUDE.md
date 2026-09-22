@@ -404,7 +404,21 @@ no hover-only UI, for tablets.
 - **Programming interface (first slice):**
   - **Play/Edit** switch in the header. In Edit mode, tapping a switch
     (or a rear-jack control) selects it for editing and fires nothing;
-    [Preset] does nothing. The faceplate gets a dashed outline.
+    [Preset] does nothing. Every programmable control gets a pencil badge,
+    overhanging its bottom-right corner with a shadow so it reads as an app
+    affordance rather than part of the hardware (and so it's clear what can
+    be tapped, and that [Preset] can't). Clicking the badge opens the
+    control, including the part that overhangs: inside a control that's
+    already a button it's a plain element that takes pointer events, and
+    where the control isn't a button (an expression pedal) the badge is one
+    itself. [Preset] gets the counterpart — a struck-out pencil in red —
+    and is disabled outright in Edit mode, so it neither highlights nor
+    responds. The badges say what's editable, so the faceplate has no edit
+    outline; a badged band sits under it. The block holding the faceplate
+    and rear jacks reserves the overhang in both modes, so switching
+    doesn't shift the layout or raise a scrollbar.
+    Entering Edit mode clears the selected control: it starts at the
+    faceplate rather than on whatever was last pressed in Play mode.
   - **Editor** (`ui/editor/`): the preset name (5 chars), then the selected
     control's mode (All at once / Sequence / External step) and a card per
     configured (active) step. Step 1 is always shown. "+ Add step"
@@ -424,9 +438,18 @@ no hover-only UI, for tablets.
       dim). The swatches are labeled by what makes each color show, e.g.
       "While CC 52 = 127" / "Otherwise", since the pair isn't a plain
       on/off (see the LED model above).
-    - Wide screens show the editor in the side column; narrow ones
-      (tablet portrait) put it right under the faceplate
-      (`useMediaQuery`, rendered in one place only).
+    - Step cards stack vertically, each spanning the width, so its fields
+      lay out wide and its two color grids sit side by side (container
+      query).
+  - **The preset's name** is edited on the display itself: in Edit mode the
+    display takes a pencil badge, and tapping it turns into a 5-character
+    field over the same spot. There's no separate name field.
+  - **The control being edited is also rendered live** beside its settings
+    (`ui/editor/LiveControl`): pressing it runs the simulator exactly as in
+    Play mode — MIDI goes out, its lights follow, the log records it — so
+    you can try what you're editing. `useControlPress(id, { live: true })`
+    opts out of Edit mode's press-free behavior. Pressing it does whatever
+    the control does, including changing preset if it's a Preset Select.
   - **Edits** are pure functions (`src/pacer/editing`) applied to the live
     config, so the simulator previews them. There's undo/redo (buttons,
     ⌘Z / ⇧⌘Z) and an "unsaved" badge.
@@ -488,10 +511,23 @@ no hover-only UI, for tablets.
   - The simulator views are keyed on `sessionId`, so React remounts them
     and no component state (a held press, the inspector tab) survives the
     switch.
-- **Around the faceplate:** rear-jack controls, a preset list (a direct
-  jump that the hardware can't do; logged as an app action), a
-  control/preset inspector (step table with LED colors and which light each
-  step drives), and the output log.
+- **Layout** (`src/App.tsx`): the faceplate spans the full width as the
+  overview, since it's wide and is what you point at. Programming is a
+  drill-in: in Edit mode, tapping a switch replaces the faceplate with that
+  control's editor across the whole width (`ui/editor/SwitchEditorView`),
+  with a switch picker in its header so you can move between controls, and
+  a Close that returns to the faceplate. The preset's name field sits with
+  the faceplate, since it belongs to the preset rather than a switch.
+  - Rear-jack controls sit with the faceplate (they're hardware, not a
+    panel), rendered by the same `ui/panel/RearControl` the editor's live
+    copy uses, so a control looks the same in both places.
+  - Everything that supports the work rather than being it — the output
+    log, inspector, preset list, configurations — sits in one tab strip
+    below. The tab you're on survives a configuration switch;
+    only the simulator views remount.
+  - This replaced a two-column layout that gave the bulk of the width to
+    panels nobody interacts with and squeezed the editor into a 360-440px
+    side column.
 - **MIDI out** (`src/midi/webMidi.ts`): a thin Web MIDI wrapper, typed
   structurally so tests use fakes (`src/midi/__tests__/fakeMidi.ts`).
   - The header's "Connect MIDI" asks for SysEx access, falling back to
@@ -544,9 +580,14 @@ no hover-only UI, for tablets.
     5 MB (~25 dumps).
   - Edits are saved as new snapshots or over the open one (see Save
     above); sending to the device is separate (see Send to Pacer).
+- **Expression pedals are swept, not pressed**: a `BoardEvent` carries a
+  `position` (0 = heel, 1 = toe) and a "move" phase, and the continuous
+  types (MIDI CC, Pitch Bend, Channel Aftertouch) interpolate between the
+  step's own min and max. The UI renders them as sliders. A press or
+  release still means toe or heel, so a pedal driven as a button behaves as
+  before.
 - Not simulated yet: a preset's own load-time MIDI settings (shown in the
-  inspector only), LED `midiController` input, and continuous expression
-  pedal sweeps (press/release = max/min).
+  inspector only) and LED `midiController` input (no MIDI input path yet).
 - Checks: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm format:check`.
 
 ### Running locally

@@ -41,7 +41,9 @@ export function createEditingSlice(set: Set, get: Get): EditingSlice {
 
   return {
     uiMode: "play",
-    setUiMode: (uiMode) => set({ uiMode }),
+    // Entering Edit mode starts from the faceplate: the control selected in Play mode was chosen
+    // by pressing it, which isn't a choice to program it.
+    setUiMode: (uiMode) => set(uiMode === "edit" ? { uiMode, selectedControlId: undefined } : { uiMode }),
 
     applyEdit: (edit) => {
       const { board, editHistory } = get();

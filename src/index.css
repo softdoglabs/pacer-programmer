@@ -79,12 +79,19 @@
 .pacer-switch[data-pressed="true"] .pad {
   transform: translateY(4px);
 }
-.pacer-switch:hover .housing,
+.pacer-switch:not(:disabled):hover .housing,
 .pacer-switch:focus-visible .housing {
   stroke: oklch(0.72 0.1 180 / 60%);
 }
 .pacer-switch[data-selected="true"] .housing {
   stroke: oklch(0.72 0.1 180);
+}
+/* Edit mode: the pencil badge marks what can be tapped to program it. */
+.pacer-switch[data-editable="true"]:hover .housing {
+  stroke: var(--primary);
+}
+.pacer-switch:disabled {
+  cursor: default;
 }
 
 @keyframes pacer-blink {

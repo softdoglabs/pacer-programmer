@@ -98,6 +98,11 @@ function concatMessages(messages: Uint8Array[]): Uint8Array {
  * its own valid message somewhere in the stream.
  */
 export function encodeSysex(config: PacerConfig): Uint8Array {
+  return concatMessages(encodeSysexMessages(config));
+}
+
+/** The same stream as `encodeSysex`, as its individual `F0 … F7` messages (e.g. to send one at a time). */
+export function encodeSysexMessages(config: PacerConfig): Uint8Array[] {
   const messages: Uint8Array[] = [];
 
   for (const idx of sortedNumericKeys(config.presets)) {
@@ -130,5 +135,18 @@ export function encodeSysex(config: PacerConfig): Uint8Array {
     messages.push(frameMessage(Command.Set, Target.Global, field.idx, field.obj, [field.elm, ...field.data]));
   }
 
-  return concatMessages(messages);
+  return messages;
+}
+
+/**
+ * The Set messages that write only the given presets (no global settings) to a Pacer. Each
+ * preset keeps its own `idx`, so it lands in the same slot.
+ */
+export function encodePresetMessages(config: PacerConfig, presetIndices: readonly number[]): Uint8Array[] {
+  const presets: PacerConfig["presets"] = {};
+  for (const idx of presetIndices) {
+    const preset = config.presets[idx];
+    if (preset) presets[idx] = preset;
+  }
+  return encodeSysexMessages({ presets, globalFields: [] });
 }

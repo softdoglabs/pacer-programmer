@@ -4,11 +4,16 @@ import type { PacerConfig } from "./types";
  * Targeted reads of the few Global-target settings the simulator needs. Global fields are
  * otherwise kept opaque (see OpaqueGlobalField). Element codes are from the reference project's
  * sysex.md: Global idx 0 = "Current", 1-4 = Global Preset 1-4. On obj 0x01 ("Global Setting"),
- * elm 0x01 = Global Channel, and on idx 0, elm 0x31 = the current global config (1-4).
+ * elm 0x01 = Global Channel, and on idx 0, elm 0x31 = the current global config (1-4), elm 0x1A =
+ * the active preset kind, and elm 0x1E = the current user preset.
  */
 const GLOBAL_SETTING_OBJ = 0x01;
 const GLOBAL_CHANNEL_ELM = 0x01;
 const CURRENT_GLOBAL_CONFIG_ELM = 0x31;
+const ACTIVE_PRESET_KIND_ELM = 0x1a;
+const CURRENT_USER_PRESET_ELM = 0x1e;
+/** `ACTIVE_PRESET_KIND_ELM` values: 0 = user preset, 1 = Track, 2 = Transport, 3/4 = their long-press variants. */
+const ACTIVE_KIND_USER = 0;
 const CURRENT_IDX = 0;
 
 /** The factory global channel (MIDI channel 1), used when a config doesn't carry one. */
@@ -33,6 +38,19 @@ export function readGlobalElement(config: PacerConfig, idx: number, obj: number,
     }
   }
   return undefined;
+}
+
+/**
+ * The SysEx idx (1-24 = A1-D6) of the user preset the Pacer has loaded, or undefined when it's on
+ * a Track/Transport preset or the fields are missing. The reference project's sysex.md numbers
+ * the current user preset 0 = A1 ... 23 = D6. Consistent with our dumps: every one has 0 here
+ * and the Pacer on A1.
+ */
+export function activeUserPresetIndex(config: PacerConfig): number | undefined {
+  const kind = readGlobalElement(config, CURRENT_IDX, GLOBAL_SETTING_OBJ, ACTIVE_PRESET_KIND_ELM)?.[0];
+  const preset = readGlobalElement(config, CURRENT_IDX, GLOBAL_SETTING_OBJ, CURRENT_USER_PRESET_ELM)?.[0];
+  if (kind !== ACTIVE_KIND_USER || preset === undefined || preset < 0 || preset > 23) return undefined;
+  return preset + 1;
 }
 
 /** Which of Global Preset 1-4 is active (factory: 1). */

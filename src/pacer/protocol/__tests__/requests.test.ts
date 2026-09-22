@@ -1,6 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { EXPECTED_FULL_DUMP_MESSAGES, buildFullDumpRequest, isPacerDataMessage } from "../requests";
+import {
+  EXPECTED_FULL_DUMP_MESSAGES,
+  buildFullDumpRequest,
+  buildGlobalSettingsRequest,
+  isPacerDataMessage,
+} from "../requests";
 
 function splitMessages(bytes: Uint8Array): Uint8Array[] {
   const messages: Uint8Array[] = [];
@@ -31,5 +36,13 @@ describe("full dump request", () => {
     expect(isPacerDataMessage(buildFullDumpRequest())).toBe(false); // a Get, not a Set
     expect(isPacerDataMessage([0xf0, 0x7e, 0x7f, 0x06, 0x02, 0xf7])).toBe(false);
     expect(isPacerDataMessage([0xc0, 0x05])).toBe(false);
+  });
+});
+
+describe("buildGlobalSettingsRequest", () => {
+  it("is Get / Global / idx 0 / all objects, as sent to the Pacer", () => {
+    expect([...buildGlobalSettingsRequest()]).toEqual([
+      0xf0, 0x00, 0x01, 0x77, 0x7f, 0x02, 0x05, 0x00, 0x7f, 0x7a, 0xf7,
+    ]);
   });
 });

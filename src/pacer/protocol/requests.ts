@@ -25,3 +25,16 @@ export function isPacerDataMessage(bytes: ArrayLike<number>): boolean {
   if (bytes.length < PACER_PREFIX.length + 3 || bytes[bytes.length - 1] !== SYSEX_END) return false;
   return PACER_PREFIX.every((b, i) => bytes[i] === b) && bytes[PACER_PREFIX.length] === Command.Set;
 }
+
+/** `obj` 0x7F: "all objects" in a Get (the reference editor's CONTROL_ALL). */
+const ALL_OBJECTS = 0x7f;
+
+/**
+ * Requests the Pacer's global settings: `Get` / Global / idx 0 / all objects. Observed on
+ * hardware (firmware "0101"): the reply is every Global-target message of a full dump (37, for
+ * idx 0-4), within about 60 ms. Among them is which preset is loaded (`activeUserPresetIndex`).
+ */
+export function buildGlobalSettingsRequest(): Uint8Array {
+  const covered = [Command.Get, Target.Global, 0, ALL_OBJECTS];
+  return Uint8Array.from([SYSEX_START, ...MANUFACTURER_ID, DEVICE_ID, ...covered, computeChecksum(covered), SYSEX_END]);
+}

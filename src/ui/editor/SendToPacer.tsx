@@ -11,7 +11,7 @@ import {
   presetIndexToLabel,
 } from "../../pacer/protocol/constants";
 import { usePacerStore } from "../../store/pacerStore";
-import type { SendView } from "../../store/sendSlice";
+import type { CurrentUpdate, SendView } from "../../store/sendSlice";
 
 type Scope = "changed" | "current" | "all";
 
@@ -69,10 +69,7 @@ function Result({ send }: { send: SendView }) {
           Sent {send.presets.map(label).join(", ")}.{" "}
           {send.verified ? "Read back from the Pacer: it matches." : "Not verified."}
         </p>
-        <p className="text-xs text-muted-foreground">
-          Not yet confirmed on hardware: if the Pacer is showing one of these presets, it may keep running the old
-          version until you select that preset again.
-        </p>
+        {send.current && <CurrentNote current={send.current} />}
       </div>
     );
   }
@@ -85,6 +82,19 @@ function Result({ send }: { send: SendView }) {
     );
   }
   return null;
+}
+
+/** What happened to the preset the Pacer has loaded (its working copy, which the switches run). */
+function CurrentNote({ current }: { current: CurrentUpdate }) {
+  const label = usePresetLabel();
+  if (current.kind === "notLoaded") return null;
+  return (
+    <p className="text-xs text-muted-foreground">
+      {current.kind === "updated"
+        ? `The Pacer has ${label(current.index)} loaded, so its working copy was updated too: the new version is live.`
+        : `Couldn't tell which preset the Pacer has loaded (${current.reason}). If it's one of these, select it again on the Pacer to run the new version.`}
+    </p>
+  );
 }
 
 /** The send form. Mounted each time the dialog opens, so the scope starts from what changed. */
@@ -131,7 +141,8 @@ function SendForm({ onClose }: { onClose: () => void }) {
         )}
         <p className="text-xs text-muted-foreground">
           Writes take effect immediately and the Pacer has no undo. Pull a copy first if you want to keep what&apos;s on
-          it. Global settings are never sent.
+          it. If the Pacer has one of these presets loaded, its working copy is updated too. Global settings are never
+          sent.
         </p>
       </div>
       <Checkbox

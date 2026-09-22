@@ -2,6 +2,7 @@ import { computeChecksum } from "./checksum";
 import {
   Command,
   CONTROL_MODE_ELEMENT,
+  CURRENT_PRESET_INDEX,
   ControlId,
   DEVICE_ID,
   MANUFACTURER_ID,
@@ -149,4 +150,18 @@ export function encodePresetMessages(config: PacerConfig, presetIndices: readonl
     if (preset) presets[idx] = preset;
   }
   return encodeSysexMessages({ presets, globalFields: [] });
+}
+
+/**
+ * The Set messages that write preset `idx` of `config` into the Pacer's Current slot (idx 0), its
+ * working copy of the loaded preset. Writing a preset's own slot doesn't update Current (observed
+ * on hardware), so when the Pacer has that preset loaded, this makes the new version take effect.
+ */
+export function encodePresetAsCurrentMessages(config: PacerConfig, idx: number): Uint8Array[] {
+  const preset = config.presets[idx];
+  if (!preset) return [];
+  return encodeSysexMessages({
+    presets: { [CURRENT_PRESET_INDEX]: { ...preset, index: CURRENT_PRESET_INDEX } },
+    globalFields: [],
+  });
 }

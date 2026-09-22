@@ -1,29 +1,40 @@
 import { pullFullDump } from "../midi/pacerDump";
+import { queryLoadedPreset } from "../midi/pacerState";
 import { SendError, sendPaced } from "../midi/pacerWrite";
 import type { MidiConnection } from "../midi/webMidi";
 import { mismatchedPresets } from "../pacer/editing";
 import { decodeSysex } from "../pacer/protocol/decode";
-import { encodePresetMessages } from "../pacer/protocol/encode";
+import { CURRENT_PRESET_INDEX } from "../pacer/protocol/constants";
+import { encodePresetAsCurrentMessages, encodePresetMessages } from "../pacer/protocol/encode";
 import type { PacerConfig } from "../pacer/protocol/types";
 import { isSendingToPacer } from "./configurationsSlice";
 import type { PacerStore } from "./pacerStore";
 
 /*
  * Sending the working configuration's presets to the Pacer, for trying edits on the hardware.
- * Only user presets (A1-D6) are written, each as Set messages to its own slot: never the global
- * settings, and never the "Current" working slot (idx 0), whose write semantics are unknown.
+ * User presets (A1-D6) are written, each as Set messages to its own slot; global settings never
+ * are. Writing a slot doesn't change the Pacer's "Current" working copy (idx 0) of the loaded
+ * preset, which is what its switches run (observed on hardware). So the Pacer is first asked
+ * which preset it has loaded, and if that's one being sent, the same contents go to Current too.
  * Writing is immediate and there's no undo on the device, so the UI confirms exactly which
  * presets get overwritten before calling `sendToPacer`. The send isn't finished until the Pacer
  * has had time to commit the writes (`sendPaced`), and until then nothing else goes to the
  * device: no read-back, pull, or firmware check.
  */
 
+/** What happened to the Pacer's working copy of its loaded preset (see the module comment). */
+export type CurrentUpdate =
+  | { kind: "updated"; index: number }
+  /** The Pacer has a preset loaded that isn't being sent (or a Track/Transport preset). */
+  | { kind: "notLoaded" }
+  | { kind: "unknown"; reason: string };
+
 export type SendView =
   | { status: "idle" }
   | { status: "sending"; presets: number[]; sent: number; total: number }
   | { status: "verifying"; presets: number[]; received: number; expected: number }
-  | { status: "done"; presets: number[]; verified: boolean }
-  | { status: "error"; presets: number[]; error: string; mismatched?: number[] };
+  | { status: "done"; presets: number[]; verified: boolean; current?: CurrentUpdate }
+  | { status: "error"; presets: number[]; error: string; mismatched?: number[]; current?: CurrentUpdate };
 
 export interface SendSlice {
   send: SendView;
@@ -80,10 +91,38 @@ export function createSendSlice(
       // Capture the config now: editing or opening another configuration mid-send doesn't change what's sent.
       const { board, sessionId } = get();
       const config = board.config;
-      const messages = encodePresetMessages(config, presets);
       abort = new AbortController();
       const signal = abort.signal;
       const stillSameSession = () => get().sessionId === sessionId;
+      set({ send: { status: "sending", presets, sent: 0, total: 0 } });
+
+      let current: CurrentUpdate = { kind: "unknown", reason: "The Pacer's MIDI input port isn't chosen" };
+      if (inputId) {
+        const loaded = await queryLoadedPreset(connection, { inputId, outputId });
+        current =
+          loaded.kind === "unknown"
+            ? loaded
+            : loaded.kind === "user" && presets.includes(loaded.index)
+              ? { kind: "updated", index: loaded.index }
+              : { kind: "notLoaded" };
+      }
+      // The slots first, then (if loaded) the working copy, all within one paced, settled send.
+      const messages = [
+        ...encodePresetMessages(config, presets),
+        ...(current.kind === "updated" ? encodePresetAsCurrentMessages(config, current.index) : []),
+      ];
+      // What the read-back should show: the sent presets, and Current matching the loaded one.
+      const expected =
+        current.kind === "updated"
+          ? {
+              ...config,
+              presets: {
+                ...config.presets,
+                [CURRENT_PRESET_INDEX]: { ...config.presets[current.index]!, index: CURRENT_PRESET_INDEX },
+              },
+            }
+          : config;
+      const checked = current.kind === "updated" ? [...presets, CURRENT_PRESET_INDEX] : presets;
 
       try {
         await sendPaced(connection, messages, {
@@ -98,7 +137,7 @@ export function createSendSlice(
         if (stillSameSession()) set((s) => ({ sendBaseline: withPresets(s.sendBaseline, config, presets) }));
 
         if (!verify || !inputId) {
-          set({ send: { status: "done", presets, verified: false } });
+          set({ send: { status: "done", presets, verified: false, current } });
           return;
         }
         set({ send: { status: "verifying", presets, received: 0, expected: 0 } });
@@ -112,24 +151,26 @@ export function createSendSlice(
             }
           },
         });
-        const mismatched = mismatchedPresets(config, decodeSysex(bytes), presets);
+        const mismatched = mismatchedPresets(expected, decodeSysex(bytes), checked);
         set({
           send:
             mismatched.length === 0
-              ? { status: "done", presets, verified: true }
+              ? { status: "done", presets, verified: true, current }
               : {
                   status: "error",
                   presets,
                   mismatched,
+                  current,
                   error: "The Pacer's read-back doesn't match what was sent for some presets.",
                 },
         });
       } catch (err) {
-        const partial = err instanceof SendError && err.sent < messages.length;
+        const partial = err instanceof SendError && err.sent > 0 && err.sent < messages.length;
         set({
           send: {
             status: "error",
             presets,
+            current,
             error: partial
               ? `${errorMessage(err)}. Presets may be partly written; send them again to be sure.`
               : errorMessage(err),

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { userPresetIndex } from "../constants";
 import { decodeSysex } from "../decode";
-import { encodePresetMessages } from "../encode";
+import { encodePresetAsCurrentMessages, encodePresetMessages } from "../encode";
 
 const factory = decodeSysex(new Uint8Array(readFileSync("fixtures/factory-presets.syx")));
 const A1 = userPresetIndex(0, 1);
@@ -23,5 +23,14 @@ describe("encodePresetMessages", () => {
       expect([m[5], m[6]]).toEqual([0x01, 0x01]);
       expect([A1, C1]).toContain(m[7]);
     }
+  });
+});
+
+describe("encodePresetAsCurrentMessages", () => {
+  it("addresses a preset's contents to the Current slot (idx 0)", () => {
+    const messages = encodePresetAsCurrentMessages(factory, C1);
+    expect(messages.every((m) => m[7] === 0)).toBe(true);
+    const decoded = decodeSysex(Uint8Array.from(messages.flatMap((m) => [...m])));
+    expect(decoded.presets[0]).toEqual({ ...factory.presets[C1], index: 0 });
   });
 });

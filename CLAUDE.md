@@ -406,9 +406,20 @@ no hover-only UI, for tablets.
       preset successfully sent since), "This preset", or "All 24". The
       dialog lists exactly which presets get overwritten and needs an
       explicit confirm.
-    - Only preset Set messages (`encodePresetMessages`) to idx 1-24.
-      Never global settings, never the Current slot (idx 0), whose write
-      semantics are unknown.
+    - Preset Set messages (`encodePresetMessages`) to idx 1-24, never
+      global settings.
+    - **The loaded preset's working copy is updated too.** Writing a slot
+      doesn't change Current (idx 0), which is what the switches run
+      (observed). So before writing, the app asks the Pacer which preset
+      it has loaded (`midi/pacerState.ts`: `Get` / Global / 0 / all
+      objects returns every global message in about 60 ms, and
+      `activeUserPresetIndex` reads elm `0x1A` = user preset and `0x1E` =
+      0-23 → A1-D6). If that preset is being sent, the same contents
+      also go to idx 0 (`encodePresetAsCurrentMessages`), after the slot
+      writes and inside the same settled send. The read-back checks
+      Current too.
+    - If the Pacer doesn't say, the send goes ahead and the dialog asks
+      you to reselect the preset on the Pacer.
     - Paced at 10 ms per message, like the reference editor's dump upload.
       Cancelable; a partial send is reported as such.
     - **Then a 1 s settle, during which nothing else goes to the Pacer**
@@ -426,9 +437,10 @@ no hover-only UI, for tablets.
       the sent presets (`mismatchedPresets`).
     - Confirmed on hardware: single-message and full-preset writes land
       in exactly the addressed slot (idx 1-24), for the active preset too.
-      Writing the active preset's slot doesn't update the Current working
-      copy (idx 0). Presumably the new version runs once that preset is
-      loaded again (not yet observed).
+      Writing idx 0 replaces Current and touches nothing else.
+    - Not yet observed: that the switches run the new Current right away,
+      and that `0x1E` counts from A1 = 0 for presets other than A1. So
+      far the Pacer has only been seen on A1.
   - Not built yet: preset load-time MIDI settings,
     expression pedal ranges beyond step data, and copy/paste of
     steps/switches.
@@ -520,7 +532,7 @@ real Pacer over USB enables live send/receive against the device.
   pedal/relay** settings, or start scoped to the 24 built-in presets only.
 - Framing/checksum/field layout is now verified against a real factory
   dump (see hardware background above); what's *not* yet verified is
-  writing Global settings or the Current slot (idx 0), and the
+  writing Global settings, and the
   Global-config field semantics (currently preserved opaquely, not
   decoded). Preset writes over Web MIDI are confirmed (see Send to Pacer).
 - Licensing: `francoisgeorgy/pacer-editor` is GPLv3. We're treating its

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { decodeSysex } from "../decode";
 import {
   DEFAULT_GLOBAL_CHANNEL,
+  activeUserPresetIndex,
   currentGlobalConfig,
   globalMidiChannel,
   readGlobalElement,
@@ -45,5 +46,28 @@ describe("wireChannel", () => {
     expect(wireChannel(1, 10)).toBe(0);
     expect(wireChannel(16, 1)).toBe(15);
     expect(wireChannel(17, 1)).toBeUndefined();
+  });
+});
+
+/** A copy of `config` with one element of the global "Current" block (idx 0, obj 1) set to `value`. */
+function withCurrentElement(config: typeof factory, elm: number, value: number) {
+  const copy = structuredClone(config);
+  const field = copy.globalFields.find((f) => f.idx === 0 && f.obj === 1 && [f.elm, ...f.data].includes(elm))!;
+  const bytes = [field.elm, ...field.data];
+  bytes[bytes.indexOf(elm) + 2] = value;
+  field.elm = bytes[0]!;
+  field.data = bytes.slice(1);
+  return copy;
+}
+
+describe("activeUserPresetIndex", () => {
+  it("reads the loaded user preset as a SysEx idx (0 = A1 in the global field)", () => {
+    expect(activeUserPresetIndex(factory)).toBe(1); // A1
+    expect(activeUserPresetIndex(withCurrentElement(factory, 0x1e, 23))).toBe(24); // D6
+  });
+
+  it("is undefined on a Track/Transport preset or when the fields are missing", () => {
+    expect(activeUserPresetIndex(withCurrentElement(factory, 0x1a, 1))).toBeUndefined();
+    expect(activeUserPresetIndex(createEmptyPacerConfig())).toBeUndefined();
   });
 });

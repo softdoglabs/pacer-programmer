@@ -22,9 +22,10 @@ const D6 = userPresetIndex(3, 6);
  *
  * It models the firmware behavior observed on hardware: writes are committed only after the
  * input has been quiet for a while, and a dump request that arrives before that drops the
- * pending writes and fills each preset being written with D6's contents.
+ * pending writes and fills each preset being written with D6's contents. It answers the global
+ * settings request, which says it's on A1 (the factory dump's Current block).
  */
-async function connectFakePacer({ ignoresWrites = false } = {}) {
+async function connectFakePacer({ ignoresWrites = false, answersGlobalRequest = true } = {}) {
   const input = new FakeInput("pacer-in", "PACER");
   const output = new FakeOutput("pacer-out", "PACER");
   const held: number[][] = encodeSysexMessages(decodeSysex(FIXTURE)).map((m) => [...m]);
@@ -39,6 +40,11 @@ async function connectFakePacer({ ignoresWrites = false } = {}) {
         held.push(...pending);
         pending = [];
       }, FIRMWARE_COMMIT_MS);
+    }
+    if (data[5] === 0x02 && data[6] === 0x05) {
+      if (answersGlobalRequest)
+        queueMicrotask(() => held.filter((m) => m[6] === 0x05).forEach((m) => input.receive(m)));
+      return;
     }
     if (data[5] === 0x02) {
       if (pending.length > 0) {
@@ -84,7 +90,7 @@ describe("sending to the Pacer", () => {
     expect(writes.length).toBeGreaterThan(0);
     expect(writes.every((m) => m[6] === 0x01 && m[7] === C1)).toBe(true);
     expect(holds().presets[C1]!.name).toBe("LOOPR");
-    expect(store().send).toEqual({ status: "done", presets: [C1], verified: false });
+    expect(store().send).toEqual({ status: "done", presets: [C1], verified: false, current: { kind: "notLoaded" } });
   });
 
   it("tracks what the Pacer holds, so 'changed presets' shrinks after a send", async () => {
@@ -99,7 +105,7 @@ describe("sending to the Pacer", () => {
     const { holds } = await connectFakePacer();
     store().applyEdit((c) => renamePreset(c, A1, "HOME"));
     await sendAndSettle([A1], true);
-    expect(store().send).toEqual({ status: "done", presets: [A1], verified: true });
+    expect(store().send).toMatchObject({ status: "done", presets: [A1], verified: true });
     expect(holds().presets[A1]!.name).toBe("HOME ");
   });
 
@@ -115,6 +121,37 @@ describe("sending to the Pacer", () => {
     expect(output.sent.length).toBe(before);
     await vi.runAllTimersAsync();
     await done;
+  });
+
+  it("also updates the Pacer's working copy when it has a sent preset loaded", async () => {
+    const { holds } = await connectFakePacer();
+    store().applyEdit((c) => renamePreset(c, A1, "HOME"));
+    await sendAndSettle([A1], true);
+    expect(store().send).toEqual({
+      status: "done",
+      presets: [A1],
+      verified: true,
+      current: { kind: "updated", index: A1 },
+    });
+    expect(holds().presets[0]).toEqual({ ...holds().presets[A1], index: 0 });
+  });
+
+  it("leaves the working copy alone when the loaded preset isn't sent", async () => {
+    const { output, holds } = await connectFakePacer();
+    const currentBefore = holds().presets[0];
+    store().applyEdit((c) => renamePreset(c, C1, "LOOPR"));
+    await sendAndSettle([C1], true);
+    expect(store().send).toMatchObject({ status: "done", verified: true, current: { kind: "notLoaded" } });
+    expect(holds().presets[0]).toEqual(currentBefore);
+    expect(output.sent.some((m) => m[5] === 0x01 && m[7] === 0)).toBe(false);
+  });
+
+  it("still sends when the Pacer doesn't say which preset is loaded, and says so", async () => {
+    const { holds } = await connectFakePacer({ answersGlobalRequest: false });
+    store().applyEdit((c) => renamePreset(c, A1, "HOME"));
+    await sendAndSettle([A1]);
+    expect(store().send).toMatchObject({ status: "done", current: { kind: "unknown" } });
+    expect(holds().presets[A1]!.name).toBe("HOME ");
   });
 
   it("reports presets whose read-back doesn't match", async () => {
@@ -135,11 +172,11 @@ describe("sending to the Pacer", () => {
   it("can be cancelled mid-send", async () => {
     const { output } = await connectFakePacer();
     const done = store().sendToPacer([A1, C1]);
-    await vi.advanceTimersByTimeAsync(30);
+    await vi.advanceTimersByTimeAsync(300); // past the loaded-preset query, a few messages in
     store().cancelSend();
     await vi.runAllTimersAsync();
     await done;
     expect(store().send).toMatchObject({ status: "error", error: expect.stringMatching(/Cancelled.*partly written/) });
-    expect(output.sent.filter((m) => m[5] === 0x01).length).toBeLessThan(10);
+    expect(output.sent.filter((m) => m[5] === 0x01).length).toBeLessThan(50); // of 378
   });
 });

@@ -106,7 +106,10 @@ JSON.
 - A control also has a **control mode** (element `0x60`): "all steps in
   one shot" (default — every configured step fires together on a single
   press, which is what makes the PC-and-jump combination above possible
-  in one press), "Sequence" (each press advances to the next step), or
+  in one press), "Sequence" (each press advances to the next **active**
+  step, wrapping after the last one; an inactive step is skipped entirely,
+  while a step whose type is Off still takes its turn and sends nothing —
+  owner-confirmed on 1.01.12 from the SEQ test preset's MIDI log), or
   "External Step Select" (another switch's `MSG_SW_STEP_SELECT` /
   `MSG_SW_STEP_INC_DEC` action drives which step fires). The
   preset-transition-graph extraction in #3 needs to account for this: only
@@ -233,9 +236,22 @@ every control on every real factory preset).
   it, marked confirmed or inferred. An invariants test checks the table.
   Current facts:
   - Front row: top = text legend, middle = icon legend, bottom = RGB bar.
-    The layout is confirmed; fixed ink is inferred.
-  - Back row (Preset, A-D): a printed legend over an RGB bar. Whether
-    steps can address the legend is unknown, so it's assumed not.
+  - Back row (Preset, A-D): a printed legend over an RGB bar, and no third
+    light.
+  - **Every light is RGB**, legends included, and takes whatever color a
+    step's LED config gives it. The printed ink only decides how a legend
+    looks when the *firmware* lights it for an assigned function.
+    Owner-confirmed on 1.01.12 (LPOS/LROWS test presets); the old model had
+    the legends as fixed-ink and unaddressable.
+  - **Hue names are the reference project's** (`ledColors.ts`), and we keep
+    them deliberately. The owner reads the middle of the table differently
+    (its "amber" as yellow, its "yellow" as lime, its "teal" as light
+    blue), but lime vs. green and lavender vs. purple are subjective, and
+    only the code-to-light mapping affects behavior.
+  - **LED num -> light** (owner-confirmed, LPOS): 0 and 1 both light the
+    bar; 2 lights the icon legend (front row) or the printed legend (back
+    row); 3 lights the text legend on the front row and does nothing on the
+    back row.
   - **Legends are function indicators:** a legend lights while its switch
     is assigned the function it depicts (`depicts`).
     - Examples: A's "Track" while A selects Track; B's icons while B
@@ -247,8 +263,8 @@ every control on every real factory preset).
       owner's dump, where A's legend is dark on A1/C1 (A reprogrammed) and
       lit elsewhere. An earlier "back-row legends are always lit" rule was
       only true of the factory assignments.
-  - LED num 0 ("Default") drives the bar. Inferred from the factory dump;
-    its MMC preset (D5) is the one place that targets middle (2).
+  - The factory dump only ever uses LED num 0, except its MMC preset (D5),
+    which targets 2 (the transport icons).
 - `src/pacer/device/deviceModeMachine.ts` is the XState machine for the
   firmware's *special presets*. Preset select, Track and Transport are
   modeled as firmware-owned presets that aren't in the config. While one
@@ -280,6 +296,12 @@ every control on every real factory preset).
   printed ink / unspecified), plus the display. It's built from one
   strategy per mode:
   - **The firmware LED model** (`engagement.ts`, `stepLight`).
+    - **A switch lights exactly one light at a time: the step that will
+      fire next** (owner-confirmed, LROWS/SEQ test presets). In All-at-once
+      mode that's step 1, whichever row it targets, even though every step
+      fires; a second step's row stays dark. In Sequence mode it follows
+      the pointer: after step 1 fires, the light shows step 2's row and
+      color, wrapping after the last active step.
     - **Steps that send MIDI have a value state.** The manual calls the
       colors "On/maximum value state" and "Off/minimum value state".
     - **That state is the device's remembered MIDI values**
@@ -293,17 +315,24 @@ every control on every real factory preset).
       - The dump's global "Current" block stores the same kind of state
         (program/bank per channel), but its encoding isn't known, so it
         isn't used as a starting point.
-    - **Lights follow the memory** (`stepValueOn`):
-      - CC Toggle / CC Trigger: the CC holds the step's On / press value.
-        Bank B rests dim blue; a CC Trigger rests at its Off color (both
-        observed).
+    - **Lights follow the memory** (`stepValueOn`), and remembered values
+      start at 0 rather than "unknown":
+      - CC Toggle / CC Trigger: the **first color field (elm 0x41) shows
+        while the controller holds `data[1]`**, whichever value that is;
+        the second (elm 0x42) shows otherwise. Confirmed on 1.01.12 with
+        the TOGL preset: five toggles with [127, 0], [0, 127] and [100, 20]
+        all followed this, at rest and after a press. Every factory and
+        owner preset puts the pressed value in data[1], which is why this
+        reads as a plain on/off there — and why the old "elm 0x41 = the on
+        color, data[2] = the on value" model matched those dumps.
       - Note / Note Toggle: the note is sounding.
       - Program & Bank: the channel's current program (and bank, if the
         step sends one) is the step's. A1 rests dim orange.
       - Other MIDI types: On while held (assumed).
-    - **Toggles follow the memory too:** a CC Toggle sends Off if its CC
-      holds the On value, else On, so every switch toggling the same CC
-      shares state. Note Toggle works the same way. This replaced
+    - **Toggles follow the memory too:** a CC Toggle sends `data[1]`
+      unless the controller already holds `data[1]`, in which case it sends
+      `data[2]` (confirmed, TOGL preset). So every switch toggling the same
+      CC shares state. Note Toggle works the same way. This replaced
       per-switch toggle bits and a "last PC sender" that were reset on
       every preset change.
     - **Preset navigation has no value state.** Each kind has a fixed light

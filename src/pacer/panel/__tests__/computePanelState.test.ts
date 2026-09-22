@@ -23,13 +23,13 @@ describe("computePanelState (factory presets)", () => {
     const panel = computePanelState(createBoardState(config, A1), USER);
     expect(Object.keys(panel.switches)).toHaveLength(17);
     expect(panel.switches.fs1.lights).toEqual({});
-    expect(Object.keys(panel.switches.swA.lights).sort()).toEqual(["bottom", "top"]);
+    expect(Object.keys(panel.switches.swA.lights).sort()).toEqual(["bottom", "middle"]);
   });
 
   it("A1: back-row legends lit, front-row legends dark, bars dim until pressed", () => {
     let board = createBoardState(config, A1);
     let panel = computePanelState(board, USER);
-    expect(panel.switches.swA.lights.top?.brightness).toBe("bright");
+    expect(panel.switches.swA.lights.middle?.brightness).toBe("bright");
     expect(panel.switches.sw1.lights.top).toBeUndefined();
     expect(panel.switches.sw1.lights.bottom?.brightness).toBe("dim");
 
@@ -116,7 +116,7 @@ describe("computePanelState (factory presets)", () => {
     expect(bar("swD")?.brightness).toBe("off");
     // Legends follow each switch's assignment: A (reprogrammed) and B (a CC) are dark; C/D still
     // step presets, so their arrows are lit.
-    const legend = (id: "swA" | "swB" | "swC" | "swD") => computePanelState(board, USER).switches[id].lights.top;
+    const legend = (id: "swA" | "swB" | "swC" | "swD") => computePanelState(board, USER).switches[id].lights.middle;
     expect(legend("swA")).toBeUndefined();
     expect(legend("swB")).toBeUndefined();
     expect(legend("swC")?.brightness).toBe("bright");
@@ -138,7 +138,12 @@ describe("computePanelState (factory presets)", () => {
       phase: "press",
     }).board;
     const panel = computePanelState(board, USER);
-    expect(panel.switches.sw5.lights.middle).toEqual({ brightness: "bright", flashing: false, color: { kind: "ink" } });
+    // The icon row is RGB, so it shows the step's color: MMC's Default hue is yellow.
+    expect(panel.switches.sw5.lights.middle).toEqual({
+      brightness: "bright",
+      flashing: false,
+      color: { kind: "hue", hue: "yellow" },
+    });
     expect(panel.switches.sw2.lights.middle?.brightness).toBe("dim");
     expect(panel.switches.sw5.lights.bottom).toBeUndefined();
   });

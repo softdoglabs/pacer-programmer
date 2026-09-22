@@ -1,4 +1,4 @@
-import { ControlMode, STEPS_PER_CONTROL } from "../protocol/constants";
+import { ControlMode } from "../protocol/constants";
 import { DEFAULT_GLOBAL_CHANNEL, wireChannel } from "../protocol/globalSettings";
 import type { SwitchControl } from "../protocol/types";
 import { EMPTY_MIDI_STATE, recordMidi, type MidiState } from "./midiState";
@@ -34,7 +34,20 @@ interface FiredSteps {
 function activeStepNumbers(control: SwitchControl): number[] {
   return Object.keys(control.steps)
     .map(Number)
-    .filter((n) => control.steps[n]?.active);
+    .filter((n) => control.steps[n]?.active)
+    .sort((a, b) => a - b);
+}
+
+/**
+ * The step a Sequence-mode control fires after `from`: the next active step, wrapping after the
+ * last one. Confirmed on hardware (SEQ test preset, firmware 1.01.12): a switch with two active
+ * steps wraps on the third press, and an inactive step in the middle is skipped entirely. A step
+ * whose type is Off still takes its turn — it's active, it just sends nothing.
+ */
+function nextActiveStep(control: SwitchControl, from: number): number {
+  const active = activeStepNumbers(control);
+  if (active.length === 0) return from;
+  return active.find((n) => n > from) ?? active[0]!;
 }
 
 function fireStepsForControl(
@@ -86,9 +99,12 @@ function pressControl(
   let pendingSequenceStep = runtimeState.pendingSequenceStep;
 
   if (mode === ControlMode.Sequence) {
-    stepNumbers = [runtimeState.sequencePointer];
-    pendingSequenceStep = runtimeState.sequencePointer;
-    nextSequencePointer = runtimeState.sequencePointer >= STEPS_PER_CONTROL ? 1 : runtimeState.sequencePointer + 1;
+    const active = activeStepNumbers(control);
+    // The pointer can sit on a step that has since been deactivated (edits, or a fresh control).
+    const current = active.includes(runtimeState.sequencePointer) ? runtimeState.sequencePointer : (active[0] ?? 1);
+    stepNumbers = [current];
+    pendingSequenceStep = current;
+    nextSequencePointer = nextActiveStep(control, current);
   } else if (mode === ControlMode.ExternalStepSelect) {
     // Deferred: cross-control step targeting isn't simulated yet (unverified target numbering) — always fires step 1.
     stepNumbers = [1];

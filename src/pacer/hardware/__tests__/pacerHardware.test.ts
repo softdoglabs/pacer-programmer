@@ -73,15 +73,18 @@ describe("PACER_HARDWARE invariants", () => {
   });
 
   it("B's stop/play/record legend is green ink (confirmed on hardware)", () => {
-    expect(switchSpec("swB").indicators.find((i) => i.id === "top")?.color).toEqual({ kind: "fixed", ink: "green" });
+    expect(switchSpec("swB").indicators.find((i) => i.id === "middle")?.color).toEqual({
+      kind: "variable",
+      ink: "green",
+    });
   });
 
   it("front-row text legends are yellow ink except Click, which is white (confirmed on hardware)", () => {
     const textInk = (id: Parameters<typeof switchSpec>[0]) =>
       switchSpec(id).indicators.find((i) => i.id === "top")?.color;
     for (const id of ["sw1", "sw2", "sw3", "sw5", "sw6"] as const)
-      expect(textInk(id)).toEqual({ kind: "fixed", ink: "yellow" });
-    expect(textInk("sw4")).toEqual({ kind: "fixed", ink: "white" });
+      expect(textInk(id)).toEqual({ kind: "variable", ink: "yellow" });
+    expect(textInk("sw4")).toEqual({ kind: "variable", ink: "white" });
   });
 
   it("records evidence for every indicator", () => {
@@ -99,10 +102,15 @@ describe("indicatorForLedNum", () => {
     expect(indicatorForLedNum(sw1, 3)?.id).toBe("top");
   });
 
-  it("returns undefined for lights a switch lacks or that steps can't address", () => {
+  it("addresses the back row's printed legend with LED num 2, and has nothing on 3", () => {
     const swA = switchSpec("swA");
-    expect(indicatorForLedNum(swA, 2)).toBeUndefined(); // no middle row on the back row
-    expect(indicatorForLedNum(swA, 3)).toBeUndefined(); // back-row legend: assumed not addressable
+    expect(indicatorForLedNum(swA, 0)?.id).toBe("bottom");
+    expect(indicatorForLedNum(swA, 1)?.id).toBe("bottom");
+    expect(indicatorForLedNum(swA, 2)?.id).toBe("middle"); // its printed legend (owner-confirmed)
+    expect(indicatorForLedNum(swA, 3)).toBeUndefined(); // no third light on the back row
+  });
+
+  it("returns undefined for lights a switch lacks or that steps can't address", () => {
     expect(indicatorForLedNum(switchSpec("fs1"), 0)).toBeUndefined();
     expect(indicatorForLedNum(switchSpec("sw1"), 9)).toBeUndefined();
   });

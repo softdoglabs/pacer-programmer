@@ -50,10 +50,10 @@ describe("userPresetLights", () => {
     });
   });
 
-  it("LED num 2 lights the middle icon row in its printed ink, not the config hue", () => {
+  it("LED num 2 lights the middle icon row in the step's own color (the legends are RGB)", () => {
     const c = control({ 1: { activeColor: BLUE_BRIGHT, inactiveColor: 0, position: 2 } });
     expect(userPresetLights(sw1, c, runtime({ pressed: true }), pressed())).toEqual({
-      middle: { brightness: "bright", flashing: false, color: { kind: "ink" } },
+      middle: { brightness: "bright", flashing: false, color: { kind: "hue", hue: "blue" } },
     });
     expect(userPresetLights(sw1, c, undefined, CTX).middle?.brightness).toBe("off");
   });
@@ -89,13 +89,13 @@ describe("userPresetLights", () => {
 
   it("a toggled-on CC Toggle step keeps its light on after release", () => {
     const c = control({ 1: { activeColor: RED_BRIGHT, inactiveColor: RED_DIM, position: 0 } });
-    c.steps[1] = { channel: 0, msgType: SwitchMessageType.CcToggle, data: [1, 0, 127], active: true };
+    c.steps[1] = { channel: 0, msgType: SwitchMessageType.CcToggle, data: [1, 127, 0], active: true };
     const on = remembered({ kind: "controlChange", channel: 0, controller: 1, value: 127 });
     expect(userPresetLights(sw1, c, undefined, on).bottom?.brightness).toBe("bright");
     expect(userPresetLights(sw1, c, undefined, CTX).bottom?.brightness).toBe("dim");
   });
 
-  it("all-steps-at-once: every active step drives its own indicator; the lower step wins a conflict", () => {
+  it("all-steps-at-once: only step 1's light shows, whichever row it targets", () => {
     const c = control(
       {
         1: { activeColor: RED_BRIGHT, inactiveColor: RED_DIM, position: 0 },
@@ -105,11 +105,12 @@ describe("userPresetLights", () => {
       { activeSteps: [1, 2, 3] },
     );
     const lights = userPresetLights(sw1, c, undefined, CTX);
-    expect(lights.bottom?.color).toEqual({ kind: "hue", hue: "red" }); // step 1, not step 3
-    expect(lights.middle?.brightness).toBe("off");
+    expect(lights.bottom?.color).toEqual({ kind: "hue", hue: "red" }); // step 1, on the bar
+    expect(lights.middle).toBeUndefined(); // step 2's row stays dark even though it fires too
+    expect(Object.keys(lights)).toEqual(["bottom"]);
   });
 
-  it("sequence mode shows only the most recently fired step's LED", () => {
+  it("sequence mode shows the step that fires next", () => {
     const c = control(
       {
         1: { activeColor: RED_BRIGHT, inactiveColor: RED_DIM, position: 0 },
@@ -118,20 +119,26 @@ describe("userPresetLights", () => {
       { mode: ControlMode.Sequence, activeSteps: [1, 2] },
     );
     expect(userPresetLights(sw1, c, undefined, CTX).bottom?.color).toEqual({ kind: "hue", hue: "red" });
-    // After step 1 fired, the pointer is on 2; the LED still shows step 1 until step 2 fires.
+    // After step 1 fired the pointer is on step 2, and the light shows step 2's color.
     expect(userPresetLights(sw1, c, runtime({ sequencePointer: 2 }), CTX).bottom?.color).toEqual({
-      kind: "hue",
-      hue: "red",
-    });
-    expect(userPresetLights(sw1, c, runtime({ sequencePointer: 3 }), CTX).bottom?.color).toEqual({
       kind: "hue",
       hue: "blue",
     });
+    // A pointer past the last active step wraps back to step 1's.
+    expect(userPresetLights(sw1, c, runtime({ sequencePointer: 3 }), CTX).bottom?.color).toEqual({
+      kind: "hue",
+      hue: "red",
+    });
   });
 
-  it("ignores LED nums a switch can't show (A-D have no middle row; their legend isn't addressable)", () => {
-    const c = control({ 1: { activeColor: RED_BRIGHT, inactiveColor: RED_DIM, position: 2 } });
-    expect(userPresetLights(switchSpec("swA"), c, undefined, CTX)).toEqual({});
+  it("lights the back row's printed legend on LED num 2, and nothing on 3", () => {
+    const legend = control({ 1: { activeColor: RED_BRIGHT, inactiveColor: RED_DIM, position: 2 } });
+    expect(userPresetLights(switchSpec("swA"), legend, undefined, CTX).middle?.color).toEqual({
+      kind: "hue",
+      hue: "red",
+    });
+    const noSuchLight = control({ 1: { activeColor: RED_BRIGHT, inactiveColor: RED_DIM, position: 3 } });
+    expect(userPresetLights(switchSpec("swA"), noSuchLight, undefined, CTX)).toEqual({});
   });
 });
 
@@ -147,32 +154,32 @@ describe("legendLights (a legend lights while its switch is assigned what it dep
   });
 
   it("A's 'Track' lights only while A selects Track (observed: dark where A was reprogrammed)", () => {
-    expect(legendLights(switchSpec("swA"), "user", presetSelect(1))).toEqual({ top: ink });
+    expect(legendLights(switchSpec("swA"), "user", presetSelect(1))).toEqual({ middle: ink });
     expect(
       legendLights(switchSpec("swA"), "user", presetSelect(presetIndexToPresetSelectTarget(userPresetIndex(2, 1)))),
     ).toEqual({});
     expect(legendLights(switchSpec("swA"), "user", undefined)).toEqual({});
-    expect(legendLights(switchSpec("swB"), "user", presetSelect(2))).toEqual({ top: ink });
+    expect(legendLights(switchSpec("swB"), "user", presetSelect(2))).toEqual({ middle: ink });
     expect(legendLights(switchSpec("swB"), "user", presetSelect(1))).toEqual({});
   });
 
   it("C/D's arrows light while they step to the previous/next preset", () => {
-    expect(legendLights(switchSpec("swC"), "user", incDec(1))).toEqual({ top: ink });
-    expect(legendLights(switchSpec("swD"), "user", incDec(0))).toEqual({ top: ink });
+    expect(legendLights(switchSpec("swC"), "user", incDec(1))).toEqual({ middle: ink });
+    expect(legendLights(switchSpec("swD"), "user", incDec(0))).toEqual({ middle: ink });
     expect(legendLights(switchSpec("swC"), "user", incDec(0))).toEqual({}); // C set to "next": not its arrow
   });
 
   it("[Preset]'s legend is always lit; front-row legends are dark on user presets", () => {
-    expect(legendLights(switchSpec("preset"), "user", undefined)).toEqual({ top: ink });
+    expect(legendLights(switchSpec("preset"), "user", undefined)).toEqual({ middle: ink });
     expect(legendLights(sw1, "user", control({ 1: { activeColor: 3, inactiveColor: 4 } }))).toEqual({});
   });
 
   it("in the DAW presets, Track lights the top text row and Transport the middle icon row", () => {
     expect(legendLights(sw1, "track", undefined)).toEqual({ top: ink }); // Solo
     expect(legendLights(sw1, "transport", undefined)).toEqual({ middle: ink }); // Cycle
-    expect(legendLights(switchSpec("swA"), "track", undefined)).toEqual({ top: ink });
-    expect(legendLights(switchSpec("swB"), "track", undefined)).toEqual({ top: ink });
-    expect(legendLights(switchSpec("swC"), "transport", undefined)).toEqual({ top: ink }); // previous track
+    expect(legendLights(switchSpec("swA"), "track", undefined)).toEqual({ middle: ink });
+    expect(legendLights(switchSpec("swB"), "track", undefined)).toEqual({ middle: ink });
+    expect(legendLights(switchSpec("swC"), "transport", undefined)).toEqual({ middle: ink }); // previous track
   });
 });
 

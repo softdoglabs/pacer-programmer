@@ -68,7 +68,7 @@ export function paintLight(light: LightState | undefined, indicator: IndicatorSp
       base = LIGHT_BLUE;
       break;
     case "ink":
-      base = indicator.color.kind === "fixed" ? INK_CSS[indicator.color.ink] : UNSPECIFIED;
+      base = indicator.color.ink !== undefined ? INK_CSS[indicator.color.ink] : UNSPECIFIED;
       break;
     case "unspecified":
       base = UNSPECIFIED;

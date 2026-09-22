@@ -4,15 +4,15 @@ import type { LightState } from "./types";
 
 export type SwitchLights = Partial<Record<IndicatorId, LightState>>;
 
-/** A light at a given brightness, colored by its own printed ink if it's a fixed-color legend. */
+/** The color a firmware-lit legend shows: its printed ink, or the given fallback for a bar. */
 export function inkOrColor(indicator: IndicatorSpec, fallback: LightState["color"]): LightState["color"] {
-  return indicator.color.kind === "fixed" ? { kind: "ink" } : fallback;
+  return indicator.color.ink !== undefined ? { kind: "ink" } : fallback;
 }
 
 /**
  * The light a config LED color code produces on an indicator.
- * - Hue codes carry their own brightness (odd = bright "A", even = dim "b"). A fixed-color
- *   legend shows that brightness in its printed ink, since it can't change color (inferred).
+ * - Hue codes carry their own brightness (odd = bright "A", even = dim "b"). Every light is RGB,
+ *   legends included, so the code's color is what shows (owner-confirmed).
  * - "Default" (0x7F) uses the step message type's default hue (see defaultLedColors.ts):
  *   bright "A" when the step is on, dimmed "b" when it's off.
  * - An unknown code, or Default with no hue for the message type, shows bright/dim with no
@@ -32,7 +32,7 @@ export function lightFromColorCode(
       return {
         brightness: decoded.brightness,
         flashing: false,
-        color: inkOrColor(indicator, { kind: "hue", hue: decoded.hue }),
+        color: { kind: "hue", hue: decoded.hue },
       };
     case "default":
     case "unknown": {
@@ -40,7 +40,7 @@ export function lightFromColorCode(
       return {
         brightness: active ? "bright" : "dim",
         flashing: false,
-        color: inkOrColor(indicator, hue ? { kind: "hue", hue } : { kind: "unspecified" }),
+        color: hue ? { kind: "hue", hue } : { kind: "unspecified" },
       };
     }
   }

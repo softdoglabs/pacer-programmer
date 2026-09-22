@@ -53,8 +53,12 @@ export type LegendFunction =
   | { kind: "navigate"; direction: "previous" | "next" }
   | { kind: "dawCommand"; command: DawCommand };
 
-/** Whether a light's color is set by config (Pacer color codes) or fixed by its printed ink. */
-export type IndicatorColor = { kind: "variable" } | { kind: "fixed"; ink: InkColor };
+/**
+ * Every light is RGB and takes whatever color a step's LED config gives it (confirmed on
+ * hardware: a step can color the legends as well as the bar). Printed legends also carry the ink
+ * they're printed in, which is what shows when the firmware lights them for an assigned function.
+ */
+export type IndicatorColor = { kind: "variable"; ink?: InkColor };
 
 /** One piece of evidence behind a hardware fact, so unverified facts are easy to find and revisit. */
 export type Evidence = { kind: "confirmed"; source: string } | { kind: "inferred"; reason: string };

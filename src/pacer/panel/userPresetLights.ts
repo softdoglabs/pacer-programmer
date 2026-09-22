@@ -1,5 +1,5 @@
 import { indicatorForLedNum, type IndicatorSpec, type SwitchSpec } from "../hardware";
-import { ControlMode, STEPS_PER_CONTROL } from "../protocol/constants";
+import { ControlMode } from "../protocol/constants";
 import type { PacerHue } from "../protocol/ledColors";
 import type { LedConfig, SwitchControl } from "../protocol/types";
 import { wireChannel } from "../protocol/globalSettings";
@@ -10,22 +10,27 @@ import { stepLight, type StepLight } from "./engagement";
 import { lightFromColorCode, type SwitchLights } from "./lights";
 import type { LightState } from "./types";
 
-function previousStep(step: number): number {
-  return step <= 1 ? STEPS_PER_CONTROL : step - 1;
+/**
+ * The one step whose LED config is showing: the step that will fire on the next press.
+ *
+ * Confirmed on hardware (LROWS and SEQ test presets, firmware 1.01.12): a switch lights exactly
+ * one light, never several, even when its steps target different rows. In All-at-once mode that
+ * is step 1 — a switch with steps on the bar, the icon row and the text row lights only step 1's
+ * row, whichever row that is. In Sequence mode it follows the pointer: after firing step 1 the
+ * light shows step 2's row and color, and it wraps back to step 1's after the last step.
+ *
+ * External step select isn't simulated (cross-control targeting is unverified), so it shows step 1.
+ */
+function showingStep(control: SwitchControl, runtime: ControlRuntimeState | undefined): number | undefined {
+  const mode = control.controlMode ?? ControlMode.AllStepsAtOnce;
+  const active = activeSteps(control);
+  if (mode === ControlMode.Sequence && runtime)
+    return active.includes(runtime.sequencePointer) ? runtime.sequencePointer : active[0];
+  return active[0];
 }
 
-/**
- * Which steps' LED configs are showing. Assumptions (not hardware-verified):
- * - Sequence mode: only the step that most recently fired (step 1 before any press).
- * - External step select: step 1 (cross-control step targeting isn't simulated).
- * - All steps at once: every active step, since they all fire together.
- */
-function showingSteps(control: SwitchControl, runtime: ControlRuntimeState | undefined): number[] {
-  const mode = control.controlMode ?? ControlMode.AllStepsAtOnce;
-  if (mode === ControlMode.Sequence) {
-    return [runtime ? (runtime.pendingSequenceStep ?? previousStep(runtime.sequencePointer)) : 1];
-  }
-  if (mode === ControlMode.ExternalStepSelect) return [1];
+/** Active step numbers, in firing order. */
+export function activeSteps(control: SwitchControl): number[] {
   return Object.keys(control.steps)
     .map(Number)
     .filter((n) => control.steps[n]?.active)
@@ -63,11 +68,10 @@ export interface UserPresetContext {
 }
 
 /**
- * Lights a user preset's config drives on one switch. Each showing step's LED config lights the
- * indicator its LED num selects (see `indicatorForLedNum`). What the light shows (On color, Off
- * color, dark, or the mode indicator) comes from `stepLight`, the firmware LED model. If two steps target the same indicator, the lower-numbered step wins
- * (assumption). LED `midiController` (LED driven by incoming MIDI) isn't simulated, since there's
- * no MIDI input yet.
+ * The light a user preset's config drives on one switch: at most one (see `showingStep`), on the
+ * indicator that step's LED num selects (see `indicatorForLedNum`). Which of its two colors shows
+ * comes from `stepLight`, the firmware LED model. LED `midiController` (LED driven by incoming
+ * MIDI) isn't simulated, since there's no MIDI input yet.
  */
 export function userPresetLights(
   spec: SwitchSpec,
@@ -77,12 +81,13 @@ export function userPresetLights(
 ): SwitchLights {
   const lights: SwitchLights = {};
   if (!control) return lights;
-  for (const n of showingSteps(control, runtime)) {
+  const n = showingStep(control, runtime);
+  if (n !== undefined) {
     const led = control.led[n];
     const step = control.steps[n];
-    if (!led || !step) continue;
+    if (!led || !step) return lights;
     const indicator = indicatorForLedNum(spec, led.position ?? 0);
-    if (!indicator || lights[indicator.id]) continue;
+    if (!indicator) return lights;
     const channel = wireChannel(step.channel, context.globalChannel);
     const light = stepLight(step, {
       held: runtime?.pressed ?? false,

@@ -41,7 +41,7 @@ describe("resolveControl — AllStepsAtOnce (default)", () => {
 });
 
 describe("resolveControl — Sequence mode", () => {
-  it("cycles the pointer across all 6 slots (not just populated ones), wrapping after the 6th press", () => {
+  it("cycles only the active steps, wrapping after the last one (owner-confirmed on hardware)", () => {
     const control: SwitchControl = {
       controlMode: ControlMode.Sequence,
       steps: { 1: ccStep(1, 1, 0), 2: ccStep(2, 1, 0), 3: ccStep(3, 1, 0) }, // 4-6 left empty on purpose
@@ -56,12 +56,12 @@ describe("resolveControl — Sequence mode", () => {
       );
       state = resolveControl(control, "switch", "release", pressed.nextRuntimeState).nextRuntimeState;
     }
-    // presses 1-3 hit populated steps; 4-6 hit empty slots (still consume a press, no message);
-    // the 7th press wraps back to step 1.
-    expect(controllersOrEmpty).toEqual([1, 2, 3, null, null, null, 1]);
+    // Three active steps: the 4th press wraps straight back to step 1, rather than running the
+    // empty slots 4-6 (SEQ test preset: a two-step switch wrapped on its third press).
+    expect(controllersOrEmpty).toEqual([1, 2, 3, 1, 2, 3, 1]);
   });
 
-  it("skips empty step slots (produces no message) but still advances the pointer", () => {
+  it("with one active step, every press fires it again", () => {
     const control: SwitchControl = {
       controlMode: ControlMode.Sequence,
       steps: { 1: ccStep(1, 1, 0) }, // steps 2-6 undefined
@@ -72,9 +72,9 @@ describe("resolveControl — Sequence mode", () => {
     expect(pressed1.messages.length).toBe(1);
     state = resolveControl(control, "switch", "release", pressed1.nextRuntimeState).nextRuntimeState;
 
-    const pressed2 = resolveControl(control, "switch", "press", state); // pointer now at step 2 (empty)
-    expect(pressed2.messages).toEqual([]);
-    expect(pressed2.nextRuntimeState.sequencePointer).toBe(3);
+    const pressed2 = resolveControl(control, "switch", "press", state); // wrapped back to step 1
+    expect(pressed2.messages.length).toBe(1);
+    expect(pressed2.nextRuntimeState.sequencePointer).toBe(1);
   });
 });
 

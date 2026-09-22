@@ -68,7 +68,7 @@ function buildLooperConfig(): PacerConfig {
 
   const preset0 = getOrCreatePreset(config, A1);
   const toggle0 = getOrCreateControl(preset0, ControlId.Stompswitch1);
-  toggle0.steps[1] = ccToggleStep(10, 0, 127);
+  toggle0.steps[1] = ccToggleStep(10, 127, 0); // as the hardware's own presets are written
 
   const jumpForward = getOrCreateControl(preset0, ControlId.StompswitchA);
   jumpForward.steps[1] = programAndBankStep(5);

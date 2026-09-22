@@ -21,9 +21,11 @@ const MMC_MIDDLE: Evidence = {
   kind: "confirmed",
   source: "factory MMC preset (D5) drives stomps 2-6 with LED num 2 (middle) to light the transport icons",
 };
-const FIXED_INK: Evidence = {
-  kind: "inferred",
-  reason: "Sound on Sound: 'illuminated fixed legends'; only the bar is described as RGB",
+const RGB_LEGENDS: Evidence = {
+  kind: "confirmed",
+  source:
+    "project owner: all three rows are RGB and take a step's colors (LPOS/LROWS test presets, 2026-09-22). " +
+    "The printed ink is what shows when the firmware lights a legend for an assigned function",
 };
 const PHOTO_INK: Evidence = { kind: "inferred", reason: "ink colors read off a product photo" };
 const OWNER_TEXT_INK: Evidence = {
@@ -34,13 +36,11 @@ const OWNER_B_LEGEND_INK: Evidence = {
   kind: "confirmed",
   source: "project owner: B's stop/play/record legend is bright green",
 };
-const TOP_ADDRESSABLE: Evidence = {
-  kind: "inferred",
-  reason: "LED num 3 (Top) exists in the protocol and reference editor; no factory preset uses it",
-};
-const BACK_LEGEND_UNADDRESSABLE: Evidence = {
-  kind: "inferred",
-  reason: "unknown whether a step's LED num can address back-row legends, so assumed not",
+const LED_NUM_MAP: Evidence = {
+  kind: "confirmed",
+  source:
+    "project owner, LPOS test preset (2026-09-22): on switches 1-6, LED num 0 and 1 light the bar, " +
+    "2 the icon legend, 3 the text legend; on A-D, 0 and 1 light the bar, 2 the printed legend, 3 nothing",
 };
 const LEGEND_BY_FUNCTION: Evidence = {
   kind: "confirmed",
@@ -77,25 +77,29 @@ function frontRowIndicators(
   return [
     {
       id: "top",
-      color: { kind: "fixed", ink: textInk },
+      color: { kind: "variable", ink: textInk },
       face: { kind: "text", text },
       addressable: true,
       depicts: { kind: "dawCommand", command: trackCommand },
-      evidence: [OWNER_LAYOUT, FIXED_INK, OWNER_TEXT_INK, TOP_ADDRESSABLE, LEGEND_BY_FUNCTION],
+      evidence: [OWNER_LAYOUT, RGB_LEGENDS, OWNER_TEXT_INK, LED_NUM_MAP, LEGEND_BY_FUNCTION],
     },
     {
       id: "middle",
-      color: { kind: "fixed", ink: "white" },
+      color: { kind: "variable", ink: "white" },
       face: { kind: "icons", icons: [icon] },
       addressable: true,
       depicts: { kind: "dawCommand", command: transportCommand },
-      evidence: [OWNER_LAYOUT, MMC_MIDDLE, FIXED_INK, PHOTO_INK, LEGEND_BY_FUNCTION],
+      evidence: [OWNER_LAYOUT, MMC_MIDDLE, RGB_LEGENDS, PHOTO_INK, LED_NUM_MAP, LEGEND_BY_FUNCTION],
     },
     bar(),
   ];
 }
 
-/** Back-row switches (Preset, A-D): a printed legend, lit while its function is assigned, over an RGB bar. */
+/**
+ * Back-row switches (Preset, A-D): a printed legend over an RGB bar. The legend lights while its
+ * function is assigned, and a step can address it with LED num 2 ("middle"): these switches have
+ * no third light, so LED num 3 does nothing (owner-confirmed, LPOS test preset).
+ */
 function backRowIndicators(
   face: IndicatorSpec["face"],
   depicts: LegendFunction,
@@ -105,12 +109,12 @@ function backRowIndicators(
 ): IndicatorSpec[] {
   return [
     {
-      id: "top",
-      color: { kind: "fixed", ink },
+      id: "middle",
+      color: { kind: "variable", ink },
       face,
-      addressable: false,
+      addressable: true,
       depicts,
-      evidence: [OWNER_LAYOUT, FIXED_INK, inkEvidence, BACK_LEGEND_UNADDRESSABLE, LEGEND_BY_FUNCTION],
+      evidence: [OWNER_LAYOUT, RGB_LEGENDS, inkEvidence, LED_NUM_MAP, LEGEND_BY_FUNCTION],
     },
     bar(...barEvidence),
   ];

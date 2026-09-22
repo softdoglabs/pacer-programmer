@@ -28,6 +28,15 @@ export function ccValue(state: MidiState, channel: number, controller: number): 
   return state.cc[channel]?.[controller];
 }
 
+/**
+ * The value a controller holds as far as the device is concerned. Nothing remembered means 0:
+ * confirmed on hardware (a toggle whose data[1] is 0 shows its first color at rest, and its
+ * first press sends data[2]).
+ */
+export function rememberedCc(state: MidiState, channel: number, controller: number): number {
+  return ccValue(state, channel, controller) ?? 0;
+}
+
 export function isNoteOn(state: MidiState, channel: number, note: number): boolean {
   return state.notes[channel]?.[note] === true;
 }
@@ -67,11 +76,15 @@ export function recordMidi(state: MidiState, messages: readonly OutgoingMidiMess
 }
 
 /**
- * Whether a step's MIDI is in its On ("maximum value") state according to the remembered values;
- * this is what its light shows. Undefined for steps whose light doesn't follow a remembered value
- * (they light while held instead; see `stepLight`).
- * - CC Toggle: the CC holds the step's On value (data 3).
- * - CC Trigger: the CC holds the step's press value (data 2).
+ * Whether a step shows its *first* LED color (the `activeColor` field, elm 0x41) rather than the
+ * second (`inactiveColor`, elm 0x42). Undefined for steps whose light doesn't follow a remembered
+ * value (they light while held instead; see `stepLight`).
+ *
+ * Confirmed on hardware (TOGL test preset, firmware 1.01.12): for a CC step the first color shows
+ * while the controller holds **data[1]**, whichever value that is, and the second color otherwise.
+ * Five toggles covering [127, 0], [0, 127] and [100, 20] all followed this, at rest and after a
+ * press. Every factory and owner preset puts the "pressed" value in data[1], which is why this
+ * reads as a plain on/off there.
  * - Note / Note Toggle: the note is sounding.
  * - Program & Bank: the channel's current program is the step's, and so is the bank if the step
  *   sends one.
@@ -80,9 +93,8 @@ export function stepValueOn(step: Step, channel: number, state: MidiState): bool
   const [d0, d1, d2] = step.data;
   switch (step.msgType) {
     case SwitchMessageType.CcToggle:
-      return ccValue(state, channel, d0) === d2;
     case SwitchMessageType.CcTrigger:
-      return ccValue(state, channel, d0) === d1;
+      return rememberedCc(state, channel, d0) === d1;
     case SwitchMessageType.Note:
     case SwitchMessageType.NoteToggle:
       return isNoteOn(state, channel, d0);

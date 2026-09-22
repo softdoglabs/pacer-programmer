@@ -6,7 +6,7 @@ import {
 } from "../protocol/constants";
 import type { Step } from "../protocol/types";
 import { cc, channelAftertouch, mmc, noteOff, noteOn, pitchBend, programChange } from "./midiMessages";
-import { ccValue, isNoteOn, type MidiState } from "./midiState";
+import { isNoteOn, rememberedCc, type MidiState } from "./midiState";
 import type { ControlPhase, DeviceAction, OutgoingMidiMessage } from "./types";
 
 /**
@@ -73,9 +73,12 @@ export function fireSwitchStep(
       if (phase === "release") return empty();
       // Toggles follow the device's remembered value for this CC, not a per-switch bit, so the
       // state survives preset changes and is shared by every switch toggling the same CC.
-      const [controller, offValue, onValue] = data;
-      const isOn = ccValue(subState.midi, channel, controller) === onValue;
-      return { ...empty(), messages: [cc(channel, controller, isOn ? offValue : onValue)] };
+      // Confirmed on hardware (TOGL test preset): a press sends data[1] unless the controller
+      // already holds data[1], in which case it sends data[2]. Nothing remembered counts as 0,
+      // so a [cc, 127, 0] toggle sends 127 first and a [cc, 0, 127] toggle sends 127 as well.
+      const [controller, first, second] = data;
+      const holdsFirst = rememberedCc(subState.midi, channel, controller) === first;
+      return { ...empty(), messages: [cc(channel, controller, holdsFirst ? second : first)] };
     }
 
     case SwitchMessageType.CcStep: {

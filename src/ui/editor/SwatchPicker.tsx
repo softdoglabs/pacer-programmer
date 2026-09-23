@@ -10,7 +10,7 @@ function Swatch({ code, label }: { code: number; label?: string }) {
     <Radio
       value={String(code)}
       aria-label={ledColorName(code)}
-      className="grid size-8 cursor-pointer place-items-center rounded-full border border-white/15 text-[10px] font-semibold text-muted-foreground outline-none data-[focus-visible]:ring-[3px] data-[focus-visible]:ring-ring/50 data-[selected]:ring-2 data-[selected]:ring-foreground"
+      className="grid size-8 cursor-pointer place-items-center rounded-full border border-white/15 text-[10px] font-semibold text-muted-foreground ring-focus outline-none data-[selected]:ring-2 data-[selected]:ring-foreground"
       style={{ background: css === "transparent" ? undefined : css }}
     >
       {label}

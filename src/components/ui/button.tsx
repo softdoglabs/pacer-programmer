@@ -31,7 +31,7 @@ export function Button({ variant = "default", size = "default", className, ...pr
       className={composeRenderProps(className, (className) =>
         cn(
           "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md font-medium whitespace-nowrap transition-colors outline-none select-none",
-          "data-[focus-visible]:ring-[3px] data-[focus-visible]:ring-ring/50 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+          "ring-focus data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
           "data-[pressed]:scale-[0.98]",
           VARIANTS[variant],
           SIZES[size],

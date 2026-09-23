@@ -32,7 +32,7 @@ export function Tab({ className, ...props }: TabProps) {
         cn(
           "cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground outline-none transition-colors",
           "data-[hovered]:text-foreground data-[selected]:bg-background data-[selected]:text-foreground data-[selected]:shadow-sm",
-          "data-[focus-visible]:ring-[3px] data-[focus-visible]:ring-ring/50",
+          "ring-focus",
           c,
         ),
       )}

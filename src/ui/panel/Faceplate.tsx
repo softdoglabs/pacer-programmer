@@ -181,7 +181,7 @@ function DisplayNameEditor() {
     return (
       <button
         type="button"
-        className="absolute inset-0 rounded-[4%] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="absolute inset-0 rounded-[4%] ring-focus outline-none"
         title={`Rename preset ${presetIndexToLabel(presetIndex)}`}
         aria-label={`Rename preset ${presetIndexToLabel(presetIndex)} (currently ${name.trim() || "unnamed"})`}
         onClick={() => setDraft(name.trimEnd())}

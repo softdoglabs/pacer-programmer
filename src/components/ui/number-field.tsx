@@ -29,7 +29,7 @@ export function NumberField({
       }}
     >
       <Label className="text-xs text-muted-foreground">{label}</Label>
-      <Group className="flex h-9 w-fit items-center overflow-hidden rounded-md border bg-card data-[focus-within]:ring-[3px] data-[focus-within]:ring-ring/50">
+      <Group className="flex h-9 w-fit items-center overflow-hidden rounded-md border bg-card ring-focus">
         <Button slot="decrement" className="h-full w-9 cursor-pointer text-lg outline-none data-[pressed]:bg-accent">
           −
         </Button>

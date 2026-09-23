@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { computePanelState, switchHint } from "../../pacer/panel";
 import { switchSpecForControl } from "../../pacer/hardware";
 import { usePacerStore } from "../../store/pacerStore";
@@ -15,6 +16,7 @@ export function LiveControl({ controlId }: { controlId: number }) {
   const board = usePacerStore((s) => s.board);
   const deviceMode = usePacerStore((s) => s.deviceMode);
   const { pressProps } = useControlPress(controlId, { live: true });
+  const panel = useMemo(() => computePanelState(board, deviceMode), [board, deviceMode]);
   if (!spec) return null;
   // Rear-jack controls have no housing or lights; they look the same here as on the faceplate.
   if (spec.placement.kind === "rear") {
@@ -26,14 +28,13 @@ export function LiveControl({ controlId }: { controlId: number }) {
     );
   }
 
-  const panel = computePanelState(board, deviceMode);
   const state = panel.switches[spec.id];
   const hint = switchHint(spec, board.config, board.activePresetIndex, deviceMode.mode, deviceMode.pendingBank);
   if (!state) return null;
 
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className="w-36">
+      <div className="w-full max-w-36">
         <div className="aspect-[196/236]">
           <SwitchView
             spec={spec}

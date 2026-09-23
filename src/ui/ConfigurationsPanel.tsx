@@ -87,7 +87,7 @@ function OpenArea({
   return (
     <button
       type="button"
-      className="min-w-0 flex-1 cursor-pointer rounded-md px-3 py-2 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="min-w-0 flex-1 cursor-pointer rounded-md px-3 py-2 text-left ring-focus outline-none"
       aria-current={active ? "true" : undefined}
       title={active ? "Open in the simulator" : "Open in the simulator (nothing is sent to the Pacer)"}
       onClick={onOpen}

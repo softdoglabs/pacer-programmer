@@ -24,7 +24,7 @@ function SaveForm({ onDone }: { onDone: () => void }) {
     <>
       <TextField value={name} onChange={setName} className="flex flex-col gap-1" autoFocus>
         <Label className="text-xs text-muted-foreground">Name</Label>
-        <Input className="h-9 rounded-md border bg-card px-2 text-sm outline-none data-[focused]:ring-[3px] data-[focused]:ring-ring/50" />
+        <Input className="h-9 rounded-md border bg-card px-2 text-sm ring-focus outline-none" />
       </TextField>
       <p className="text-xs text-muted-foreground">
         Saving keeps a snapshot in this browser. Nothing is sent to the Pacer.

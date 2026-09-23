@@ -62,7 +62,7 @@ export function App() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-[1500px] flex-1 flex-col gap-4 p-4">
+      <main className="mx-auto flex w-full max-w-[var(--page-max)] flex-1 flex-col gap-4 p-4">
         {/* Simulator views are keyed on the session, so a configuration switch remounts them. */}
         <Fragment key={`sim-${sessionId}`}>
           {programming ? (
@@ -73,7 +73,7 @@ export function App() {
               {/* `badge-room` keeps space for Edit mode's overhanging badges, in both modes, so
                   switching doesn't shift the layout or raise a scrollbar (see index.css). */}
               <div className="overflow-x-auto overflow-y-hidden">
-                <div className="badge-room min-w-[900px] space-y-3">
+                <div className="badge-room min-w-[var(--faceplate-min)] space-y-3">
                   <Faceplate />
                   {/* Rear-jack controls are part of the hardware, so they stay with the faceplate. */}
                   <RearJacks />

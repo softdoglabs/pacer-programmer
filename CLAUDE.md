@@ -392,6 +392,12 @@ no hover-only UI, for tablets.
   character as the segments the hardware's module would light. It's
   keshikan's font under the SIL Open Font License 1.1, bundled with its
   license file; the italic cut matches the Pacer's slanted digits.
+- **Shared style facts live in `index.css`, not repeated in components:**
+  `--page-max` and `--faceplate-min` (the width the page stops growing at,
+  and the one below which the faceplate scrolls), `--badge-overhang` with
+  `.badge-room`, and `.ring-focus`, which carries the focus ring for all
+  of React Aria's focus attributes (`data-focus-visible`, `data-focused`,
+  `data-focus-within`) so they can't drift apart.
 - **`palette.ts`** is the only place semantic colors become CSS.
   **`icons.tsx`** holds our own SVG icon drawings.
 - **Hints** are drawn as teal italic annotations below each switch, visibly

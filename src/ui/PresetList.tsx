@@ -21,7 +21,7 @@ function PresetButton({ index }: { index: number }) {
       aria-current={active ? "true" : undefined}
       className={cn(
         "flex items-baseline gap-2 rounded-md border px-2 py-1 text-left text-sm transition-colors outline-none",
-        "hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50",
+        "hover:bg-accent ring-focus",
         active ? "border-primary bg-primary/15" : "border-transparent",
         !preset && "text-muted-foreground",
       )}

@@ -1,6 +1,7 @@
 import type { CSSProperties, DOMAttributes } from "react";
 import type { IndicatorSpec, SwitchSpec } from "@/pacer/hardware";
 import type { SwitchPanelState } from "@/pacer/panel";
+import { cn } from "@/lib/utils";
 import { EditBadge, NoEditBadge } from "./EditBadge";
 import { IconGlyph } from "./icons";
 import { paintLight } from "./palette";
@@ -130,7 +131,7 @@ export function SwitchView({
   return (
     <button
       type="button"
-      className={`pacer-switch rounded-[7%] p-0 ${style ? "absolute" : "relative block size-full"}`}
+      className={cn("pacer-switch rounded-[7%] p-0", style ? "absolute" : "relative block size-full")}
       style={style}
       title={title}
       aria-label={ariaLabel}

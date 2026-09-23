@@ -65,6 +65,16 @@
 }
 
 /*
+ * How wide the page lets itself get, and the width below which the faceplate scrolls rather than
+ * shrinking further (its switches stop being worth tapping). Declared together because they only
+ * make sense relative to each other.
+ */
+:root {
+  --page-max: 1500px;
+  --faceplate-min: 900px;
+}
+
+/*
  * Edit mode's badges overhang their control's bottom-right corner (see EditBadge). The overhang
  * is declared once here: the badge offsets itself by it, and whatever lays out badged controls
  * keeps that much room with `.badge-room`, so nothing is clipped and no scrollbar appears.
@@ -76,6 +86,20 @@
   padding-right: var(--badge-overhang);
   padding-bottom: var(--badge-overhang);
   padding-left: var(--badge-overhang);
+}
+
+/*
+ * The focus ring, in one place: React Aria exposes focus as data-focus-visible / data-focused /
+ * data-focus-within depending on the component, and repeating the same three utilities at each
+ * of those selectors is how they drift apart.
+ */
+.ring-focus:focus-visible,
+.ring-focus[data-focus-visible],
+.ring-focus[data-focused],
+.ring-focus[data-focus-within] {
+  --tw-ring-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
+  outline: none;
 }
 
 /* Faceplate-specific bits that are awkward to express as utility classes on SVG. */

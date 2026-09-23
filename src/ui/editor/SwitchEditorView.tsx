@@ -70,7 +70,7 @@ export function SwitchEditorView({ controlId }: { controlId: number }) {
         </Button>
       </div>
       <div className="flex flex-col gap-4 lg:flex-row">
-        <div className="lg:order-2 lg:w-40 lg:shrink-0">
+        <div className="lg:order-2 lg:shrink-0">
           <LiveControl controlId={controlId} />
         </div>
         <div className="min-w-0 flex-1">

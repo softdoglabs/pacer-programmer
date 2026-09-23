@@ -55,7 +55,7 @@ function FootswitchControl({ controlId, live }: { controlId: number; live: boole
       aria-label={`${live ? "Try" : "Switch"} ${controlLabel(controlId)}`}
       className={cn(
         "h-full touch-none rounded-md text-left outline-none select-none",
-        "focus-visible:ring-[3px] focus-visible:ring-ring/50",
+        "ring-focus",
         pressed && "translate-y-px",
       )}
       {...pressProps}

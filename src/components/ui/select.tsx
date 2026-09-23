@@ -61,7 +61,7 @@ export function Select({
       placeholder={placeholder}
     >
       <Label className={labelVisible ? "text-muted-foreground" : "sr-only"}>{label}</Label>
-      <Button className="flex h-9 max-w-56 min-w-24 cursor-pointer items-center justify-between gap-2 rounded-md border bg-card px-3 text-left outline-none data-[focus-visible]:ring-[3px] data-[focus-visible]:ring-ring/50">
+      <Button className="flex h-9 max-w-56 min-w-24 cursor-pointer items-center justify-between gap-2 rounded-md border bg-card px-3 text-left ring-focus outline-none">
         <SelectValue className="truncate data-[placeholder]:text-muted-foreground" />
         <span aria-hidden className="text-muted-foreground">
           ▾

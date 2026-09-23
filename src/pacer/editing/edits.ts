@@ -172,7 +172,7 @@ export function setStepType(
   });
 }
 
-const DEFAULT_LED: LedConfig = { midiController: 0, activeColor: 0x7f, inactiveColor: 0x7f, position: 0 };
+const DEFAULT_LED: LedConfig = { midiFeedback: 0, activeColor: 0x7f, inactiveColor: 0x7f, position: 0 };
 
 /** Patches a step's LED config (colors are Pacer color codes; `position` is the LED num). */
 export function updateStepLed(

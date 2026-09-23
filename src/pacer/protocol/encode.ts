@@ -71,7 +71,7 @@ function buildLedMessage(idx: number, controlId: number, stepNumber: number, led
   // One elm/len/value[/reserved] field per row, mirroring the wire format.
   // prettier-ignore
   const fields = [
-    base, 1, led.midiController ?? 0, 0,
+    base, 1, led.midiFeedback ?? 0, 0,
     base + 1, 1, led.activeColor ?? 0, 0,
     base + 2, 1, led.inactiveColor ?? 0, 0,
     base + 3, 1, led.position ?? 0,

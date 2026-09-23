@@ -73,7 +73,7 @@ describe("editing", () => {
   it("edits LED config, creating it with Default colors when missing", () => {
     const c = updateStepLed(factory, A1, ControlId.Footswitch1, 1, { activeColor: 0x03 });
     expect(c.presets[A1]!.controls[ControlId.Footswitch1]!.led[1]).toEqual({
-      midiController: 0,
+      midiFeedback: 0,
       activeColor: 0x03,
       inactiveColor: 0x7f,
       position: 0,

@@ -15,8 +15,13 @@ export interface Step {
 
 /** Per-step LED feedback config. All fields are independently optional — the Pacer sends them as separate SysEx fields. */
 export interface LedConfig {
-  /** MIDI controller number the LED listens to for its on/off state, if not driven by the step's own action. */
-  midiController?: number;
+  /**
+   * The LED menu's "MIDI" setting (Off/On), not a controller number: with it on, the light's two
+   * colors follow the step's own assigned message *received* on USB MIDI rather than what the
+   * switch itself sends — the User Guide's "MIDI LED feedback for MIDI CC messages" (Control Edit
+   * -> LED, Chart 1). Kept as the raw byte, since only 0 (Off) has been seen in a dump.
+   */
+  midiFeedback?: number;
   activeColor?: number;
   inactiveColor?: number;
   /** LED position on multi-LED footswitches: 0=default, 1=bottom, 2=middle, 3=top. */

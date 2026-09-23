@@ -160,7 +160,7 @@ function decodeMidiSettingFields(data: Uint8Array): DecodedMidiSetting {
   };
 }
 
-const LED_FIELD_BY_OFFSET: Array<keyof LedConfig> = ["midiController", "activeColor", "inactiveColor", "position"];
+const LED_FIELD_BY_OFFSET: Array<keyof LedConfig> = ["midiFeedback", "activeColor", "inactiveColor", "position"];
 
 /**
  * LED fields are TLV-encoded (`elm, len, ...len data bytes`) with a single

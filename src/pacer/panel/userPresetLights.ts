@@ -70,7 +70,7 @@ export interface UserPresetContext {
 /**
  * The light a user preset's config drives on one switch: at most one (see `showingStep`), on the
  * indicator that step's LED num selects (see `indicatorForLedNum`). Which of its two colors shows
- * comes from `stepLight`, the firmware LED model. LED `midiController` (LED driven by incoming
+ * comes from `stepLight`, the firmware LED model. LED `midiFeedback` (LED driven by incoming
  * MIDI) isn't simulated, since there's no MIDI input yet.
  */
 export function userPresetLights(

@@ -101,7 +101,7 @@ describe("computePanelState (factory presets)", () => {
     const set = (id: number, msgType: number, d0: number, colors: { on: number; off: number }) => {
       const ctl = getOrCreateControl(preset, id);
       ctl.steps[1] = { channel: 0, msgType, data: [d0, 127, 0], active: true };
-      ctl.led[1] = { midiController: 0, activeColor: colors.on, inactiveColor: colors.off, position: 0 };
+      ctl.led[1] = { midiFeedback: 0, activeColor: colors.on, inactiveColor: colors.off, position: 0 };
     };
     set(ControlId.StompswitchA, SwitchMessageType.PresetSelect, presetIndexToPresetSelectTarget(A1), WHITE);
     set(ControlId.StompswitchB, SwitchMessageType.CcTrigger, 52, ORANGE);

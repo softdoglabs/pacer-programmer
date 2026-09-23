@@ -24,8 +24,8 @@ export interface ButtonProps extends AriaButtonProps {
 }
 
 /** A React Aria button (press handling that works for mouse, touch, pen and keyboard). */
-export function Button({ variant = "default", size = "default", className, ...props }: ButtonProps) {
-  return (
+export function Button({ variant = "default", size = "default", className, title, ...props }: ButtonProps) {
+  const button = (
     <AriaButton
       {...props}
       className={composeRenderProps(className, (className) =>
@@ -39,5 +39,19 @@ export function Button({ variant = "default", size = "default", className, ...pr
         ),
       )}
     />
+  );
+  /*
+   * React Aria filters props it doesn't know down to the DOM, so `title` never reached the
+   * element and these tooltips silently did nothing. A wrapper carries it instead — and because
+   * a disabled button sets `pointer-events: none`, putting it here is also what makes the tooltip
+   * work on a disabled button, which is exactly when "why can't I click this?" gets asked.
+   * `aria-label` is what actually names the button; this is only the mouse-over hint.
+   */
+  return title ? (
+    <span title={title} className="inline-flex">
+      {button}
+    </span>
+  ) : (
+    button
   );
 }

@@ -1,6 +1,7 @@
 import { Pencil, PencilOff } from "lucide-react";
 import { Button } from "react-aria-components";
 import { cn } from "@/lib/utils";
+import { Titled } from "@/components/ui/titled";
 
 const BADGE_CLASS = cn(
   // Offset by --badge-overhang, the same value `.badge-room` reserves (see index.css).
@@ -22,15 +23,17 @@ export function EditBadge({ onPress, label, className }: { onPress?: () => void;
   const icon = <Pencil className="size-5" strokeWidth={2.5} />;
   if (!onPress) {
     return (
-      <span aria-hidden className={cn(BADGE_CLASS, className)}>
+      <span aria-hidden title={label} className={cn(BADGE_CLASS, className)}>
         {icon}
       </span>
     );
   }
   return (
-    <Button aria-label={label} className={cn(BADGE_CLASS, className)} onPress={onPress}>
-      {icon}
-    </Button>
+    <Titled title={label}>
+      <Button aria-label={label} className={cn(BADGE_CLASS, className)} onPress={onPress}>
+        {icon}
+      </Button>
+    </Titled>
   );
 }
 

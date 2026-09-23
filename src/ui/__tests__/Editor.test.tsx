@@ -135,7 +135,7 @@ describe("programming interface", () => {
     fireEvent.click(within(litBy).getByRole("radio", { name: "Incoming MIDI" }));
     expect(led().midiFeedback).toBe(1);
     // Factory A1 switch 1 is a Program Change, and the hardware only does this for CC steps.
-    expect(within(step1).getByText(/only does this for CC steps/)).toBeTruthy();
+    expect(within(step1).getByText(/only works on CC steps/)).toBeTruthy();
 
     fireEvent.click(within(litBy).getByRole("radio", { name: "This switch" }));
     expect(led().midiFeedback).toBe(0);

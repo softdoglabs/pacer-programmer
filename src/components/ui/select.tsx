@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "react-aria-components";
 import { cn } from "@/lib/utils";
+import { Titled } from "./titled";
 
 export interface SelectOption {
   id: string;
@@ -43,8 +44,11 @@ export function Select({
   className,
   placeholder = "—",
   labelVisible = true,
+  title,
 }: {
   label: string;
+  /** Hover hint describing what this sets (see `Titled`). */
+  title?: string;
   /** Flat options, or groups of options with headings. */
   options: SelectOption[] | SelectGroup[];
   labelVisible?: boolean;
@@ -54,35 +58,37 @@ export function Select({
   placeholder?: string;
 }) {
   return (
-    <AriaSelect
-      className={cn("flex items-center gap-2 text-sm", className)}
-      selectedKey={value ?? null}
-      onSelectionChange={(key: Key | null) => onChange(key === null ? undefined : String(key))}
-      placeholder={placeholder}
-    >
-      <Label className={labelVisible ? "text-muted-foreground" : "sr-only"}>{label}</Label>
-      <Button className="flex h-9 max-w-56 min-w-24 cursor-pointer items-center justify-between gap-2 rounded-md border bg-card px-3 text-left ring-focus outline-none">
-        <SelectValue className="truncate data-[placeholder]:text-muted-foreground" />
-        <span aria-hidden className="text-muted-foreground">
-          ▾
-        </span>
-      </Button>
-      <Popover className="min-w-[var(--trigger-width)] rounded-md border bg-popover p-1 shadow-lg">
-        <ListBox className="max-h-80 overflow-auto outline-none">
-          {options.map((o) =>
-            "options" in o ? (
-              <ListBoxSection key={o.title} id={o.title}>
-                <Header className="px-3 pt-2 pb-1 text-xs font-semibold text-muted-foreground">{o.title}</Header>
-                {o.options.map((option) => (
-                  <Item key={option.id} option={option} />
-                ))}
-              </ListBoxSection>
-            ) : (
-              <Item key={o.id} option={o} />
-            ),
-          )}
-        </ListBox>
-      </Popover>
-    </AriaSelect>
+    <Titled title={title}>
+      <AriaSelect
+        className={cn("flex items-center gap-2 text-sm", className)}
+        selectedKey={value ?? null}
+        onSelectionChange={(key: Key | null) => onChange(key === null ? undefined : String(key))}
+        placeholder={placeholder}
+      >
+        <Label className={labelVisible ? "text-muted-foreground" : "sr-only"}>{label}</Label>
+        <Button className="flex h-9 max-w-56 min-w-24 cursor-pointer items-center justify-between gap-2 rounded-md border bg-card px-3 text-left ring-focus outline-none">
+          <SelectValue className="truncate data-[placeholder]:text-muted-foreground" />
+          <span aria-hidden className="text-muted-foreground">
+            ▾
+          </span>
+        </Button>
+        <Popover className="min-w-[var(--trigger-width)] rounded-md border bg-popover p-1 shadow-lg">
+          <ListBox className="max-h-80 overflow-auto outline-none">
+            {options.map((o) =>
+              "options" in o ? (
+                <ListBoxSection key={o.title} id={o.title}>
+                  <Header className="px-3 pt-2 pb-1 text-xs font-semibold text-muted-foreground">{o.title}</Header>
+                  {o.options.map((option) => (
+                    <Item key={option.id} option={option} />
+                  ))}
+                </ListBoxSection>
+              ) : (
+                <Item key={o.id} option={o} />
+              ),
+            )}
+          </ListBox>
+        </Popover>
+      </AriaSelect>
+    </Titled>
   );
 }

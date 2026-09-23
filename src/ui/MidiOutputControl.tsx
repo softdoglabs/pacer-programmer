@@ -16,6 +16,7 @@ export function MidiOutputControl() {
           variant="outline"
           size="sm"
           isDisabled={midi.status === "connecting"}
+          title="Ask the browser for MIDI access, so simulated presses can reach real gear and the Pacer can be read and written"
           onPress={() => void connectMidi()}
         >
           {midi.status === "connecting" ? "Connecting…" : "Connect MIDI"}
@@ -29,7 +30,7 @@ export function MidiOutputControl() {
       return (
         <span className="flex items-center gap-2 text-xs text-warning">
           MIDI access denied{midi.error ? `: ${midi.error}` : ""}
-          <Button variant="ghost" size="sm" onPress={() => void connectMidi()}>
+          <Button variant="ghost" size="sm" title="Ask for MIDI access again" onPress={() => void connectMidi()}>
             Retry
           </Button>
         </span>

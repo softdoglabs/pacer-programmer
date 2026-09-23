@@ -1,6 +1,7 @@
 import type { Key } from "react-aria-components";
 import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { cn } from "@/lib/utils";
+import { Titled } from "./titled";
 
 /** A segmented control: exactly one of a few options is selected. */
 export function ToggleGroup<T extends string>({
@@ -12,7 +13,7 @@ export function ToggleGroup<T extends string>({
   labelVisible = false,
 }: {
   label: string;
-  options: readonly { id: T; label: string }[];
+  options: readonly { id: T; label: string; title?: string }[];
   value: T;
   onChange: (value: T) => void;
   className?: string;
@@ -31,15 +32,22 @@ export function ToggleGroup<T extends string>({
       }}
       className={cn("inline-flex w-fit rounded-lg bg-muted p-[3px]", className)}
     >
-      {options.map((o) => (
-        <ToggleButton
-          key={o.id}
-          id={o.id}
-          className="h-8 cursor-pointer rounded-md px-3 text-sm font-medium text-muted-foreground outline-none ring-focus data-[hovered]:text-foreground data-[selected]:bg-background data-[selected]:text-foreground data-[selected]:shadow-sm"
-        >
-          {o.label}
-        </ToggleButton>
-      ))}
+      {options.map((o) => {
+        const button = (
+          <ToggleButton
+            key={o.id}
+            id={o.id}
+            className="h-8 cursor-pointer rounded-md px-3 text-sm font-medium text-muted-foreground outline-none ring-focus data-[hovered]:text-foreground data-[selected]:bg-background data-[selected]:text-foreground data-[selected]:shadow-sm"
+          >
+            {o.label}
+          </ToggleButton>
+        );
+        return (
+          <Titled key={o.id} title={o.title}>
+            {button}
+          </Titled>
+        );
+      })}
     </ToggleButtonGroup>
   );
   if (!labelVisible) return group;

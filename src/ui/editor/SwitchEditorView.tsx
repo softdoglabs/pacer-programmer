@@ -27,6 +27,7 @@ function SwitchPicker({ selected, onSelect }: { selected: number; onSelect: (con
                 size="sm"
                 variant={id === selected ? "default" : "outline"}
                 aria-label={`Program ${controlLabel(id)}`}
+                title={`Program ${controlLabel(id)}`}
                 aria-pressed={id === selected}
                 className="min-w-9 px-2"
                 onPress={() => onSelect(id)}

@@ -51,7 +51,7 @@ function Progress({ send }: { send: SendView }) {
     <div className="space-y-1">
       <div className="flex items-center gap-3">
         <progress className="h-2 flex-1" max={max} value={value} aria-label="Send progress" />
-        <Button size="sm" variant="ghost" onPress={cancelSend}>
+        <Button size="sm" variant="ghost" title="Stop; presets already written stay written" onPress={cancelSend}>
           Cancel
         </Button>
       </div>
@@ -162,12 +162,13 @@ function SendForm({ onClose }: { onClose: () => void }) {
       <Progress send={send} />
       {!busy && <Result send={send} />}
       <div className="flex flex-wrap justify-end gap-2">
-        <Button variant="outline" onPress={onClose}>
+        <Button variant="outline" title="Close without sending anything" onPress={onClose}>
           {send.status === "done" ? "Close" : "Cancel"}
         </Button>
         <Button
           variant="destructive"
           isDisabled={busy || presets.length === 0}
+          title="Write these presets to the Pacer now. Takes effect immediately, with no undo on the device."
           onPress={() => void sendToPacer(presets, { verify })}
         >
           Overwrite {presets.length} preset{presets.length === 1 ? "" : "s"} on the Pacer
@@ -193,7 +194,13 @@ export function SendToPacer() {
 
   return (
     <>
-      <Button size="sm" variant="outline" isDisabled={!canSend} onPress={openDialog}>
+      <Button
+        size="sm"
+        variant="outline"
+        isDisabled={!canSend}
+        title={canSend ? "Write presets to the connected Pacer" : "Needs MIDI with SysEx and the Pacer's output port"}
+        onPress={openDialog}
+      >
         {isBusy(send) ? "Sending…" : "Send to Pacer…"}
       </Button>
       <ModalDialog isOpen={open} onOpenChange={setOpen} title="Send to Pacer">

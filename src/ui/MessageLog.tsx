@@ -23,7 +23,13 @@ export function MessageLog() {
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center justify-between pb-2">
         <h2 className="text-sm font-semibold">Output</h2>
-        <Button variant="ghost" size="sm" onPress={clearLog} isDisabled={log.length === 0}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onPress={clearLog}
+          isDisabled={log.length === 0}
+          title={log.length === 0 ? "The log is already empty" : "Empty the log"}
+        >
           Clear
         </Button>
       </div>

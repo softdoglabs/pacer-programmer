@@ -115,6 +115,7 @@ function DataFields({ kind, step, onData }: { kind: ControlKind; step: Step; onD
     return (
       <Select
         label="Jump to"
+        title="The preset this step loads when the control fires"
         options={PRESET_TARGET_OPTIONS}
         value={String(step.data[0])}
         onChange={(v) => v && set(0, Number(v))}
@@ -126,8 +127,8 @@ function DataFields({ kind, step, onData }: { kind: ControlKind; step: Step; onD
       <ToggleGroup
         label="Direction"
         options={[
-          { id: "0", label: "Next preset" },
-          { id: "1", label: "Previous preset" },
+          { id: "0", label: "Next preset", title: "Step forward through the presets, wrapping at D6" },
+          { id: "1", label: "Previous preset", title: "Step back through the presets, wrapping at A1" },
         ]}
         value={step.data[0] === 0 ? "0" : "1"}
         onChange={(v) => set(0, Number(v))}
@@ -191,7 +192,13 @@ function LedFields({
     const indicator = indicatorForLedNum(spec, num);
     if (!indicator || seen.has(indicator.id)) return [];
     seen.add(indicator.id);
-    return [{ id: String(num), label: LED_TARGET_NAMES[indicator.face.kind] }];
+    return [
+      {
+        id: String(num),
+        label: LED_TARGET_NAMES[indicator.face.kind],
+        title: `Light this step's colors on the switch's ${LED_TARGET_NAMES[indicator.face.kind].toLowerCase()}`,
+      },
+    ];
   });
   // A config using num 1 (the bar) selects the same option as num 0.
   const selected = indicatorForLedNum(spec, led?.position ?? 0);
@@ -213,8 +220,12 @@ function LedFields({
           label="Lit by"
           labelVisible
           options={[
-            { id: "switch", label: "This switch" },
-            { id: "midi", label: "Incoming MIDI" },
+            { id: "switch", label: "This switch", title: "The light follows what this switch itself sends" },
+            {
+              id: "midi",
+              label: "Incoming MIDI",
+              title: "The light follows this step's CC arriving over USB, and stops following presses",
+            },
           ]}
           value={followsMidi ? "midi" : "switch"}
           onChange={(v) => onLed({ midiFeedback: v === "midi" ? LED_MIDI_FEEDBACK_ON : LED_MIDI_FEEDBACK_OFF })}
@@ -223,8 +234,8 @@ function LedFields({
       {followsMidi && (
         <p className="text-xs text-muted-foreground">
           {sendsCc
-            ? `The Pacer lights this from CC ${step.data[0]} arriving over USB, and the switch's own presses stop moving it. It needs something at the other end echoing that CC back — the Pacer has no MIDI In jack, so USB is the only way in. With nothing received it parks on the second color, which is what's drawn here.`
-            : "Confirmed on the hardware: the Pacer only does this for CC steps — a Program Change step with the flag on never lit. Expect no effect here."}
+            ? `Lit by CC ${step.data[0]} received over USB; pressing the switch no longer changes it. Needs something echoing that CC back, since the Pacer has no MIDI In jack. With nothing received it stays on the second color, as drawn here. Verified on hardware.`
+            : "This only works on CC steps, so it will have no effect here. Verified on hardware."}
         </p>
       )}
       <div className="flex flex-wrap gap-4">
@@ -276,6 +287,7 @@ export function StepCard({
         {drivesLight && hasLights && <Badge variant="outline">lights the switch</Badge>}
         <Select
           label={`Step ${n} type`}
+          title={`What step ${n} sends or does`}
           labelVisible={false}
           options={typeOptions(kind)}
           value={step ? String(step.msgType) : undefined}
@@ -285,6 +297,7 @@ export function StepCard({
         {step && !(kind === "switch" && NO_CHANNEL.includes(step.msgType)) && (
           <Select
             label="Channel"
+            title="MIDI channel this step transmits on. Global follows the configuration's own channel."
             options={CHANNEL_OPTIONS}
             value={String(step.channel)}
             onChange={(v) => v && applyEdit((c) => updateStep(c, presetIndex, controlId, n, { channel: Number(v) }))}
@@ -296,6 +309,7 @@ export function StepCard({
             variant="ghost"
             className="ml-auto"
             aria-label={`Remove step ${n}`}
+            title={`Turn off step ${n}`}
             onPress={() => applyEdit((c) => updateStep(c, presetIndex, controlId, n, { active: false }))}
           >
             ✕

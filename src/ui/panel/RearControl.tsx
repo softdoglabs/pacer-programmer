@@ -48,10 +48,18 @@ function FootswitchControl({ controlId, live }: { controlId: number; live: boole
   const editable = usePacerStore((s) => s.uiMode === "edit") && !live;
   const { pressProps } = useControlPress(controlId, { live });
   const pressed = usePacerStore((s) => getControlDisplayState(s.board, controlId).pressed);
+  const control = usePacerStore((s) => s.board.config.presets[s.board.activePresetIndex]?.controls[controlId]);
+  const label = controlLabel(controlId);
+  const title = editable
+    ? `Program ${label}`
+    : control
+      ? `${label}: ${summarizeControl(control, controlKindOf(controlId)!)}`
+      : `${label}: not configured on this preset`;
   return (
     <button
       type="button"
       aria-pressed={pressed}
+      title={title}
       aria-label={`${live ? "Try" : "Switch"} ${controlLabel(controlId)}`}
       className={cn(
         "h-full touch-none rounded-md text-left outline-none select-none",
@@ -89,6 +97,7 @@ function PedalControl({ controlId, live }: { controlId: number; live: boolean })
         max={100}
         value={Math.round(position * 100)}
         aria-label={`${label}: heel to toe`}
+        title={editable ? `Program ${label}` : `${label}: drag from heel to toe`}
         className="w-full accent-primary"
         onPointerDown={() => !live && editing && selectControl(controlId)}
         // In Edit mode the faceplate copy only selects; the editor's live copy sweeps.

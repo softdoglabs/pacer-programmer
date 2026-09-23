@@ -67,6 +67,11 @@ export function PullControls() {
           size="sm"
           variant="ghost"
           isDisabled={!pacerPorts.inputId || !pacerPorts.outputId || deviceInfo.kind === "querying" || sending}
+          title={
+            pacerPorts.inputId && pacerPorts.outputId
+              ? "Ask the Pacer to identify itself: manufacturer, model and version"
+              : "Choose the Pacer's MIDI ports first"
+          }
           onPress={() => void checkFirmware()}
         >
           Check firmware
@@ -82,7 +87,7 @@ export function PullControls() {
           <span className="text-xs tabular-nums text-muted-foreground">
             {pull.received} / {pull.expected}
           </span>
-          <Button size="sm" variant="ghost" onPress={cancelPull}>
+          <Button size="sm" variant="ghost" title="Stop reading from the Pacer" onPress={cancelPull}>
             Cancel
           </Button>
         </div>

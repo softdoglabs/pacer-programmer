@@ -108,6 +108,7 @@ export function EntryRow({ entry, guard }: { entry: LibraryEntry; guard: Guard }
         <Button
           size="sm"
           variant="ghost"
+          title="Rename this snapshot"
           onPress={() => {
             setDraft(entry.name);
             setEditing(true);
@@ -118,6 +119,7 @@ export function EntryRow({ entry, guard }: { entry: LibraryEntry; guard: Guard }
         <Button
           size="sm"
           variant="ghost"
+          title="Download this snapshot as a .syx file"
           onPress={() => downloadBytes(`${entry.name}.syx`, savedConfigBytes(entry.id))}
         >
           Export .syx
@@ -125,6 +127,9 @@ export function EntryRow({ entry, guard }: { entry: LibraryEntry; guard: Guard }
         <Button
           size="sm"
           variant={confirmingDelete ? "destructive" : "ghost"}
+          title={
+            confirmingDelete ? "Delete it for good — this can't be undone" : "Delete this snapshot from the browser"
+          }
           onPress={() =>
             confirmingDelete
               ? active

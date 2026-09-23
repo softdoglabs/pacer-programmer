@@ -1,5 +1,6 @@
 import { Button, Group, Input, Label, NumberField as AriaNumberField } from "react-aria-components";
 import { cn } from "@/lib/utils";
+import { Titled } from "./titled";
 
 /** A labeled number input with −/+ steppers (touch-friendly; also accepts typing and arrow keys). */
 export function NumberField({
@@ -30,16 +31,20 @@ export function NumberField({
     >
       <Label className="text-xs text-muted-foreground">{label}</Label>
       <Group className="flex h-9 w-fit items-center overflow-hidden rounded-md border bg-card ring-focus">
-        <Button slot="decrement" className="h-full w-9 cursor-pointer text-lg outline-none data-[pressed]:bg-accent">
-          −
-        </Button>
+        <Titled title={`${label}: one less (${minValue} is the lowest)`}>
+          <Button slot="decrement" className="h-full w-9 cursor-pointer text-lg outline-none data-[pressed]:bg-accent">
+            −
+          </Button>
+        </Titled>
         <Input
           inputMode="numeric"
           className="h-full w-12 border-x bg-transparent text-center text-sm tabular-nums outline-none"
         />
-        <Button slot="increment" className="h-full w-9 cursor-pointer text-lg outline-none data-[pressed]:bg-accent">
-          +
-        </Button>
+        <Titled title={`${label}: one more (${maxValue} is the highest)`}>
+          <Button slot="increment" className="h-full w-9 cursor-pointer text-lg outline-none data-[pressed]:bg-accent">
+            +
+          </Button>
+        </Titled>
       </Group>
     </AriaNumberField>
   );

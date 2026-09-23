@@ -1,5 +1,6 @@
 import { Button as AriaButton, composeRenderProps, type ButtonProps as AriaButtonProps } from "react-aria-components";
 import { cn } from "@/lib/utils";
+import { Titled } from "./titled";
 
 const VARIANTS = {
   default: "bg-primary text-primary-foreground data-[hovered]:bg-primary/90",
@@ -40,18 +41,5 @@ export function Button({ variant = "default", size = "default", className, title
       )}
     />
   );
-  /*
-   * React Aria filters props it doesn't know down to the DOM, so `title` never reached the
-   * element and these tooltips silently did nothing. A wrapper carries it instead — and because
-   * a disabled button sets `pointer-events: none`, putting it here is also what makes the tooltip
-   * work on a disabled button, which is exactly when "why can't I click this?" gets asked.
-   * `aria-label` is what actually names the button; this is only the mouse-over hint.
-   */
-  return title ? (
-    <span title={title} className="inline-flex">
-      {button}
-    </span>
-  ) : (
-    button
-  );
+  return <Titled title={title}>{button}</Titled>;
 }

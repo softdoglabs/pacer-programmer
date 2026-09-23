@@ -39,11 +39,21 @@ export function ConfigurationsPanel() {
         <Button
           size="sm"
           isDisabled={!canPull || pull.status === "pulling" || sending}
+          title={
+            canPull
+              ? "Read everything on the Pacer into a new snapshot. Nothing on the device is changed."
+              : "Connect MIDI and choose the Pacer's ports first"
+          }
           onPress={() => guard(() => void pullFromPacer())}
         >
           {pull.status === "pulling" ? "Pulling…" : "Pull from Pacer"}
         </Button>
-        <Button size="sm" variant="outline" onPress={() => fileInputRef.current?.click()}>
+        <Button
+          size="sm"
+          variant="outline"
+          title="Open a .syx dump from a file as a new snapshot"
+          onPress={() => fileInputRef.current?.click()}
+        >
           Import .syx
         </Button>
         <input ref={fileInputRef} type="file" accept=".syx" className="hidden" onChange={handleFile} />
@@ -78,11 +88,12 @@ export function ConfigurationsPanel() {
           Your edits haven't been saved. Save them from the header first if you want to keep them.
         </p>
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onPress={() => setPending(undefined)}>
+          <Button variant="outline" title="Go back, keeping your edits" onPress={() => setPending(undefined)}>
             Keep editing
           </Button>
           <Button
             variant="destructive"
+            title="Throw the unsaved edits away and carry on"
             onPress={() => {
               pending?.();
               setPending(undefined);

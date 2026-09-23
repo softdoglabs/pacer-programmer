@@ -19,6 +19,11 @@ function PresetButton({ index }: { index: number }) {
       type="button"
       onClick={() => jumpToPreset(index)}
       aria-current={active ? "true" : undefined}
+      title={
+        active
+          ? `${presetIndexToLabel(index)} is loaded`
+          : `Load ${presetIndexToLabel(index)} in the simulator. A shortcut: the hardware has no single button for this.`
+      }
       className={cn(
         "flex items-baseline gap-2 rounded-md border px-2 py-1 text-left text-sm transition-colors outline-none",
         "hover:bg-accent ring-focus",

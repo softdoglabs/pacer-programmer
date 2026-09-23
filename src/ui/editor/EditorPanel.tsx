@@ -9,9 +9,21 @@ import { usePacerStore } from "../../store/pacerStore";
 import { StepCard } from "./StepCard";
 
 const MODE_OPTIONS = [
-  { id: String(ControlMode.AllStepsAtOnce), label: "All at once" },
-  { id: String(ControlMode.Sequence), label: "Sequence" },
-  { id: String(ControlMode.ExternalStepSelect), label: "External step" },
+  {
+    id: String(ControlMode.AllStepsAtOnce),
+    label: "All at once",
+    title: "Every active step fires together on one press",
+  },
+  {
+    id: String(ControlMode.Sequence),
+    label: "Sequence",
+    title: "Each press fires the next active step, wrapping after the last",
+  },
+  {
+    id: String(ControlMode.ExternalStepSelect),
+    label: "External step",
+    title: "Another control chooses which step this one fires",
+  },
 ] as const;
 
 function ControlEditor({ controlId }: { controlId: number }) {
@@ -70,6 +82,11 @@ function ControlEditor({ controlId }: { controlId: number }) {
         variant="outline"
         size="sm"
         isDisabled={nextFreeStep === undefined}
+        title={
+          nextFreeStep === undefined
+            ? `All ${STEPS_PER_CONTROL} steps are in use`
+            : `Turn on step ${nextFreeStep}, so this control fires one more message`
+        }
         onPress={() =>
           nextFreeStep !== undefined &&
           applyEdit((c) => updateStep(c, presetIndex, controlId, nextFreeStep, { active: true }))

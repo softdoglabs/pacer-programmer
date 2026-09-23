@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button, Dialog, DialogTrigger, Popover, Radio, RadioGroup } from "react-aria-components";
+import { Titled } from "@/components/ui/titled";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import {
   LED_COLOR_DEFAULT,
@@ -75,20 +76,22 @@ export function LedColorPicker({
     <div className="flex min-w-0 flex-col gap-1">
       <span className="text-xs text-muted-foreground">{label}</span>
       <DialogTrigger>
-        <Button
-          aria-label={`${label}: ${ledColorName(value)}`}
-          className="flex h-9 w-full max-w-56 min-w-40 cursor-pointer items-center gap-2 rounded-md border bg-card px-3 text-sm ring-focus outline-none data-[hovered]:bg-accent"
-        >
-          <span
-            aria-hidden
-            className="size-4 shrink-0 rounded-full border border-white/15"
-            style={{ background: value === LED_COLOR_OFF ? "transparent" : colorCodeCss(value) }}
-          />
-          <span className="truncate">{triggerName(value)}</span>
-          <span aria-hidden className="ml-auto text-muted-foreground">
-            ▾
-          </span>
-        </Button>
+        <Titled title={`${label} — currently ${ledColorName(value)}`}>
+          <Button
+            aria-label={`${label}: ${ledColorName(value)}`}
+            className="flex h-9 w-full max-w-56 min-w-40 cursor-pointer items-center gap-2 rounded-md border bg-card px-3 text-sm ring-focus outline-none data-[hovered]:bg-accent"
+          >
+            <span
+              aria-hidden
+              className="size-4 shrink-0 rounded-full border border-white/15"
+              style={{ background: value === LED_COLOR_OFF ? "transparent" : colorCodeCss(value) }}
+            />
+            <span className="truncate">{triggerName(value)}</span>
+            <span aria-hidden className="ml-auto text-muted-foreground">
+              ▾
+            </span>
+          </Button>
+        </Titled>
         <Popover className="rounded-md border bg-popover p-3 shadow-lg">
           <Dialog aria-label={`${label} — choose a color`} className="space-y-3 outline-none">
             {({ close }) => (

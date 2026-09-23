@@ -34,6 +34,7 @@ function SaveForm({ onDone }: { onDone: () => void }) {
         {activeConfigId !== undefined && (
           <Button
             variant="outline"
+            title={`Replace the “${configSource}” snapshot with what's open now`}
             onPress={() => {
               saveOverActive();
               onDone();
@@ -44,6 +45,7 @@ function SaveForm({ onDone }: { onDone: () => void }) {
         )}
         <Button
           isDisabled={!name.trim()}
+          title="Keep the current configuration as a new snapshot in this browser"
           onPress={() => {
             saveAsNewSnapshot(name);
             onDone();
@@ -92,8 +94,8 @@ export function EditToolbar() {
       <ToggleGroup<UiMode>
         label="Mode"
         options={[
-          { id: "play", label: "Play" },
-          { id: "edit", label: "Edit" },
+          { id: "play", label: "Play", title: "Pressing a control simulates it and sends its MIDI" },
+          { id: "edit", label: "Edit", title: "Pressing a control opens it for programming instead of firing it" },
         ]}
         value={uiMode}
         onChange={setUiMode}
@@ -120,7 +122,15 @@ export function EditToolbar() {
         <Redo2 className="size-4" aria-hidden />
       </Button>
       {unsaved && <Badge variant="outline">● unsaved</Badge>}
-      <Button size="sm" variant={unsaved ? "default" : "outline"} isDisabled={!unsaved} onPress={() => setSaving(true)}>
+      <Button
+        size="sm"
+        variant={unsaved ? "default" : "outline"}
+        isDisabled={!unsaved}
+        title={
+          unsaved ? "Save these edits as a snapshot in this browser" : "Nothing to save: no edits since this was opened"
+        }
+        onPress={() => setSaving(true)}
+      >
         Save…
       </Button>
       <SaveDialog isOpen={saving} onOpenChange={setSaving} />

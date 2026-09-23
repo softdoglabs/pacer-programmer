@@ -88,13 +88,15 @@ export function App() {
                 </div>
               )}
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <Button size="sm" variant="outline" onPress={resetMidiState}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  title="Forget the programs, CC values and notes the simulator has sent, so switches light as they would from a fresh start"
+                  onPress={resetMidiState}
+                >
                   Reset MIDI state
                 </Button>
-                <span>
-                  The Pacer remembers the last program, CC values and notes it sent (they light switches across
-                  presets). This forgets them.
-                </span>
+                <span>Switches light from the values the Pacer last sent; this forgets them.</span>
               </div>
             </>
           )}

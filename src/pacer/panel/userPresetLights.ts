@@ -70,8 +70,8 @@ export interface UserPresetContext {
 /**
  * The light a user preset's config drives on one switch: at most one (see `showingStep`), on the
  * indicator that step's LED num selects (see `indicatorForLedNum`). Which of its two colors shows
- * comes from `stepLight`, the firmware LED model. LED `midiFeedback` (LED driven by incoming
- * MIDI) isn't simulated, since there's no MIDI input yet.
+ * comes from `stepLight`, the firmware LED model — except where the step's LED has `midiFeedback`
+ * on, which takes the light off the switch entirely (see below).
  */
 export function userPresetLights(
   spec: SwitchSpec,
@@ -89,9 +89,21 @@ export function userPresetLights(
     const indicator = indicatorForLedNum(spec, led.position ?? 0);
     if (!indicator) return lights;
     const channel = wireChannel(step.channel, context.globalChannel);
+    /*
+     * With the LED's MIDI flag on, the firmware drives this light *only* from the step's own CC
+     * arriving on USB MIDI — the switch's own presses don't move it (confirmed on 1.01.12: a CC 52
+     * toggle with the flag on stayed on its second color through two presses, while the same step
+     * with the flag off behaved normally). We have no MIDI input, so nothing is ever received and
+     * the light rests on the second color, exactly as the hardware does until its DAW answers.
+     */
+    const followsIncomingMidi = (led.midiFeedback ?? 0) !== 0;
     const light = stepLight(step, {
-      held: runtime?.pressed ?? false,
-      valueOn: channel === undefined ? undefined : stepValueOn(step, channel, context.midi),
+      held: followsIncomingMidi ? false : (runtime?.pressed ?? false),
+      valueOn: followsIncomingMidi
+        ? false
+        : channel === undefined
+          ? undefined
+          : stepValueOn(step, channel, context.midi),
       current: { kind: "user", index: context.activePresetIndex },
     });
     lights[indicator.id] = renderStepLight(indicator, light, led, defaultLedHue(step.msgType));

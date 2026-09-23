@@ -335,6 +335,38 @@ every control on every real factory preset).
       CC shares state. Note Toggle works the same way. This replaced
       per-switch toggle bits and a "last PC sender" that were reset on
       every preset change.
+    - **A step's LED can be driven by incoming MIDI instead** — its first
+      field, `LedConfig.midiFeedback` (the front panel's Control Edit ->
+      LED -> `MIDI`, Off/On). We used to call it `midiController` and read
+      it as a controller number; it's a flag. All confirmed on 1.01.12 by
+      writing a CC 52 toggle ([52, 127, 0], green/red) into the Current
+      slot on two switches, one flagged and one not:
+      - `0` = Off, `1` = On, and it's **per step**: setting it from the
+        front panel changed `led1` alone, leaving `led2`-`led6` of the same
+        switch at 0.
+      - With it on, the light follows the step's own CC **received on USB
+        MIDI**: `CC 52 = 127` showed the first color, `64` the second. Same
+        exact-match-on-`data[1]` rule as above, so the value model didn't
+        need changing — only where the value comes from.
+      - **The switch's own presses stop moving it** (pressed twice, stayed
+        on the second color), which is the point: the DAW confirms the
+        state. The step still *sends* on a press; only its light is
+        detached.
+      - **CC only.** A Program Change step with the flag on never lit, and
+        sending PC 5 changed no light on the board. The User Guide only
+        ever advertises "MIDI LED feedback for MIDI CC messages".
+      - **USB is the only way in.** The Pacer has no MIDI In jack: its one
+        DIN socket is MIDI Out, and the global `M OUT` setting
+        (Int/USB/I+U) only picks what that jack transmits. So the flag is
+        opt-in "let the DAW own this light", and with nothing echoing the
+        CC back it parks on the second color for good. With the flag off
+        (every preset in evidence) a CC step's light needs no input at all
+        — the Pacer tracks what it sent itself.
+      - The app has no MIDI input, so `userPresetLights` gives a flagged
+        step its second color and ignores presses — what the hardware shows
+        until its DAW answers. The editor says so per step.
+      - It reads 0 on all 1500 LED entries of both the factory dump and the
+        owner's device, so no preset in evidence uses it.
     - **Preset navigation has no value state.** Each kind has a fixed light
       role (all observed):
       - Preset Select to a user preset: the On color, steadily. A with
@@ -538,9 +570,14 @@ no hover-only UI, for tablets.
     - Confirmed on hardware: single-message and full-preset writes land
       in exactly the addressed slot (idx 1-24), for the active preset too.
       Writing idx 0 replaces Current and touches nothing else.
-    - Not yet observed: that the switches run the new Current right away,
-      and that `0x1E` counts from A1 = 0 for presets other than A1. So
-      far the Pacer has only been seen on A1.
+    - **Confirmed: the switches run the new Current right away.** Writing
+      a preset into idx 0 changed what the loaded switches send and how
+      they light, with no reload (1.01.12, the LED-feedback experiment).
+    - Front-panel edits go to Current too: they only reach a preset slot
+      through the device's own Save -> Store, so an experiment run from the
+      panel is discarded by reloading the preset.
+    - Not yet observed: that `0x1E` counts from A1 = 0 for presets other
+      than A1. So far the Pacer has only been seen on A1.
   - Not built yet: preset load-time MIDI settings,
     expression pedal ranges beyond step data, and copy/paste of
     steps/switches.
@@ -630,7 +667,8 @@ no hover-only UI, for tablets.
   UI renders them as sliders. A press or release still means toe or heel,
   so a pedal driven as a button behaves as before.
 - Not simulated yet: a preset's own load-time MIDI settings (shown in the
-  inspector only) and LED `midiController` input (no MIDI input path yet).
+  inspector only). LED `midiFeedback` steps are modeled as far as they can
+  be without a MIDI input path (see the LED model above).
 - Checks: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm format:check`.
 
 ### Running locally

@@ -245,3 +245,11 @@ export function presetIndexToPresetSelectTarget(idx: number): number {
 }
 
 export const STEPS_PER_CONTROL = 6;
+
+/**
+ * `LedConfig.midiFeedback` values — the Control Edit -> LED menu's "MIDI" setting. On means the
+ * light's two colors follow the step's assigned message *received* on USB MIDI instead of what
+ * the switch itself sends.
+ */
+export const LED_MIDI_FEEDBACK_OFF = 0;
+export const LED_MIDI_FEEDBACK_ON = 1;

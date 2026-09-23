@@ -123,6 +123,24 @@ describe("programming interface", () => {
     expect(led().activeColor).toBe(0x04);
   });
 
+  it("switches a light between what the switch sends and incoming MIDI", () => {
+    render(<App />);
+    enterEditMode();
+    tap(screen.getByRole("button", { name: /^Switch 1:/ }));
+    const step1 = screen.getByRole("region", { name: "Step 1" });
+    const litBy = within(step1).getByRole("radiogroup", { name: "Lit by" });
+    const led = () => store().board.config.presets[A1]!.controls[ControlId.Stompswitch1]!.led[1]!;
+    expect(led().midiFeedback).toBe(0); // no preset in any dump has it on
+
+    fireEvent.click(within(litBy).getByRole("radio", { name: "Incoming MIDI" }));
+    expect(led().midiFeedback).toBe(1);
+    // Factory A1 switch 1 is a Program Change, and the hardware only does this for CC steps.
+    expect(within(step1).getByText(/only does this for CC steps/)).toBeTruthy();
+
+    fireEvent.click(within(litBy).getByRole("radio", { name: "This switch" }));
+    expect(led().midiFeedback).toBe(0);
+  });
+
   it("entering Edit mode starts at the faceplate, and closing a switch stays in Edit mode", () => {
     render(<App />);
     tap(screen.getByRole("button", { name: /^Switch 2:/ })); // pressed in Play mode: not a choice to program it

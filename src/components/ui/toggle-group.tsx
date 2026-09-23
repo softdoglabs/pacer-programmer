@@ -9,14 +9,17 @@ export function ToggleGroup<T extends string>({
   value,
   onChange,
   className,
+  labelVisible = false,
 }: {
   label: string;
   options: readonly { id: T; label: string }[];
   value: T;
   onChange: (value: T) => void;
   className?: string;
+  /** Shows the label beside the buttons, for groups whose options don't name what they set. */
+  labelVisible?: boolean;
 }) {
-  return (
+  const group = (
     <ToggleButtonGroup
       aria-label={label}
       selectionMode="single"
@@ -38,5 +41,15 @@ export function ToggleGroup<T extends string>({
         </ToggleButton>
       ))}
     </ToggleButtonGroup>
+  );
+  if (!labelVisible) return group;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {/* The group already carries `label` as its accessible name, so this copy is decoration. */}
+      <span aria-hidden className="text-sm text-muted-foreground">
+        {label}
+      </span>
+      {group}
+    </div>
   );
 }

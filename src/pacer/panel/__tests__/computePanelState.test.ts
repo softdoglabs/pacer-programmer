@@ -93,6 +93,32 @@ describe("computePanelState (factory presets)", () => {
     }
   });
 
+  it("a step whose LED follows incoming MIDI ignores its own switch, resting on the second color", () => {
+    // Confirmed on 1.01.12: a CC 52 toggle with the LED's MIDI flag on stayed on its second color
+    // through two presses, while the same step with the flag off toggled normally. We receive no
+    // MIDI, so the flagged light never leaves the second color.
+    const cfg = createEmptyPacerConfig();
+    const preset = getOrCreatePreset(cfg, A1);
+    const set = (id: number, midiFeedback: number) => {
+      const ctl = getOrCreateControl(preset, id);
+      ctl.steps[1] = { channel: 1, msgType: SwitchMessageType.CcToggle, data: [52, 127, 0], active: true };
+      ctl.led[1] = { midiFeedback, activeColor: 0x0d, inactiveColor: 0x03, position: 0 };
+    };
+    set(ControlId.Stompswitch1, 1); // follows incoming MIDI
+    set(ControlId.Stompswitch2, 0); // the control: lit by its own switch
+
+    let board = createBoardState(cfg, A1);
+    const bar = (id: "sw1" | "sw2") => computePanelState(board, USER).switches[id].lights.bottom;
+    expect(bar("sw1")?.color).toEqual({ kind: "hue", hue: "red" });
+    expect(bar("sw2")?.color).toEqual({ kind: "hue", hue: "red" });
+
+    // The flagged switch still *sends* on a press — it just doesn't light itself from it. Switch 2
+    // shares CC 52, so it does light, which separates "doesn't send" from "doesn't light".
+    board = applyBoardEvent(board, { controlId: ControlId.Stompswitch1, phase: "press" }).board;
+    expect(bar("sw1")?.color).toEqual({ kind: "hue", hue: "red" });
+    expect(bar("sw2")?.color).toEqual({ kind: "hue", hue: "green" });
+  });
+
   it("a LOOPR-style preset (from a real device dump) lights like the hardware", () => {
     const WHITE = { on: 0x17, off: 0x18 };
     const ORANGE = { on: 0x05, off: 0x06 };

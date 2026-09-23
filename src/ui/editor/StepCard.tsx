@@ -8,6 +8,8 @@ import { indicatorForLedNum, type SwitchSpec } from "../../pacer/hardware";
 import {
   ControlMode,
   ExpressionMessageType,
+  LED_MIDI_FEEDBACK_OFF,
+  LED_MIDI_FEEDBACK_ON,
   PresetSelectTarget,
   SwitchMessageType,
 } from "../../pacer/protocol/constants";
@@ -89,6 +91,9 @@ const PRESET_TARGET_OPTIONS: SelectGroup[] = [
     options: PresetSelectTarget.slice(3).map((label, i) => ({ id: String(i + 3), label })),
   },
 ];
+
+/** Step types that send a MIDI CC — the only ones the LED's MIDI feedback flag acts on. */
+const CC_TYPES: readonly number[] = [SwitchMessageType.CcTrigger, SwitchMessageType.CcToggle, SwitchMessageType.CcStep];
 
 const LED_TARGET_NAMES = { bar: "Bar", text: "Text legend", icons: "Icon legend" } as const;
 
@@ -191,9 +196,37 @@ function LedFields({
   // A config using num 1 (the bar) selects the same option as num 0.
   const selected = indicatorForLedNum(spec, led?.position ?? 0);
   const value = targets.find((t) => indicatorForLedNum(spec, Number(t.id))?.id === selected?.id)?.id ?? "0";
+  const followsMidi = (led?.midiFeedback ?? LED_MIDI_FEEDBACK_OFF) !== LED_MIDI_FEEDBACK_OFF;
+  // MIDI feedback is a CC feature: a Program Change step with the flag on didn't respond on 1.01.12.
+  const sendsCc = kind === "switch" ? CC_TYPES.includes(step.msgType) : step.msgType === ExpressionMessageType.MidiCc;
   return (
     <div className="space-y-2 border-t pt-2">
-      <ToggleGroup label="Light" options={targets} value={value} onChange={(v) => onLed({ position: Number(v) })} />
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <ToggleGroup
+          label="Light"
+          labelVisible
+          options={targets}
+          value={value}
+          onChange={(v) => onLed({ position: Number(v) })}
+        />
+        <ToggleGroup
+          label="Lit by"
+          labelVisible
+          options={[
+            { id: "switch", label: "This switch" },
+            { id: "midi", label: "Incoming MIDI" },
+          ]}
+          value={followsMidi ? "midi" : "switch"}
+          onChange={(v) => onLed({ midiFeedback: v === "midi" ? LED_MIDI_FEEDBACK_ON : LED_MIDI_FEEDBACK_OFF })}
+        />
+      </div>
+      {followsMidi && (
+        <p className="text-xs text-muted-foreground">
+          {sendsCc
+            ? `The Pacer lights this from CC ${step.data[0]} arriving over USB, and the switch's own presses stop moving it. It needs something at the other end echoing that CC back — the Pacer has no MIDI In jack, so USB is the only way in. With nothing received it parks on the second color, which is what's drawn here.`
+            : "Confirmed on the hardware: the Pacer only does this for CC steps — a Program Change step with the flag on never lit. Expect no effect here."}
+        </p>
+      )}
       <div className="flex flex-wrap gap-4">
         <LedColorPicker
           label={firstLabel}

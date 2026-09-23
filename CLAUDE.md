@@ -606,6 +606,9 @@ no hover-only UI, for tablets.
   - This replaced a two-column layout that gave the bulk of the width to
     panels nobody interacts with and squeezed the editor into a 360-440px
     side column.
+  - **This shell is itself due to be replaced** — see "Planned UI
+    reorganization" below. Build toward that shape rather than extending
+    the Play/Edit toggle and the tab strip.
 - **MIDI out** (`src/midi/webMidi.ts`): a thin Web MIDI wrapper, typed
   structurally so tests use fakes (`src/midi/__tests__/fakeMidi.ts`).
   - The header's "Connect MIDI" asks for SysEx access, falling back to
@@ -682,6 +685,79 @@ Opens the Vite dev server. Requires a Chromium-based browser (Chrome, Edge,
 Opera) for Web MIDI + SysEx support — Firefox/Safari support is
 inconsistent. The simulator works with no hardware attached; connecting a
 real Pacer over USB enables live send/receive against the device.
+
+## Planned UI reorganization (agreed, not built)
+
+The current shell — a Play/Edit toggle in the header and a tab strip of
+support panels — has no room for the analysis views still to come
+(preset-transition graph, template hierarchy), scatters the two unrelated
+MIDI setups, and spends a whole tab on choosing a preset. This is the
+agreed target shape. Build toward it; don't add to the old shell.
+
+**Why two MIDI setups, permanently.** They point in opposite directions:
+the simulator sends *out to the rig* (one output port — a Quad Cortex, a
+DAW), while programming talks *to the Pacer* over SysEx (an in/out pair,
+auto-detected by name). The store has always kept them apart
+(`midi.outputId` vs `pacerPorts`); only the UI mixed them. They could
+merge only if the Pacer reported its own state back, and it doesn't (see
+the LED model: even `midiFeedback` is CC-only and USB-only). So the app
+permanently holds two models — what the simulator thinks and what the
+device has — and the UI should say so rather than imply they're one.
+
+**Top level: a horizontal mode bar**, each mode owning a context bar with
+exactly the controls it needs. That split is what separates the two MIDI
+setups without a word of explanation.
+
+```
+Pacer Programmer  [Factory defaults v]                 Pacer: connected
+( Simulate | Program | Preset map | Templates )
+Simulate:  [A1 . PRGM1 v]  Output -> [Quad Cortex v]  [Reset MIDI state]
+Program:   [A1 . PRGM1 v]  [undo redo] [Save...] [Send...]  3 differ from device
+--- main: faceplate / switch editor / graph / tree ---
+--- dock: Output log | Inspector ---
+```
+
+- This replaces the Play/Edit toggle. "Connect MIDI" shows only until
+  access is granted, then gives way to the per-mode port pickers.
+- The "N presets differ from the device" chip needs no new machinery:
+  `sendBaseline` + `changedPresets` already compute it. It makes the
+  two-models problem visible instead of implied.
+
+**The preset chooser**: one button (`A1 . PRGM1 v`) in every mode's
+context bar, opening a 4x6 grid laid out like the hardware's banks, each
+cell showing number and name, marked for *edited since opened* and
+*differs from device*. About 40px of permanent chrome instead of a tab,
+and it retires the Presets tab. The faceplate's hold-[Preset]-bank-number
+path stays: that one is the hardware, and the chooser is an app shortcut.
+
+**One current preset everywhere** (decided). Simulate, Program and the
+analysis views all point at the same preset; clicking a node in the map
+moves it, and hovering covers inspect-without-loading. No second
+selection: a single current preset is what makes the faceplate preview
+the edits.
+
+**Device and library move to a drawer** behind the config name in the
+header — pull, import, snapshots, Pacer ports, firmware check are all
+occasional. The header's Pacer status chip opens the same drawer at the
+ports. This retires the Configurations tab.
+
+**The dock** keeps Output log and Inspector, open by default in Simulate
+(the log is the point there) and collapsed in Program.
+
+**The analysis views are peers, not panels.** Both are whole-config and
+full-width, with no faceplate:
+- *Preset map* doubles as navigation — at 24 presets a graph beats any
+  list. Click a node to make it current, double-click to open it in
+  Program. It's where the "looper active" grouping (Purpose #3) surfaces.
+- *Templates* highlights the presets in a selected shared-config group.
+- **Configuring the state machine is an editing layer on the map**, not a
+  fourth mode: dragging from a switch on preset A to preset B writes a
+  Preset Select step through the same `src/pacer/editing` functions and
+  the same undo stack.
+
+**Build order**: the mode bar and context bars first (everything hangs off
+them), then the device drawer (which empties the tab strip), then the
+preset chooser, then the analysis views.
 
 ## Open questions
 

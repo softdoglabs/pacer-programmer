@@ -1,51 +1,43 @@
 import { usePress } from "react-aria";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 import { panelRow, type SwitchSpec } from "@/pacer/hardware";
 import { checkPresetName, renamePreset } from "@/pacer/editing";
 import { presetIndexToLabel } from "@/pacer/protocol/constants";
-import { cn } from "@/lib/utils";
 import { computePanelState, switchHint, type DisplayState, type SwitchPanelState } from "@/pacer/panel";
+import { cn } from "@/lib/utils";
 import { usePacerStore } from "@/store/pacerStore";
 import { useControlPress } from "../useControlPress";
 import { EditBadge } from "./EditBadge";
+import { FaceplateDefs } from "./FaceplateDefs";
 import { HOUSING_H, HOUSING_W, SwitchView } from "./SwitchView";
 
 /*
  * A schematic, hand-drawn rendering of the Pacer's top panel (landscape, player's view), laid
- * out entirely from the hardware description (src/pacer/hardware) and painted from the
- * computed panel state (src/pacer/panel). Proportions are approximate.
+ * out entirely from the hardware description (src/pacer/hardware) and painted from the computed
+ * panel state (src/pacer/panel). Proportions are approximate.
  *
- * Layout: a background SVG draws the body, display, printed markings, and the app's per-switch
- * hints. Each switch is a real HTML <button> positioned over it (see SwitchView). The switches
- * have to be HTML elements, not SVG ones: React Aria's usePress ends a touch long-press, which
- * fires no click on iOS/Android, by clicking the target itself, and it only does that for
- * HTMLElements.
+ * Layout is a plain CSS grid — two rows of six cells, each holding a switch with its hint and
+ * printed marking beneath it — so every element sizes itself from its content. (It used to be an
+ * SVG background with the switches positioned over it as percentages of a hand-built coordinate
+ * system, which meant anything that grew, like Edit mode's badges, had nowhere to go.)
+ *
+ * Text scales with the panel through container-query units (`cqw`), so it stays in proportion at
+ * any width without depending on the viewport.
+ *
+ * The switches have to be HTML elements, not SVG ones: React Aria's usePress ends a touch
+ * long-press, which fires no click on iOS/Android, by clicking the target itself, and it only
+ * does that for HTMLElements.
  */
-const WIDTH = 1480;
-const HEIGHT = 700;
-const COL_X0 = 50;
-const COL_PITCH = 236;
-const ROW_Y = { back: 40, front: 372 } as const;
-/** App annotations (what a press would do) sit just below each housing, styled apart from the hardware. */
-const HINT_DY = HOUSING_H + 24;
-const MARKING_DY = HOUSING_H + 58;
-const DISPLAY_COL = 5;
+
 const DISPLAY_RED = "#ff3322";
 /** The display is a 14-segment module; DSEG14 draws its characters the same way (see index.css). */
 const DISPLAY_FONT = '"DSEG14 Classic", ui-monospace, SFMono-Regular, Menlo, monospace';
-const HINT_COLOR = "#7fd1c3";
 
-const colX = (col: number) => COL_X0 + col * COL_PITCH;
+const PANEL_SWITCHES: readonly SwitchSpec[] = [...panelRow("back"), ...panelRow("front")];
 
-function placementOf(spec: SwitchSpec): { x: number; y: number } {
-  if (spec.placement.kind !== "panel") throw new Error(`${spec.id} isn't on the panel`);
-  return { x: colX(spec.placement.col), y: ROW_Y[spec.placement.row] };
-}
-
-/** Positions an element over the background SVG, in its coordinate space. */
-function overlayStyle(x: number, y: number, w: number, h: number): CSSProperties {
-  const pct = (v: number, of: number) => `${(v / of) * 100}%`;
-  return { left: pct(x, WIDTH), top: pct(y, HEIGHT), width: pct(w, WIDTH), height: pct(h, HEIGHT) };
+/** A switch and, beneath it, the app's hint and the faceplate's printed marking. */
+function PanelCell({ children }: { children: React.ReactNode }) {
+  return <div className="flex flex-col items-center gap-[1cqw]">{children}</div>;
 }
 
 interface PanelSwitchProps {
@@ -59,12 +51,10 @@ function StompPanelSwitch({ spec, controlId, state, hint }: PanelSwitchProps & {
   const { pressProps } = useControlPress(controlId);
   const selected = usePacerStore((s) => s.selectedControlId === controlId);
   const editing = usePacerStore((s) => s.uiMode === "edit");
-  const { x, y } = placementOf(spec);
   return (
     <SwitchView
       spec={spec}
       state={state}
-      style={overlayStyle(x, y, HOUSING_W, HOUSING_H)}
       selected={selected}
       editable={editing}
       ariaLabel={`Switch ${spec.name}: ${hint ?? "—"}`}
@@ -84,12 +74,10 @@ function PresetPanelSwitch({ spec, state, hint }: PanelSwitchProps) {
   // [Preset] isn't programmable, so in Edit mode it does nothing.
   const editing = usePacerStore((s) => s.uiMode === "edit");
   const { pressProps } = usePress({ onPressStart, onPressEnd, isDisabled: editing });
-  const { x, y } = placementOf(spec);
   return (
     <SwitchView
       spec={spec}
       state={state}
-      style={overlayStyle(x, y, HOUSING_W, HOUSING_H)}
       selected={false}
       uneditable={editing}
       ariaLabel={editing ? "Preset button (not programmable)" : `Preset button (${hint})`}
@@ -99,99 +87,78 @@ function PresetPanelSwitch({ spec, state, hint }: PanelSwitchProps) {
   );
 }
 
-function Display({ display }: { display: DisplayState }) {
+/** The app's own annotation of what a press would do: not something the hardware shows. */
+function Hint({ hint }: { hint: string | undefined }) {
   return (
-    <g transform={`translate(${colX(DISPLAY_COL)} ${ROW_Y.back})`} aria-live="polite">
-      <rect width={HOUSING_W} height={130} rx={8} fill="#060606" stroke="#000" strokeWidth={4} />
-      <g
-        fill={DISPLAY_RED}
-        filter="url(#display-glow)"
-        fontFamily={DISPLAY_FONT}
-        fontStyle="italic"
-        fontSize={38}
-        letterSpacing={2}
-        textAnchor="middle"
-      >
-        <text x={HOUSING_W / 2} y={56} style={{ whiteSpace: "pre" }}>
-          {display.line1}
-        </text>
-        <text
-          x={HOUSING_W / 2}
-          y={108}
-          className={display.line2Blinking ? "pacer-blink" : undefined}
-          data-testid="display-line2"
-        >
-          {display.line2}
-        </text>
-      </g>
-      <g transform={`translate(${HOUSING_W / 2} 196)`}>
-        <circle r={50} fill="#151517" stroke="#000" strokeWidth={3} />
-        <circle r={44} fill="none" stroke="#2c2c30" strokeWidth={6} strokeDasharray="3 4" />
-        <circle r={32} fill="#1d1d20" />
-      </g>
-    </g>
+    <p className="max-w-full truncate text-[1.15cqw] italic" style={{ color: "#7fd1c3" }}>
+      {hint ?? " "}
+    </p>
   );
 }
 
-/** Printed faceplate markings below each switch, from the hardware spec. */
+/** The marking printed on the faceplate below a switch: a teal badge (A-D) or a plain numeral (1-6). */
 function Marking({ spec }: { spec: SwitchSpec }) {
-  if (!spec.marking) return null;
-  const { x, y } = placementOf(spec);
-  const cx = x + HOUSING_W / 2;
   if (spec.marking === "badge") {
     return (
-      <g transform={`translate(${cx} ${y + MARKING_DY})`}>
-        <circle r={15} fill="#5fa99b" />
-        <text
-          dy={6}
-          fontSize={17}
-          fontWeight={700}
-          fill="#1c2b28"
-          textAnchor="middle"
-          fontFamily="ui-sans-serif, system-ui"
-        >
-          {spec.name}
-        </text>
-      </g>
+      <span className="grid size-[2.2cqw] place-items-center rounded-full bg-[#5fa99b] text-[1.2cqw] font-bold text-[#1c2b28]">
+        {spec.name}
+      </span>
     );
   }
+  if (spec.marking === "numeral") {
+    return <span className="text-[1.6cqw] font-bold text-[#d4d4d8]">{spec.name}</span>;
+  }
+  return null;
+}
+
+/** The LED display and the encoder below it, in the back row's last cell. */
+function Display({ display, children }: { display: DisplayState; children?: React.ReactNode }) {
   return (
-    <text
-      x={cx}
-      y={y + MARKING_DY + 8}
-      fontSize={22}
-      fontWeight={700}
-      fill="#d4d4d8"
-      textAnchor="middle"
-      fontFamily="ui-sans-serif, system-ui"
-    >
-      {spec.name}
-    </text>
+    <div className="flex w-full flex-col items-center gap-[1cqw]">
+      <div
+        className="relative w-full rounded-[4%] border-[0.25cqw] border-black bg-[#060606] px-[2%] py-[3%] text-center"
+        style={{ aspectRatio: `${HOUSING_W} / 130` }}
+        aria-live="polite"
+      >
+        <svg viewBox="0 0 196 130" className="size-full" aria-hidden>
+          <g
+            fill={DISPLAY_RED}
+            filter="url(#display-glow)"
+            fontFamily={DISPLAY_FONT}
+            fontStyle="italic"
+            fontSize={38}
+            letterSpacing={2}
+            textAnchor="middle"
+          >
+            <text x={98} y={52} style={{ whiteSpace: "pre" }}>
+              {display.line1}
+            </text>
+            <text x={98} y={104} className={display.line2Blinking ? "pacer-blink" : undefined}>
+              {display.line2}
+            </text>
+          </g>
+        </svg>
+        {/* The tests read the display's second line; the SVG text above is aria-hidden. */}
+        <span className="sr-only" data-testid="display-line2">
+          {display.line2}
+        </span>
+        {/* Renaming targets the screen itself, not the encoder below it. */}
+        {children}
+      </div>
+      <Encoder />
+    </div>
   );
 }
 
-/** The app's own annotation of what a press would do: not something the hardware shows. */
-function Hint({ spec, hint }: { spec: SwitchSpec; hint: string | undefined }) {
-  if (!hint) return null;
-  const { x, y } = placementOf(spec);
+function Encoder() {
   return (
-    <text
-      x={x + HOUSING_W / 2}
-      y={y + HINT_DY}
-      fontSize={17}
-      fontStyle="italic"
-      fill={HINT_COLOR}
-      textAnchor="middle"
-      fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-    >
-      {hint.length > 20 ? `${hint.slice(0, 19)}…` : hint}
-    </text>
+    <svg viewBox="0 0 110 110" className="w-[7cqw]" aria-hidden>
+      <circle cx={55} cy={55} r={50} fill="#151517" stroke="#000" strokeWidth={3} />
+      <circle cx={55} cy={55} r={44} fill="none" stroke="#2c2c30" strokeWidth={6} strokeDasharray="3 4" />
+      <circle cx={55} cy={55} r={32} fill="#1d1d20" />
+    </svg>
   );
 }
-
-const PANEL_SWITCHES: readonly SwitchSpec[] = [...panelRow("back"), ...panelRow("front")];
-
-const DISPLAY_BOX = { w: HOUSING_W, h: 130 };
 
 /**
  * The preset's name, edited on the display itself: in Edit mode the display takes a pencil badge,
@@ -202,7 +169,6 @@ function DisplayNameEditor() {
   const name = usePacerStore((s) => s.board.config.presets[s.board.activePresetIndex]?.name ?? "");
   const applyEdit = usePacerStore((s) => s.applyEdit);
   const [draft, setDraft] = useState<string>();
-  const style = overlayStyle(colX(DISPLAY_COL), ROW_Y.back, DISPLAY_BOX.w, DISPLAY_BOX.h);
   const check = draft === undefined ? undefined : checkPresetName(draft);
   const commit = () => {
     if (draft === undefined) return;
@@ -215,8 +181,7 @@ function DisplayNameEditor() {
     return (
       <button
         type="button"
-        className="absolute rounded-[4%] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-        style={style}
+        className="absolute inset-0 rounded-[4%] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
         title={`Rename preset ${presetIndexToLabel(presetIndex)}`}
         aria-label={`Rename preset ${presetIndexToLabel(presetIndex)} (currently ${name.trim() || "unnamed"})`}
         onClick={() => setDraft(name.trimEnd())}
@@ -235,10 +200,10 @@ function DisplayNameEditor() {
         aria-invalid={check?.error !== undefined}
         aria-describedby={problem ? "preset-name-problem" : undefined}
         className={cn(
-          "absolute rounded-[4%] border-2 bg-black text-center text-[#ff3322] uppercase outline-none",
+          "absolute inset-0 rounded-[4%] border-2 bg-black text-center text-[4cqw] uppercase outline-none",
           check?.error ? "border-destructive" : "border-primary",
         )}
-        style={{ ...style, fontFamily: DISPLAY_FONT, fontStyle: "italic", fontSize: "min(3.4vw, 2rem)" }}
+        style={{ color: DISPLAY_RED, fontFamily: DISPLAY_FONT, fontStyle: "italic" }}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
@@ -251,10 +216,9 @@ function DisplayNameEditor() {
           id="preset-name-problem"
           role={check?.error ? "alert" : undefined}
           className={cn(
-            "absolute z-10 w-64 rounded-md border bg-popover px-2 py-1 text-xs shadow-lg",
+            "absolute top-full right-0 z-10 mt-1 w-max max-w-[22cqw] rounded-md border bg-popover px-2 py-1 text-[1.1cqw] shadow-lg",
             check?.error ? "text-destructive" : "text-warning",
           )}
-          style={{ left: style.left, top: `calc(${String(style.top)} + ${String(style.height)})` }}
         >
           {problem}
         </p>
@@ -278,73 +242,40 @@ export function Faceplate() {
       ),
     [board, deviceMode],
   );
+  const back = PANEL_SWITCHES.filter((s) => s.placement.kind === "panel" && s.placement.row === "back");
+  const front = PANEL_SWITCHES.filter((s) => s.placement.kind === "panel" && s.placement.row === "front");
 
-  return (
-    <div
-      className="relative w-full touch-none rounded-[2%] select-none"
-      style={{ aspectRatio: `${WIDTH} / ${HEIGHT}` }}
-      role="group"
-      aria-label={editing ? "Pacer faceplate (editing: tap a switch to program it)" : "Pacer faceplate"}
-    >
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="absolute inset-0 size-full">
-        <defs>
-          <filter id="led-glow" x="-30%" y="-200%" width="160%" height="500%">
-            <feGaussianBlur stdDeviation="4" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          <filter id="legend-glow" x="-20%" y="-50%" width="140%" height="200%">
-            <feGaussianBlur stdDeviation="1.5" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          <filter id="display-glow" x="-10%" y="-30%" width="120%" height="160%">
-            <feGaussianBlur stdDeviation="2.5" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        <rect width={WIDTH} height={HEIGHT} rx={28} fill="#3a3b3e" />
-        <rect
-          x={12}
-          y={12}
-          width={WIDTH - 24}
-          height={HEIGHT - 24}
-          rx={20}
-          fill="none"
-          stroke="#5fa99b"
-          strokeWidth={3}
-          opacity={0.8}
-        />
-        {PANEL_SWITCHES.map((spec) => (
-          <Marking key={spec.id} spec={spec} />
-        ))}
-        {PANEL_SWITCHES.map((spec) => (
-          <Hint key={spec.id} spec={spec} hint={hints.get(spec.id)} />
-        ))}
-        <Display display={panel.display} />
-      </svg>
-
-      {editing && <DisplayNameEditor />}
-      {PANEL_SWITCHES.map((spec) =>
-        spec.kind === "presetSwitch" ? (
-          <PresetPanelSwitch key={spec.id} spec={spec} state={panel.switches[spec.id]} hint={hints.get(spec.id)} />
+  const cell = (spec: SwitchSpec) => (
+    <PanelCell key={spec.id}>
+      <div className="relative w-full" style={{ aspectRatio: `${HOUSING_W} / ${HOUSING_H}` }}>
+        {spec.kind === "presetSwitch" ? (
+          <PresetPanelSwitch spec={spec} state={panel.switches[spec.id]} hint={hints.get(spec.id)} />
         ) : spec.controlId !== undefined ? (
           <StompPanelSwitch
-            key={spec.id}
             spec={spec}
             controlId={spec.controlId}
             state={panel.switches[spec.id]}
             hint={hints.get(spec.id)}
           />
-        ) : null,
-      )}
+        ) : null}
+      </div>
+      <Hint hint={hints.get(spec.id)} />
+      <Marking spec={spec} />
+    </PanelCell>
+  );
+
+  return (
+    <div
+      className="@container w-full touch-none rounded-[2%] bg-[#3a3b3e] p-[1.2cqw] select-none"
+      role="group"
+      aria-label={editing ? "Pacer faceplate (editing: tap a switch to program it)" : "Pacer faceplate"}
+    >
+      <FaceplateDefs />
+      <div className="grid grid-cols-6 gap-x-[1.6cqw] gap-y-[2cqw] rounded-[1.6cqw] p-[1.2cqw] ring-[0.2cqw] ring-[#5fa99b]/80">
+        {back.map(cell)}
+        <Display display={panel.display}>{editing && <DisplayNameEditor />}</Display>
+        {front.map(cell)}
+      </div>
     </div>
   );
 }

@@ -396,9 +396,19 @@ no hover-only UI, for tablets.
   **`icons.tsx`** holds our own SVG icon drawings.
 - **Hints** are drawn as teal italic annotations below each switch, visibly
   distinct from the printed legends.
-- **Hit regions:** each switch is a real HTML `<button>` positioned over a
-  background SVG (body, display, markings, hints), with its artwork in an
-  inner SVG.
+- **Layout is a CSS grid** (`ui/panel/Faceplate.tsx`): two rows of six
+  cells, each a switch with its hint and printed marking beneath it, so
+  every element sizes itself from its content and anything that grows (Edit
+  mode's badges, a longer hint) has somewhere to go. Text scales with the
+  panel through container-query units (`cqw`), not the viewport.
+  - This replaced an SVG background with the switches positioned over it as
+    percentages of a hand-built coordinate system (WIDTH/HEIGHT, column
+    pitch, per-row offsets). Every box was computed, which is what made
+    overhanging badges clip and raise scrollbars.
+  - Each switch is still a real HTML `<button>` with its artwork in an
+    inner SVG (`SwitchView`), and the glow filters live in one place
+    (`FaceplateDefs`) so they also apply to the editor's live control,
+    which renders outside the faceplate.
 - **Press handling:** all presses, including the rear-jack buttons, go
   through React Aria's `usePress` (`react-aria`), not hand-rolled
   pointer/focus code.

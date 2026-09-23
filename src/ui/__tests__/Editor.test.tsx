@@ -105,15 +105,22 @@ describe("programming interface", () => {
     expect(screen.getByRole("region", { name: "Step 3" })).toBeTruthy();
   });
 
-  it("picks LED colors from the swatches, labeled by what makes each color show", () => {
+  it("picks an LED color from the picker, labeled by what makes it show, and flips it to dim", () => {
     render(<App />);
     enterEditMode();
     tap(screen.getByRole("button", { name: /^Switch 1:/ }));
     const step1 = screen.getByRole("region", { name: "Step 1" });
+    const led = () => store().board.config.presets[A1]!.controls[ControlId.Stompswitch1]!.led[1]!;
     // Factory A1 switch 1 is a Program Change, so the first color shows while that program is active.
-    const first = within(step1).getByRole("radiogroup", { name: /While this program is active/ });
-    fireEvent.click(within(first).getByRole("radio", { name: "2A Red" }));
-    expect(store().board.config.presets[A1]!.controls[ControlId.Stompswitch1]!.led[1]!.activeColor).toBe(0x03);
+    const open = () => fireEvent.click(within(step1).getByRole("button", { name: /^While this program is active:/ }));
+    open();
+    fireEvent.click(screen.getByRole("radio", { name: "2A Red" }));
+    expect(led().activeColor).toBe(0x03);
+
+    // The hue's dim twin is one tap on the brightness toggle, not a hunt for another swatch.
+    open();
+    fireEvent.click(screen.getByRole("radio", { name: "Dim" }));
+    expect(led().activeColor).toBe(0x04);
   });
 
   it("entering Edit mode starts at the faceplate, and closing a switch stays in Edit mode", () => {

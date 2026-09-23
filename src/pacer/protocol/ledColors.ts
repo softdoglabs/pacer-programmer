@@ -38,6 +38,11 @@ export function decodeLedColor(code: number): DecodedLedColor {
   return { kind: "hue", hue, brightness: code % 2 === 1 ? "bright" : "dim" };
 }
 
+/** The code for a hue in one of its two brightnesses — the inverse of `decodeLedColor`. */
+export function ledColorCode(hue: PacerHue, brightness: "bright" | "dim"): number {
+  return 1 + PACER_HUES.indexOf(hue) * 2 + (brightness === "dim" ? 1 : 0);
+}
+
 /** The reference project's name for a color code, e.g. "2A Red", "2B Dim Red". */
 export function ledColorName(code: number): string {
   const color = decodeLedColor(code);

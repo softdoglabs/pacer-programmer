@@ -11,10 +11,11 @@ import {
   PresetSelectTarget,
   SwitchMessageType,
 } from "../../pacer/protocol/constants";
+import { LED_COLOR_DEFAULT } from "../../pacer/protocol/ledColors";
 import type { LedConfig, Step } from "../../pacer/protocol/types";
 import { messageTypeInfo } from "../../pacer/simulator";
 import { usePacerStore } from "../../store/pacerStore";
-import { SwatchPicker } from "./SwatchPicker";
+import { LedColorPicker } from "./LedColorPicker";
 
 const SWITCH_TYPE_GROUPS: { title: string; types: number[] }[] = [
   {
@@ -193,16 +194,15 @@ function LedFields({
   return (
     <div className="space-y-2 border-t pt-2">
       <ToggleGroup label="Light" options={targets} value={value} onChange={(v) => onLed({ position: Number(v) })} />
-      {/* Side by side once the card is wide enough for both grids (container query). */}
-      <div className="grid gap-3 @3xl:grid-cols-2">
-        <SwatchPicker
+      <div className="flex flex-wrap gap-4">
+        <LedColorPicker
           label={firstLabel}
-          value={led?.activeColor ?? 0x7f}
+          value={led?.activeColor ?? LED_COLOR_DEFAULT}
           onChange={(activeColor) => onLed({ activeColor })}
         />
-        <SwatchPicker
+        <LedColorPicker
           label={secondLabel}
-          value={led?.inactiveColor ?? 0x7f}
+          value={led?.inactiveColor ?? LED_COLOR_DEFAULT}
           onChange={(inactiveColor) => onLed({ inactiveColor })}
         />
       </div>
@@ -237,7 +237,7 @@ export function StepCard({
   const hasLights = kind === "switch" && spec !== undefined && spec.indicators.some((i) => i.addressable);
 
   return (
-    <section aria-label={`Step ${n}`} className="@container space-y-3 rounded-md border bg-card p-3">
+    <section aria-label={`Step ${n}`} className="space-y-3 rounded-md border bg-card p-3">
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-sm font-semibold">Step {n}</span>
         {drivesLight && hasLights && <Badge variant="outline">lights the switch</Badge>}

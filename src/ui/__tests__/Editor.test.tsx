@@ -9,7 +9,9 @@ import { usePacerStore } from "../../store/pacerStore";
 
 const store = () => usePacerStore.getState();
 const A1 = userPresetIndex(0, 1);
-const display = () => screen.getByTestId("display-line2").parentElement!.textContent;
+/** Both display lines: the name is an input's value, the preset label is text. */
+const display = () =>
+  `${(screen.getByTestId("display-line1") as HTMLInputElement).value} ${screen.getByTestId("display-line2").textContent}`;
 
 function tap(el: Element) {
   fireEvent.keyDown(el, { key: " " });
@@ -179,6 +181,18 @@ describe("programming interface", () => {
     expect(screen.getByText(/may not display/)).toBeTruthy();
     fireEvent.keyDown(field, { key: "Enter" });
     expect(store().board.config.presets[A1]!.name).toBe("A*B  ");
+  });
+
+  it("renames in place: the same display line becomes the field, focused and selected", () => {
+    render(<App />);
+    enterEditMode();
+    const readout = screen.getByTestId("display-line1");
+    expect(readout.tagName).toBe("INPUT"); // the readout and the field are one element
+    fireEvent.click(screen.getByRole("button", { name: /Rename preset A1/ }));
+    const field = screen.getByTestId("display-line1");
+    expect(field).toBe(document.activeElement);
+    expect(field).toBe(screen.getByRole("textbox", { name: /Preset A1 name/ }));
+    expect(screen.queryByRole("button", { name: /Rename preset A1/ })).toBeNull();
   });
 
   it("stores typed names uppercased, as every Pacer name is", () => {

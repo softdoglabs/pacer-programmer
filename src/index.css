@@ -102,6 +102,34 @@
   outline: none;
 }
 
+/*
+ * A line of the Pacer's LED display. The readout and the name field share it, so swapping one for
+ * the other can't move or resize anything: same font, size, spacing, color and glow, laid out in
+ * normal flow. Sizes are relative to the display module (its own container), so they track it at
+ * any panel width.
+ */
+.display-line {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font-family: "DSEG14 Classic", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-style: italic;
+  font-size: 19.4cqw;
+  letter-spacing: 1cqw;
+  line-height: 1.25;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: pre;
+  color: #ff3322;
+  text-shadow: 0 0 0.6cqw currentcolor;
+  outline: none;
+  caret-color: currentcolor;
+}
+.display-line:disabled {
+  opacity: 1; /* a disabled field is still the display: it reads exactly the same */
+}
+
 /* Faceplate-specific bits that are awkward to express as utility classes on SVG. */
 /*
  * The Pacer's display is a 14-segment LED module, so it gets a 14-segment font: DSEG14 Classic

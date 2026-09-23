@@ -465,10 +465,19 @@ no hover-only UI, for tablets.
       query).
   - **The preset's name** is edited on the display itself: in Edit mode the
     display takes a pencil badge, and tapping it puts a caret in the name,
-    nothing more. The field is placed and sized from the display's own
-    drawing units (`SCREEN` in Faceplate.tsx) — same segment font, size,
-    letter spacing, baseline and glow — so opening it doesn't move or
-    resize anything. There's no separate name field.
+    nothing more.
+    - **The readout and the field are the same element**, an `<input>`
+      that's read-only until you open it, so there's nothing to position
+      or keep in step. Both display lines are styled by one class,
+      `.display-line` in index.css, which carries the segment font, size,
+      letter spacing, color and glow, sized in container units relative to
+      the display module.
+    - The display was SVG text with the field overlaid on top; matching
+      their metrics by hand made the name jump larger and land on the wrong
+      line. Now it's HTML in normal flow.
+    - The input's value isn't document text, so the display's accessible
+      readout is an `sr-only` line inside its `aria-live` region; the
+      visible lines are `aria-hidden`.
     - **Validated** by `checkPresetName` (`src/pacer/editing`), which
       separates what the Pacer can't store from what it merely might not
       show: more than 5 characters or anything outside printable ASCII is

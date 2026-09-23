@@ -1,5 +1,5 @@
 import { usePress } from "react-aria";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { panelRow, type SwitchSpec } from "@/pacer/hardware";
 import { checkPresetName, renamePreset } from "@/pacer/editing";
 import { presetIndexToLabel } from "@/pacer/protocol/constants";
@@ -29,12 +29,8 @@ import { HOUSING_H, HOUSING_W, SwitchView } from "./SwitchView";
  * does that for HTMLElements.
  */
 
-const DISPLAY_RED = "#ff3322";
-/* The display module's own drawing units (its SVG viewBox), which line 2's field matches. */
-const SCREEN = { w: 196, h: 130, fontSize: 38, letterSpacing: 2, line1Baseline: 52, line2Baseline: 104 };
-const pctOfScreenW = (v: number) => `${((v / SCREEN.w) * 100).toFixed(2)}cqw`;
-/** The display is a 14-segment module; DSEG14 draws its characters the same way (see index.css). */
-const DISPLAY_FONT = '"DSEG14 Classic", ui-monospace, SFMono-Regular, Menlo, monospace';
+/** The display module's proportions; its text metrics live in `.display-line` (index.css). */
+const SCREEN_ASPECT = "196 / 130";
 
 const PANEL_SWITCHES: readonly SwitchSpec[] = [...panelRow("back"), ...panelRow("front")];
 
@@ -115,53 +111,27 @@ function Marking({ spec }: { spec: SwitchSpec }) {
 }
 
 /** The LED display and the encoder below it, in the back row's last cell. */
-function Display({
-  display,
-  hideName = false,
-  children,
-}: {
-  display: DisplayState;
-  /** The rename field draws line 1 (the preset's name) while it's open, in the same place and size. */
-  hideName?: boolean;
-  children?: React.ReactNode;
-}) {
+function Display({ display, children }: { display: DisplayState; children?: React.ReactNode }) {
   return (
     <div className="flex w-full flex-col items-center gap-[1cqw]">
       <div
-        className="@container relative w-full rounded-[4%] border-[0.25cqw] border-black bg-[#060606] px-[2%] py-[3%] text-center"
-        style={{ aspectRatio: `${HOUSING_W} / 130` }}
+        className="@container relative flex w-full flex-col justify-center rounded-[4%] border-[0.25cqw] border-black bg-[#060606] px-[3%] py-[4%]"
+        style={{ aspectRatio: `${SCREEN_ASPECT}` }}
         aria-live="polite"
       >
-        <svg viewBox={`0 0 ${SCREEN.w} ${SCREEN.h}`} className="size-full" aria-hidden>
-          <g
-            fill={DISPLAY_RED}
-            filter="url(#display-glow)"
-            fontFamily={DISPLAY_FONT}
-            fontStyle="italic"
-            fontSize={SCREEN.fontSize}
-            letterSpacing={SCREEN.letterSpacing}
-            textAnchor="middle"
-          >
-            {!hideName && (
-              <text x={SCREEN.w / 2} y={SCREEN.line1Baseline} style={{ whiteSpace: "pre" }}>
-                {display.line1}
-              </text>
-            )}
-            <text
-              x={SCREEN.w / 2}
-              y={SCREEN.line2Baseline}
-              className={display.line2Blinking ? "pacer-blink" : undefined}
-            >
-              {display.line2}
-            </text>
-          </g>
-        </svg>
-        {/* The tests read the display's second line; the SVG text above is aria-hidden. */}
-        <span className="sr-only" data-testid="display-line2">
+        <span className="sr-only">{`${display.line1.trim()} ${display.line2}`}</span>
+        {children ?? (
+          <span aria-hidden className="display-line" data-testid="display-line1">
+            {display.line1}
+          </span>
+        )}
+        <span
+          aria-hidden
+          className={cn("display-line", display.line2Blinking && "pacer-blink")}
+          data-testid="display-line2"
+        >
           {display.line2}
         </span>
-        {/* Renaming targets the screen itself, not the encoder below it. */}
-        {children}
       </div>
       <Encoder />
     </div>
@@ -179,67 +149,49 @@ function Encoder() {
 }
 
 /**
- * The preset's name, edited on the display itself: in Edit mode the display takes a pencil badge,
- * and tapping it turns into a 5-character field over the same spot.
+ * The preset's name, edited on the display itself. The field and the readout are the same line of
+ * the display (`.display-line` in index.css), so opening the editor only puts a caret in it —
+ * there's no second element to position or keep in step.
  */
-function DisplayNameEditor({ onEditingChange }: { onEditingChange: (editing: boolean) => void }) {
+function DisplayNameField() {
   const presetIndex = usePacerStore((s) => s.board.activePresetIndex);
   const name = usePacerStore((s) => s.board.config.presets[s.board.activePresetIndex]?.name ?? "");
   const applyEdit = usePacerStore((s) => s.applyEdit);
-  const [draft, setDraftState] = useState<string>();
-  const setDraft = (next: string | undefined) => {
-    setDraftState(next);
-    onEditingChange(next !== undefined);
-  };
+  const [draft, setDraft] = useState<string>();
+  const field = useRef<HTMLInputElement>(null);
   const check = draft === undefined ? undefined : checkPresetName(draft);
+  const renaming = draft !== undefined;
+  // The field is always mounted (it's the display's name line), so opening it has to move focus.
+  useEffect(() => {
+    if (!renaming) return;
+    field.current?.focus();
+    field.current?.select(); // typing replaces the old name, as renaming usually means a new one
+  }, [renaming]);
+  const label = `Preset ${presetIndexToLabel(presetIndex)} name`;
   const commit = () => {
     if (draft === undefined) return;
-    if (check?.error) return; // keep editing until it's something the Pacer can store
-    if (check && check.name.trimEnd() !== name.trimEnd()) applyEdit((c) => renamePreset(c, presetIndex, draft));
+    const checked = checkPresetName(draft);
+    if (checked.error) return; // keep editing until it's something the Pacer can store
+    if (checked.name.trimEnd() !== name.trimEnd()) applyEdit((c) => renamePreset(c, presetIndex, draft));
     setDraft(undefined);
   };
-
-  if (draft === undefined) {
-    return (
-      <button
-        type="button"
-        className="absolute inset-0 rounded-[4%] ring-focus outline-none"
-        title={`Rename preset ${presetIndexToLabel(presetIndex)}`}
-        aria-label={`Rename preset ${presetIndexToLabel(presetIndex)} (currently ${name.trim() || "unnamed"})`}
-        onClick={() => setDraft(name.trimEnd())}
-      >
-        <EditBadge />
-      </button>
-    );
-  }
   const problem = check?.error ?? check?.warning;
+
   return (
     <>
-      {/*
-       * Sized and placed from the display's own units, so renaming changes nothing on screen
-       * except that a caret appears: same segment font, same size, same line.
-       */}
       <input
-        autoFocus
-        value={draft}
-        aria-label={`Preset ${presetIndexToLabel(presetIndex)} name`}
+        ref={field}
+        value={draft ?? name}
+        // Outside editing it's the display: focusable and clickable, but not typed into.
+        readOnly={draft === undefined}
+        aria-label={draft === undefined ? undefined : label}
+        aria-hidden={draft === undefined}
+        tabIndex={draft === undefined ? -1 : 0}
         aria-invalid={check?.error !== undefined}
         aria-describedby={problem ? "preset-name-problem" : undefined}
-        className={cn(
-          "absolute w-full border-0 bg-transparent p-0 text-center uppercase caret-current outline-none",
-          check?.error && "text-destructive",
-        )}
-        style={{
-          color: check?.error ? undefined : DISPLAY_RED,
-          fontFamily: DISPLAY_FONT,
-          fontStyle: "italic",
-          textShadow: `0 0 ${pctOfScreenW(5)} ${DISPLAY_RED}`,
-          fontSize: pctOfScreenW(SCREEN.fontSize),
-          letterSpacing: pctOfScreenW(SCREEN.letterSpacing),
-          // The name line's baseline, less the ascent the font sits above it.
-          top: `${(((SCREEN.line1Baseline - SCREEN.fontSize * 0.78) / SCREEN.h) * 100).toFixed(2)}%`,
-          left: 0,
-        }}
+        className={cn("display-line", check?.error && "text-destructive")}
+        data-testid="display-line1"
+        onFocus={() => draft === undefined && setDraft(name.trimEnd())}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
@@ -247,6 +199,18 @@ function DisplayNameEditor({ onEditingChange }: { onEditingChange: (editing: boo
           if (e.key === "Escape") setDraft(undefined);
         }}
       />
+      {/* The button gives the affordance and the accessible name; focusing it opens the field. */}
+      {draft === undefined && (
+        <button
+          type="button"
+          className="ring-focus absolute inset-0 rounded-[4%] outline-none"
+          title={`Rename preset ${presetIndexToLabel(presetIndex)}`}
+          aria-label={`Rename preset ${presetIndexToLabel(presetIndex)} (currently ${name.trim() || "unnamed"})`}
+          onClick={() => setDraft(name.trimEnd())}
+        >
+          <EditBadge />
+        </button>
+      )}
       {problem && (
         <p
           id="preset-name-problem"
@@ -265,7 +229,6 @@ function DisplayNameEditor({ onEditingChange }: { onEditingChange: (editing: boo
 
 export function Faceplate() {
   const editing = usePacerStore((s) => s.uiMode === "edit");
-  const [renaming, setRenaming] = useState(false);
   const board = usePacerStore((s) => s.board);
   const deviceMode = usePacerStore((s) => s.deviceMode);
   const panel = useMemo(() => computePanelState(board, deviceMode), [board, deviceMode]);
@@ -310,9 +273,7 @@ export function Faceplate() {
       <FaceplateDefs />
       <div className="grid grid-cols-6 gap-x-[1.6cqw] gap-y-[2cqw] rounded-[1.6cqw] p-[1.2cqw] ring-[0.2cqw] ring-[#5fa99b]/80">
         {back.map(cell)}
-        <Display display={panel.display} hideName={renaming}>
-          {editing && <DisplayNameEditor onEditingChange={setRenaming} />}
-        </Display>
+        <Display display={panel.display}>{editing && <DisplayNameField />}</Display>
         {front.map(cell)}
       </div>
     </div>

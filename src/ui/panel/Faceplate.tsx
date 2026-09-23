@@ -30,6 +30,8 @@ const HINT_DY = HOUSING_H + 24;
 const MARKING_DY = HOUSING_H + 58;
 const DISPLAY_COL = 5;
 const DISPLAY_RED = "#ff3322";
+/** The display is a 14-segment module; DSEG14 draws its characters the same way (see index.css). */
+const DISPLAY_FONT = '"DSEG14 Classic", ui-monospace, SFMono-Regular, Menlo, monospace';
 const HINT_COLOR = "#7fd1c3";
 
 const colX = (col: number) => COL_X0 + col * COL_PITCH;
@@ -103,10 +105,10 @@ function Display({ display }: { display: DisplayState }) {
       <g
         fill={DISPLAY_RED}
         filter="url(#display-glow)"
-        fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-        fontWeight={700}
-        fontSize={40}
-        letterSpacing={4}
+        fontFamily={DISPLAY_FONT}
+        fontStyle="italic"
+        fontSize={38}
+        letterSpacing={2}
         textAnchor="middle"
       >
         <text x={HOUSING_W / 2} y={56} style={{ whiteSpace: "pre" }}>
@@ -226,8 +228,8 @@ function DisplayNameEditor() {
       value={draft}
       maxLength={PRESET_NAME_LENGTH}
       aria-label={`Preset ${presetIndexToLabel(presetIndex)} name`}
-      className="absolute rounded-[4%] border-2 border-primary bg-black text-center font-mono font-bold tracking-[0.2em] text-[#ff3322] uppercase outline-none"
-      style={{ ...style, fontSize: "min(4vw, 2.2rem)" }}
+      className="absolute rounded-[4%] border-2 border-primary bg-black text-center text-[#ff3322] uppercase outline-none"
+      style={{ ...style, fontFamily: DISPLAY_FONT, fontStyle: "italic", fontSize: "min(3.4vw, 2rem)" }}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => {

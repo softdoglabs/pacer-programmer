@@ -387,6 +387,11 @@ no hover-only UI, for tablets.
   or per-mode logic. It lays out `PACER_HARDWARE` and paints
   `computePanelState` through the generic `SwitchView`, which renders any
   switch's text/icon legend rows and bar from its spec.
+- **The display uses a real 14-segment font**: DSEG14 Classic Italic
+  (`src/assets/fonts/`, @font-face in `index.css`), which draws each
+  character as the segments the hardware's module would light. It's
+  keshikan's font under the SIL Open Font License 1.1, bundled with its
+  license file; the italic cut matches the Pacer's slanted digits.
 - **`palette.ts`** is the only place semantic colors become CSS.
   **`icons.tsx`** holds our own SVG icon drawings.
 - **Hints** are drawn as teal italic annotations below each switch, visibly

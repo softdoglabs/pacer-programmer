@@ -65,6 +65,19 @@
 }
 
 /* Faceplate-specific bits that are awkward to express as utility classes on SVG. */
+/*
+ * The Pacer's display is a 14-segment LED module, so it gets a 14-segment font: DSEG14 Classic
+ * Italic (keshikan, SIL Open Font License 1.1 - see src/assets/fonts/DSEG-LICENSE.txt). The
+ * italic cut matches the hardware's slanted digits.
+ */
+@font-face {
+  font-family: "DSEG14 Classic";
+  src: url("./assets/fonts/DSEG14Classic-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
 .pacer-switch {
   cursor: pointer;
   outline: none;

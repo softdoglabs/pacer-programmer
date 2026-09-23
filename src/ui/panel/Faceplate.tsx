@@ -30,6 +30,9 @@ import { HOUSING_H, HOUSING_W, SwitchView } from "./SwitchView";
  */
 
 const DISPLAY_RED = "#ff3322";
+/* The display module's own drawing units (its SVG viewBox), which line 2's field matches. */
+const SCREEN = { w: 196, h: 130, fontSize: 38, letterSpacing: 2, line1Baseline: 52, line2Baseline: 104 };
+const pctOfScreenW = (v: number) => `${((v / SCREEN.w) * 100).toFixed(2)}cqw`;
 /** The display is a 14-segment module; DSEG14 draws its characters the same way (see index.css). */
 const DISPLAY_FONT = '"DSEG14 Classic", ui-monospace, SFMono-Regular, Menlo, monospace';
 
@@ -112,28 +115,43 @@ function Marking({ spec }: { spec: SwitchSpec }) {
 }
 
 /** The LED display and the encoder below it, in the back row's last cell. */
-function Display({ display, children }: { display: DisplayState; children?: React.ReactNode }) {
+function Display({
+  display,
+  hideName = false,
+  children,
+}: {
+  display: DisplayState;
+  /** The rename field draws line 1 (the preset's name) while it's open, in the same place and size. */
+  hideName?: boolean;
+  children?: React.ReactNode;
+}) {
   return (
     <div className="flex w-full flex-col items-center gap-[1cqw]">
       <div
-        className="relative w-full rounded-[4%] border-[0.25cqw] border-black bg-[#060606] px-[2%] py-[3%] text-center"
+        className="@container relative w-full rounded-[4%] border-[0.25cqw] border-black bg-[#060606] px-[2%] py-[3%] text-center"
         style={{ aspectRatio: `${HOUSING_W} / 130` }}
         aria-live="polite"
       >
-        <svg viewBox="0 0 196 130" className="size-full" aria-hidden>
+        <svg viewBox={`0 0 ${SCREEN.w} ${SCREEN.h}`} className="size-full" aria-hidden>
           <g
             fill={DISPLAY_RED}
             filter="url(#display-glow)"
             fontFamily={DISPLAY_FONT}
             fontStyle="italic"
-            fontSize={38}
-            letterSpacing={2}
+            fontSize={SCREEN.fontSize}
+            letterSpacing={SCREEN.letterSpacing}
             textAnchor="middle"
           >
-            <text x={98} y={52} style={{ whiteSpace: "pre" }}>
-              {display.line1}
-            </text>
-            <text x={98} y={104} className={display.line2Blinking ? "pacer-blink" : undefined}>
+            {!hideName && (
+              <text x={SCREEN.w / 2} y={SCREEN.line1Baseline} style={{ whiteSpace: "pre" }}>
+                {display.line1}
+              </text>
+            )}
+            <text
+              x={SCREEN.w / 2}
+              y={SCREEN.line2Baseline}
+              className={display.line2Blinking ? "pacer-blink" : undefined}
+            >
               {display.line2}
             </text>
           </g>
@@ -164,11 +182,15 @@ function Encoder() {
  * The preset's name, edited on the display itself: in Edit mode the display takes a pencil badge,
  * and tapping it turns into a 5-character field over the same spot.
  */
-function DisplayNameEditor() {
+function DisplayNameEditor({ onEditingChange }: { onEditingChange: (editing: boolean) => void }) {
   const presetIndex = usePacerStore((s) => s.board.activePresetIndex);
   const name = usePacerStore((s) => s.board.config.presets[s.board.activePresetIndex]?.name ?? "");
   const applyEdit = usePacerStore((s) => s.applyEdit);
-  const [draft, setDraft] = useState<string>();
+  const [draft, setDraftState] = useState<string>();
+  const setDraft = (next: string | undefined) => {
+    setDraftState(next);
+    onEditingChange(next !== undefined);
+  };
   const check = draft === undefined ? undefined : checkPresetName(draft);
   const commit = () => {
     if (draft === undefined) return;
@@ -193,6 +215,10 @@ function DisplayNameEditor() {
   const problem = check?.error ?? check?.warning;
   return (
     <>
+      {/*
+       * Sized and placed from the display's own units, so renaming changes nothing on screen
+       * except that a caret appears: same segment font, same size, same line.
+       */}
       <input
         autoFocus
         value={draft}
@@ -200,10 +226,20 @@ function DisplayNameEditor() {
         aria-invalid={check?.error !== undefined}
         aria-describedby={problem ? "preset-name-problem" : undefined}
         className={cn(
-          "absolute inset-0 rounded-[4%] border-2 bg-black text-center text-[4cqw] uppercase outline-none",
-          check?.error ? "border-destructive" : "border-primary",
+          "absolute w-full border-0 bg-transparent p-0 text-center uppercase caret-current outline-none",
+          check?.error && "text-destructive",
         )}
-        style={{ color: DISPLAY_RED, fontFamily: DISPLAY_FONT, fontStyle: "italic" }}
+        style={{
+          color: check?.error ? undefined : DISPLAY_RED,
+          fontFamily: DISPLAY_FONT,
+          fontStyle: "italic",
+          textShadow: `0 0 ${pctOfScreenW(5)} ${DISPLAY_RED}`,
+          fontSize: pctOfScreenW(SCREEN.fontSize),
+          letterSpacing: pctOfScreenW(SCREEN.letterSpacing),
+          // The name line's baseline, less the ascent the font sits above it.
+          top: `${(((SCREEN.line1Baseline - SCREEN.fontSize * 0.78) / SCREEN.h) * 100).toFixed(2)}%`,
+          left: 0,
+        }}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
@@ -216,7 +252,7 @@ function DisplayNameEditor() {
           id="preset-name-problem"
           role={check?.error ? "alert" : undefined}
           className={cn(
-            "absolute top-full right-0 z-10 mt-1 w-max max-w-[22cqw] rounded-md border bg-popover px-2 py-1 text-[1.1cqw] shadow-lg",
+            "absolute top-full right-0 z-10 mt-1 w-max max-w-64 rounded-md border bg-popover px-2 py-1 text-xs shadow-lg",
             check?.error ? "text-destructive" : "text-warning",
           )}
         >
@@ -229,6 +265,7 @@ function DisplayNameEditor() {
 
 export function Faceplate() {
   const editing = usePacerStore((s) => s.uiMode === "edit");
+  const [renaming, setRenaming] = useState(false);
   const board = usePacerStore((s) => s.board);
   const deviceMode = usePacerStore((s) => s.deviceMode);
   const panel = useMemo(() => computePanelState(board, deviceMode), [board, deviceMode]);
@@ -273,7 +310,9 @@ export function Faceplate() {
       <FaceplateDefs />
       <div className="grid grid-cols-6 gap-x-[1.6cqw] gap-y-[2cqw] rounded-[1.6cqw] p-[1.2cqw] ring-[0.2cqw] ring-[#5fa99b]/80">
         {back.map(cell)}
-        <Display display={panel.display}>{editing && <DisplayNameEditor />}</Display>
+        <Display display={panel.display} hideName={renaming}>
+          {editing && <DisplayNameEditor onEditingChange={setRenaming} />}
+        </Display>
         {front.map(cell)}
       </div>
     </div>

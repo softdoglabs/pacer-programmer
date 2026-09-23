@@ -464,8 +464,11 @@ no hover-only UI, for tablets.
       lay out wide and its two color grids sit side by side (container
       query).
   - **The preset's name** is edited on the display itself: in Edit mode the
-    display takes a pencil badge, and tapping it turns into a 5-character
-    field over the same spot. There's no separate name field.
+    display takes a pencil badge, and tapping it puts a caret in the name,
+    nothing more. The field is placed and sized from the display's own
+    drawing units (`SCREEN` in Faceplate.tsx) — same segment font, size,
+    letter spacing, baseline and glow — so opening it doesn't move or
+    resize anything. There's no separate name field.
     - **Validated** by `checkPresetName` (`src/pacer/editing`), which
       separates what the Pacer can't store from what it merely might not
       show: more than 5 characters or anything outside printable ASCII is

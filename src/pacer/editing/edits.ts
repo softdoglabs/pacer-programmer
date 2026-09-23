@@ -12,11 +12,51 @@ export type ControlKind = "switch" | "expressionPedal";
 /** A preset name: up to 5 printable ASCII characters (the display's width), stored padded to 5 like the dumps. */
 export const PRESET_NAME_LENGTH = 5;
 
+/**
+ * Characters every name in the factory dump and the owner's device uses. The display is a
+ * 14-segment module, so anything outside this may not render as typed on the hardware.
+ */
+const KNOWN_NAME_CHARS = /^[A-Z0-9 -]*$/;
+
+/**
+ * The stored form of a typed name: printable ASCII only, uppercase (no dump has ever held a
+ * lowercase name), truncated to the display's width and padded like the dumps.
+ */
 export function normalizePresetName(name: string): string {
   const printable = Array.from(name)
     .filter((c) => c >= " " && c <= "~")
-    .join("");
+    .join("")
+    .toUpperCase();
   return printable.slice(0, PRESET_NAME_LENGTH).padEnd(PRESET_NAME_LENGTH, " ");
+}
+
+export interface PresetNameCheck {
+  /** What would be stored (see `normalizePresetName`). */
+  name: string;
+  /** Set when the text can't be stored as typed: the edit should be refused. */
+  error?: string;
+  /** Set when it can be stored but the hardware may not show it as typed. */
+  warning?: string;
+}
+
+/** Checks a typed preset name, separating what's impossible from what's merely unverified. */
+export function checkPresetName(raw: string): PresetNameCheck {
+  const name = normalizePresetName(raw);
+  const chars = Array.from(raw);
+  if (chars.length > PRESET_NAME_LENGTH) {
+    return { name, error: `Up to ${PRESET_NAME_LENGTH} characters (the display's width)` };
+  }
+  if (chars.some((c) => c < " " || c > "~")) {
+    return { name, error: "Only printable ASCII characters can be stored" };
+  }
+  const unknown = Array.from(new Set(Array.from(name).filter((c) => !KNOWN_NAME_CHARS.test(c))));
+  if (unknown.length > 0) {
+    return {
+      name,
+      warning: `The Pacer may not display ${unknown.join(" ")} — its own names use A-Z, 0-9, space and -`,
+    };
+  }
+  return { name };
 }
 
 function emptyPreset(index: number): Preset {

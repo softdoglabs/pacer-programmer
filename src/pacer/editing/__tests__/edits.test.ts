@@ -3,7 +3,15 @@ import { describe, expect, it } from "vitest";
 import { ControlId, ControlMode, SwitchMessageType, userPresetIndex } from "../../protocol/constants";
 import { decodeSysex } from "../../protocol/decode";
 import { encodeSysex } from "../../protocol/encode";
-import { normalizePresetName, renamePreset, setControlMode, setStepType, updateStep, updateStepLed } from "../edits";
+import {
+  checkPresetName,
+  normalizePresetName,
+  renamePreset,
+  setControlMode,
+  setStepType,
+  updateStep,
+  updateStepLed,
+} from "../edits";
 
 const factory = decodeSysex(new Uint8Array(readFileSync("fixtures/factory-presets.syx")));
 const A1 = userPresetIndex(0, 1);
@@ -18,10 +26,21 @@ describe("editing", () => {
     expect(edited.presets[A1 + 1]).toBe(factory.presets[A1 + 1]); // structurally shared
   });
 
-  it("normalizes names: printable ASCII, at most 5 characters, padded to 5", () => {
-    expect(normalizePresetName("looper!")).toBe("loope");
+  it("normalizes names: printable ASCII, uppercase, at most 5 characters, padded to 5", () => {
+    // No dump has ever held a lowercase name, and the display is a 14-segment module.
+    expect(normalizePresetName("looper!")).toBe("LOOPE");
     expect(normalizePresetName("AéB")).toBe("AB   ");
     expect(normalizePresetName("")).toBe("     ");
+  });
+
+  it("checks a typed name: too long or unstorable is an error, an unusual character a warning", () => {
+    expect(checkPresetName("LOOPR")).toEqual({ name: "LOOPR" });
+    expect(checkPresetName("loop")).toEqual({ name: "LOOP " }); // lowercase is just uppercased
+    expect(checkPresetName("G-MST")).toEqual({ name: "G-MST" });
+    expect(checkPresetName("LOOPER")).toMatchObject({ error: expect.stringMatching(/5 characters/) });
+    expect(checkPresetName("A\u0001B")).toMatchObject({ error: expect.stringMatching(/printable ASCII/) });
+    // Storable, but no Pacer name has ever used it, and the display may not render it.
+    expect(checkPresetName("A*B")).toMatchObject({ name: "A*B  ", warning: expect.stringContaining("*") });
   });
 
   it("sets control mode, and patches steps with values clamped to the MIDI range", () => {

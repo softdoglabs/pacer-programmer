@@ -449,6 +449,13 @@ no hover-only UI, for tablets.
   - **The preset's name** is edited on the display itself: in Edit mode the
     display takes a pencil badge, and tapping it turns into a 5-character
     field over the same spot. There's no separate name field.
+    - **Validated** by `checkPresetName` (`src/pacer/editing`), which
+      separates what the Pacer can't store from what it merely might not
+      show: more than 5 characters or anything outside printable ASCII is
+      an error and the rename is refused; a character no Pacer name has
+      ever used (its own names are A-Z, 0-9, space and -) is a warning and
+      goes through. Names are stored uppercased, since no dump has ever
+      held a lowercase one.
   - **The control being edited is also rendered live** beside its settings
     (`ui/editor/LiveControl`): pressing it runs the simulator exactly as in
     Play mode — MIDI goes out, its lights follow, the log records it — so

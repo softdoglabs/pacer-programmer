@@ -1,8 +1,9 @@
 import { usePress } from "react-aria";
 import { useMemo, useState, type CSSProperties } from "react";
 import { panelRow, type SwitchSpec } from "@/pacer/hardware";
-import { PRESET_NAME_LENGTH, renamePreset } from "@/pacer/editing";
+import { checkPresetName, renamePreset } from "@/pacer/editing";
 import { presetIndexToLabel } from "@/pacer/protocol/constants";
+import { cn } from "@/lib/utils";
 import { computePanelState, switchHint, type DisplayState, type SwitchPanelState } from "@/pacer/panel";
 import { usePacerStore } from "@/store/pacerStore";
 import { useControlPress } from "../useControlPress";
@@ -202,9 +203,11 @@ function DisplayNameEditor() {
   const applyEdit = usePacerStore((s) => s.applyEdit);
   const [draft, setDraft] = useState<string>();
   const style = overlayStyle(colX(DISPLAY_COL), ROW_Y.back, DISPLAY_BOX.w, DISPLAY_BOX.h);
+  const check = draft === undefined ? undefined : checkPresetName(draft);
   const commit = () => {
-    if (draft !== undefined && draft.trimEnd() !== name.trimEnd())
-      applyEdit((c) => renamePreset(c, presetIndex, draft));
+    if (draft === undefined) return;
+    if (check?.error) return; // keep editing until it's something the Pacer can store
+    if (check && check.name.trimEnd() !== name.trimEnd()) applyEdit((c) => renamePreset(c, presetIndex, draft));
     setDraft(undefined);
   };
 
@@ -222,21 +225,41 @@ function DisplayNameEditor() {
       </button>
     );
   }
+  const problem = check?.error ?? check?.warning;
   return (
-    <input
-      autoFocus
-      value={draft}
-      maxLength={PRESET_NAME_LENGTH}
-      aria-label={`Preset ${presetIndexToLabel(presetIndex)} name`}
-      className="absolute rounded-[4%] border-2 border-primary bg-black text-center text-[#ff3322] uppercase outline-none"
-      style={{ ...style, fontFamily: DISPLAY_FONT, fontStyle: "italic", fontSize: "min(3.4vw, 2rem)" }}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") commit();
-        if (e.key === "Escape") setDraft(undefined);
-      }}
-    />
+    <>
+      <input
+        autoFocus
+        value={draft}
+        aria-label={`Preset ${presetIndexToLabel(presetIndex)} name`}
+        aria-invalid={check?.error !== undefined}
+        aria-describedby={problem ? "preset-name-problem" : undefined}
+        className={cn(
+          "absolute rounded-[4%] border-2 bg-black text-center text-[#ff3322] uppercase outline-none",
+          check?.error ? "border-destructive" : "border-primary",
+        )}
+        style={{ ...style, fontFamily: DISPLAY_FONT, fontStyle: "italic", fontSize: "min(3.4vw, 2rem)" }}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") setDraft(undefined);
+        }}
+      />
+      {problem && (
+        <p
+          id="preset-name-problem"
+          role={check?.error ? "alert" : undefined}
+          className={cn(
+            "absolute z-10 w-64 rounded-md border bg-popover px-2 py-1 text-xs shadow-lg",
+            check?.error ? "text-destructive" : "text-warning",
+          )}
+          style={{ left: style.left, top: `calc(${String(style.top)} + ${String(style.height)})` }}
+        >
+          {problem}
+        </p>
+      )}
+    </>
   );
 }
 

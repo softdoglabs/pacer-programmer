@@ -162,6 +162,35 @@ describe("programming interface", () => {
     ).toMatch(/CC#7 = 127/);
   });
 
+  it("refuses a name the Pacer can't store, and warns about an unusual character", () => {
+    render(<App />);
+    enterEditMode();
+    fireEvent.click(screen.getByRole("button", { name: /Rename preset A1/ }));
+    const field = screen.getByRole("textbox", { name: /Preset A1 name/ });
+
+    fireEvent.change(field, { target: { value: "TOOLONG" } });
+    expect(screen.getByRole("alert").textContent).toMatch(/5 characters/);
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(store().board.config.presets[A1]!.name).toBe("PRGM1"); // refused: still editing
+    expect(screen.getByRole("textbox", { name: /Preset A1 name/ })).toBeTruthy();
+
+    fireEvent.change(field, { target: { value: "A*B" } });
+    expect(screen.queryByRole("alert")).toBeNull(); // a warning, not an error
+    expect(screen.getByText(/may not display/)).toBeTruthy();
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(store().board.config.presets[A1]!.name).toBe("A*B  ");
+  });
+
+  it("stores typed names uppercased, as every Pacer name is", () => {
+    render(<App />);
+    enterEditMode();
+    fireEvent.click(screen.getByRole("button", { name: /Rename preset A1/ }));
+    const field = screen.getByRole("textbox", { name: /Preset A1 name/ });
+    fireEvent.change(field, { target: { value: "loop" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(store().board.config.presets[A1]!.name).toBe("LOOP ");
+  });
+
   it("[Preset] is disabled in Edit mode: it can't be programmed", () => {
     render(<App />);
     enterEditMode();

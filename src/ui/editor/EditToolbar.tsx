@@ -1,3 +1,4 @@
+import { Redo2, Undo2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Input, Label, TextField } from "react-aria-components";
 import { Badge } from "@/components/ui/badge";
@@ -97,11 +98,26 @@ export function EditToolbar() {
         value={uiMode}
         onChange={setUiMode}
       />
-      <Button size="icon" variant="ghost" isDisabled={!canUndo} onPress={undo} aria-label="Undo">
-        ↶
+      {/* Icon-only, so each carries a tooltip naming it and its shortcut: bare arrow glyphs read as nothing. */}
+      <Button
+        size="icon"
+        variant="ghost"
+        isDisabled={!canUndo}
+        onPress={undo}
+        aria-label="Undo"
+        title={canUndo ? "Undo (\u2318Z)" : "Undo (nothing to undo yet)"}
+      >
+        <Undo2 className="size-4" aria-hidden />
       </Button>
-      <Button size="icon" variant="ghost" isDisabled={!canRedo} onPress={redo} aria-label="Redo">
-        ↷
+      <Button
+        size="icon"
+        variant="ghost"
+        isDisabled={!canRedo}
+        onPress={redo}
+        aria-label="Redo"
+        title={canRedo ? "Redo (\u21e7\u2318Z)" : "Redo (nothing to redo yet)"}
+      >
+        <Redo2 className="size-4" aria-hidden />
       </Button>
       {unsaved && <Badge variant="outline">● unsaved</Badge>}
       <Button size="sm" variant={unsaved ? "default" : "outline"} isDisabled={!unsaved} onPress={() => setSaving(true)}>

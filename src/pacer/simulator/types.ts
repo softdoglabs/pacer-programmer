@@ -66,6 +66,12 @@ export interface BoardState {
    * and are cleared only by an explicit reset or a new session. See midiState.ts.
    */
   midi: MidiState;
+  /**
+   * Where each expression pedal is, 0 (heel down) to 1 (toe down), keyed by ControlId. A pedal's
+   * position is physical: it doesn't reset when the preset changes, and nothing but moving it
+   * changes it.
+   */
+  pedals: Partial<Record<number, number>>;
 }
 
 export interface BoardEvent {

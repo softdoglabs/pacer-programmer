@@ -22,8 +22,9 @@ export function createBoardState(
   config: PacerConfig,
   initialPresetIndex = FIRST_USER_PRESET_INDEX,
   midi: MidiState = EMPTY_MIDI_STATE,
+  pedals: BoardState["pedals"] = {},
 ): BoardState {
-  return { config, activePresetIndex: initialPresetIndex, controls: {}, midi };
+  return { config, activePresetIndex: initialPresetIndex, controls: {}, midi, pedals };
 }
 
 /**
@@ -32,7 +33,7 @@ export function createBoardState(
  * values carry over (observed).
  */
 export function changePreset(board: BoardState, index: number): BoardState {
-  return createBoardState(board.config, index, board.midi);
+  return createBoardState(board.config, index, board.midi, board.pedals);
 }
 
 /** Forgets every remembered MIDI value (the simulator's "Reset MIDI state"). */
@@ -106,6 +107,11 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
     event.position,
   );
   const midi = recordMidi(board.midi, resolved.messages);
+  // A pedal's position is physical: whatever moved it last, including a press (toe) or release (heel).
+  const pedals =
+    controlKind === "expressionPedal"
+      ? { ...board.pedals, [event.controlId]: event.position ?? (event.phase === "release" ? 0 : 1) }
+      : board.pedals;
 
   const {
     nextPresetIndex,
@@ -122,7 +128,7 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
     // was, since that's the preset the firmware comes back to. The pressed control's own state
     // change is discarded, like any other preset-changing press.
     return {
-      board: { ...board, midi },
+      board: { ...board, midi, pedals },
       effect: { messages: resolved.messages, relayActions, specialPresetRequested: specialPreset, warnings },
     };
   }
@@ -132,7 +138,7 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
     // this also means the just-computed `resolved.nextRuntimeState` for the pressed control is
     // discarded, so a release that follows (still addressed to this controlId) lands on nothing.
     return {
-      board: createBoardState(board.config, nextPresetIndex, midi),
+      board: createBoardState(board.config, nextPresetIndex, midi, pedals),
       effect: {
         messages: resolved.messages,
         relayActions,
@@ -147,6 +153,7 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
       ...board,
       controls: { ...board.controls, [event.controlId]: resolved.nextRuntimeState },
       midi,
+      pedals,
     },
     effect: { messages: resolved.messages, relayActions, warnings },
   };

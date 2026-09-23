@@ -64,6 +64,20 @@
   }
 }
 
+/*
+ * Edit mode's badges overhang their control's bottom-right corner (see EditBadge). The overhang
+ * is declared once here: the badge offsets itself by it, and whatever lays out badged controls
+ * keeps that much room with `.badge-room`, so nothing is clipped and no scrollbar appears.
+ */
+:root {
+  --badge-overhang: 0.625rem;
+}
+.badge-room {
+  padding-right: var(--badge-overhang);
+  padding-bottom: var(--badge-overhang);
+  padding-left: var(--badge-overhang);
+}
+
 /* Faceplate-specific bits that are awkward to express as utility classes on SVG. */
 /*
  * The Pacer's display is a 14-segment LED module, so it gets a 14-segment font: DSEG14 Classic

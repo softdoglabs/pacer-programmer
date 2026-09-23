@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { switchSpecForControl } from "../../pacer/hardware";
 import { controlKindOf, controlLabel, getControlDisplayState, summarizeControl } from "../../pacer/simulator";
@@ -27,7 +26,7 @@ function Jack({
   return (
     <div
       className={cn(
-        "relative flex h-full min-w-0 flex-col items-start gap-1 rounded-md border bg-card px-3 pt-2 pb-4",
+        "relative flex h-full min-w-0 flex-col items-start gap-1 rounded-md border bg-card px-3 py-2",
         selected && "border-primary",
         !control && "opacity-60",
         rest.className,
@@ -78,7 +77,8 @@ function PedalControl({ controlId, live }: { controlId: number; live: boolean })
   const editable = editing && !live;
   const movePedal = usePacerStore((s) => s.movePedal);
   const selectControl = usePacerStore((s) => s.selectControl);
-  const [position, setPosition] = useState(0);
+  // The pedal's position is device state, so the faceplate and the editor's live copy agree.
+  const position = usePacerStore((s) => s.board.pedals[controlId] ?? 0);
   const label = controlLabel(controlId);
 
   return (
@@ -91,12 +91,8 @@ function PedalControl({ controlId, live }: { controlId: number; live: boolean })
         aria-label={`${label}: heel to toe`}
         className="w-full accent-primary"
         onPointerDown={() => !live && editing && selectControl(controlId)}
-        onChange={(e) => {
-          const next = Number(e.target.value) / 100;
-          setPosition(next);
-          // In Edit mode the faceplate copy only selects; the editor's live copy sweeps.
-          if (live || !editing) movePedal(controlId, next);
-        }}
+        // In Edit mode the faceplate copy only selects; the editor's live copy sweeps.
+        onChange={(e) => (live || !editing) && movePedal(controlId, Number(e.target.value) / 100)}
       />
       <span className="mt-auto text-[10px] text-muted-foreground">heel → toe ({Math.round(position * 100)}%)</span>
     </Jack>

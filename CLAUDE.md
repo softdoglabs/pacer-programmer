@@ -419,9 +419,10 @@ no hover-only UI, for tablets.
     itself. [Preset] gets the counterpart — a struck-out pencil in red —
     and is disabled outright in Edit mode, so it neither highlights nor
     responds. The badges say what's editable, so the faceplate has no edit
-    outline; a badged band sits under it. The block holding the faceplate
-    and rear jacks reserves the overhang in both modes, so switching
-    doesn't shift the layout or raise a scrollbar.
+    outline; a badged band sits under it. How far a badge overhangs is one
+    value, `--badge-overhang` in index.css: the badge offsets itself by it
+    and `.badge-room` keeps that much space, in both modes, so nothing is
+    clipped and switching raises no scrollbar.
     Entering Edit mode clears the selected control: it starts at the
     faceplate rather than on whatever was last pressed in Play mode.
   - **Editor** (`ui/editor/`): the preset name (5 chars), then the selected
@@ -593,11 +594,13 @@ no hover-only UI, for tablets.
   - Edits are saved as new snapshots or over the open one (see Save
     above); sending to the device is separate (see Send to Pacer).
 - **Expression pedals are swept, not pressed**: a `BoardEvent` carries a
-  `position` (0 = heel, 1 = toe) and a "move" phase, and the continuous
-  types (MIDI CC, Pitch Bend, Channel Aftertouch) interpolate between the
-  step's own min and max. The UI renders them as sliders. A press or
-  release still means toe or heel, so a pedal driven as a button behaves as
-  before.
+  `position` (0 = heel, 1 = toe) and a "move" phase, and where each pedal
+  sits is device state (`BoardState.pedals`), not component state — a
+  pedal's position is physical, so it survives preset changes and every
+  view of that pedal agrees. The continuous types (MIDI CC, Pitch Bend,
+  Channel Aftertouch) interpolate between the step's own min and max. The
+  UI renders them as sliders. A press or release still means toe or heel,
+  so a pedal driven as a button behaves as before.
 - Not simulated yet: a preset's own load-time MIDI settings (shown in the
   inspector only) and LED `midiController` input (no MIDI input path yet).
 - Checks: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm format:check`.

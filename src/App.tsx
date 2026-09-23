@@ -70,10 +70,10 @@ export function App() {
           ) : (
             <>
               {/* Scales down to fit, then scrolls: below this the switches get too small to hit. */}
-              {/* The padding holds Edit mode's badges, which overhang their controls: reserved in
-                  both modes so switching doesn't shift the layout or raise a scrollbar. */}
+              {/* `badge-room` keeps space for Edit mode's overhanging badges, in both modes, so
+                  switching doesn't shift the layout or raise a scrollbar (see index.css). */}
               <div className="overflow-x-auto overflow-y-hidden">
-                <div className="min-w-[900px] space-y-3 px-3 pt-1 pb-4">
+                <div className="badge-room min-w-[900px] space-y-3">
                   <Faceplate />
                   {/* Rear-jack controls are part of the hardware, so they stay with the faceplate. */}
                   <RearJacks />

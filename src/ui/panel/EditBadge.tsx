@@ -3,7 +3,9 @@ import { Button } from "react-aria-components";
 import { cn } from "@/lib/utils";
 
 const BADGE_CLASS = cn(
-  "absolute -right-2.5 -bottom-2.5 z-10 flex size-9 cursor-pointer items-center justify-center",
+  // Offset by --badge-overhang, the same value `.badge-room` reserves (see index.css).
+  "absolute right-[calc(-1*var(--badge-overhang))] bottom-[calc(-1*var(--badge-overhang))] z-10",
+  "flex size-9 cursor-pointer items-center justify-center",
   "rounded-full bg-primary text-primary-foreground shadow-lg shadow-black/70 ring-2 ring-black/40",
   "outline-none data-[focus-visible]:ring-ring/50",
 );
@@ -39,7 +41,8 @@ export function NoEditBadge({ title }: { title?: string }) {
       aria-hidden
       title={title}
       className={cn(
-        "absolute -right-2.5 -bottom-2.5 z-10 flex size-9 items-center justify-center",
+        "absolute right-[calc(-1*var(--badge-overhang))] bottom-[calc(-1*var(--badge-overhang))] z-10",
+        "flex size-9 items-center justify-center",
         "rounded-full bg-black/80 text-destructive shadow-lg shadow-black/70 ring-2 ring-destructive",
       )}
     >

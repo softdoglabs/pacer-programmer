@@ -16,6 +16,8 @@ function tap(el: Element) {
   fireEvent.keyUp(el, { key: " " });
 }
 const display = () => screen.getByTestId("display-line2").textContent;
+/** The name line: an input, whose value isn't document text. */
+const displayName = () => (screen.getByTestId("display-line1") as HTMLInputElement).value;
 const switchButton = (name: string) => screen.getByRole("button", { name: new RegExp(`^Switch ${name}:`) });
 
 /** The support panels (log, presets, configurations, rear jacks) live behind tabs. */
@@ -98,6 +100,18 @@ describe("Faceplate (factory defaults)", () => {
     fireEvent.click(within(list).getByRole("button", { name: "Delete" }));
     fireEvent.click(within(list).getByRole("button", { name: "Confirm delete" }));
     expect(within(list).queryByText("Friday gig")).toBeNull();
+  });
+
+  it("shows the preset's name and label on the display, in Play mode as well as Edit", () => {
+    render(<App />);
+    expect(displayName().trim()).toBe("PRGM1"); // Play mode: the readout still reads out
+    expect(display()).toBe("A1");
+    expect(screen.getByRole("group", { name: /Pacer faceplate/ }).textContent).toContain("PRGM1");
+
+    act(() => usePacerStore.getState().setUiMode("edit"));
+    expect(displayName().trim()).toBe("PRGM1");
+    act(() => usePacerStore.getState().setUiMode("play"));
+    expect(displayName().trim()).toBe("PRGM1");
   });
 
   it("pressing a switch logs its MIDI output and marks it held", () => {

@@ -111,7 +111,7 @@ function Marking({ spec }: { spec: SwitchSpec }) {
 }
 
 /** The LED display and the encoder below it, in the back row's last cell. */
-function Display({ display, children }: { display: DisplayState; children?: React.ReactNode }) {
+function Display({ display, nameLine }: { display: DisplayState; nameLine: React.ReactNode }) {
   return (
     <div className="flex w-full flex-col items-center gap-[1cqw]">
       <div
@@ -120,11 +120,7 @@ function Display({ display, children }: { display: DisplayState; children?: Reac
         aria-live="polite"
       >
         <span className="sr-only">{`${display.line1.trim()} ${display.line2}`}</span>
-        {children ?? (
-          <span aria-hidden className="display-line" data-testid="display-line1">
-            {display.line1}
-          </span>
-        )}
+        {nameLine}
         <span
           aria-hidden
           className={cn("display-line", display.line2Blinking && "pacer-blink")}
@@ -153,7 +149,7 @@ function Encoder() {
  * the display (`.display-line` in index.css), so opening the editor only puts a caret in it —
  * there's no second element to position or keep in step.
  */
-function DisplayNameField() {
+function DisplayNameField({ editable }: { editable: boolean }) {
   const presetIndex = usePacerStore((s) => s.board.activePresetIndex);
   const name = usePacerStore((s) => s.board.config.presets[s.board.activePresetIndex]?.name ?? "");
   const applyEdit = usePacerStore((s) => s.applyEdit);
@@ -183,15 +179,14 @@ function DisplayNameField() {
         ref={field}
         value={draft ?? name}
         // Outside editing it's the display: focusable and clickable, but not typed into.
-        readOnly={draft === undefined}
-        aria-label={draft === undefined ? undefined : label}
-        aria-hidden={draft === undefined}
-        tabIndex={draft === undefined ? -1 : 0}
+        readOnly={!renaming}
+        aria-label={renaming ? label : undefined}
+        aria-hidden={!renaming}
+        tabIndex={renaming ? 0 : -1}
         aria-invalid={check?.error !== undefined}
         aria-describedby={problem ? "preset-name-problem" : undefined}
         className={cn("display-line", check?.error && "text-destructive")}
         data-testid="display-line1"
-        onFocus={() => draft === undefined && setDraft(name.trimEnd())}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
@@ -199,8 +194,8 @@ function DisplayNameField() {
           if (e.key === "Escape") setDraft(undefined);
         }}
       />
-      {/* The button gives the affordance and the accessible name; focusing it opens the field. */}
-      {draft === undefined && (
+      {/* The button gives the affordance and the accessible name; pressing it opens the field. */}
+      {editable && !renaming && (
         <button
           type="button"
           className="ring-focus absolute inset-0 rounded-[4%] outline-none"
@@ -273,7 +268,7 @@ export function Faceplate() {
       <FaceplateDefs />
       <div className="grid grid-cols-6 gap-x-[1.6cqw] gap-y-[2cqw] rounded-[1.6cqw] p-[1.2cqw] ring-[0.2cqw] ring-[#5fa99b]/80">
         {back.map(cell)}
-        <Display display={panel.display}>{editing && <DisplayNameField />}</Display>
+        <Display display={panel.display} nameLine={<DisplayNameField editable={editing} />} />
         {front.map(cell)}
       </div>
     </div>

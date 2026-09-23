@@ -466,9 +466,9 @@ no hover-only UI, for tablets.
   - **The preset's name** is edited on the display itself: in Edit mode the
     display takes a pencil badge, and tapping it puts a caret in the name,
     nothing more.
-    - **The readout and the field are the same element**, an `<input>`
-      that's read-only until you open it, so there's nothing to position
-      or keep in step. Both display lines are styled by one class,
+    - **The readout and the field are the same element in both modes**, an
+      `<input>` that's read-only until you open it, so there's nothing to
+      position or keep in step. Both display lines are styled by one class,
       `.display-line` in index.css, which carries the segment font, size,
       letter spacing, color and glow, sized in container units relative to
       the display module.

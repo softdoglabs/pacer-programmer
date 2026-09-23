@@ -123,7 +123,7 @@ function Display({ display, nameLine }: { display: DisplayState; nameLine: React
         {nameLine}
         <span
           aria-hidden
-          className={cn("display-line", display.line2Blinking && "pacer-blink")}
+          className={cn("display-line display-line--number", display.line2Blinking && "pacer-blink")}
           data-testid="display-line2"
         >
           {display.line2}

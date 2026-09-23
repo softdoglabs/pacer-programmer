@@ -117,7 +117,7 @@
   font-style: italic;
   font-size: 19.4cqw;
   letter-spacing: 1cqw;
-  line-height: 1.25;
+  line-height: 1;
   text-align: center;
   text-transform: uppercase;
   white-space: pre;
@@ -128,6 +128,19 @@
 }
 .display-line:disabled {
   opacity: 1; /* a disabled field is still the display: it reads exactly the same */
+}
+/*
+ * The preset number reads larger than the name above it (observed on the hardware). The name
+ * keeps the base size, which is what makes five characters fill the screen's width.
+ */
+.display-line--number {
+  font-size: 25cqw;
+  /*
+   * A third of its own height between the lines. The margin sits on the line, not as a gap on the
+   * screen that stacks them: a container-query unit resolves against the nearest *ancestor*
+   * container, so `gap` on the screen itself would measure against the faceplate instead.
+   */
+  margin-top: 8cqw;
 }
 
 /* Faceplate-specific bits that are awkward to express as utility classes on SVG. */

@@ -16,5 +16,7 @@ const MODES: { id: UiMode; label: string; title: string }[] = [
 export function ModeBar() {
   const uiMode = usePacerStore((s) => s.uiMode);
   const setUiMode = usePacerStore((s) => s.setUiMode);
-  return <ToggleGroup<UiMode> label="Mode" options={MODES} value={uiMode} onChange={setUiMode} />;
+  // Switching mode only changes which view is showing, so the arrow keys can select as they move
+  // — what a radio group is expected to do, and what makes this operable without hunting for Enter.
+  return <ToggleGroup<UiMode> label="Mode" options={MODES} value={uiMode} onChange={setUiMode} selectOnFocus />;
 }

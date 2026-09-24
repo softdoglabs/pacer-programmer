@@ -11,6 +11,7 @@ export function ToggleGroup<T extends string>({
   onChange,
   className,
   labelVisible = false,
+  selectOnFocus = false,
 }: {
   label: string;
   options: readonly { id: T; label: string; title?: string }[];
@@ -19,6 +20,13 @@ export function ToggleGroup<T extends string>({
   className?: string;
   /** Shows the label beside the buttons, for groups whose options don't name what they set. */
   labelVisible?: boolean;
+  /**
+   * Selects whatever the arrow keys move focus to, which is how a radio group is expected to
+   * behave. Off by default: React Aria moves focus without selecting, and ARIA allows that when
+   * selecting has a side effect worth confirming — every group here that writes a config edit
+   * would otherwise record one undo entry per arrow press.
+   */
+  selectOnFocus?: boolean;
 }) {
   const group = (
     <ToggleButtonGroup
@@ -37,6 +45,7 @@ export function ToggleGroup<T extends string>({
           <ToggleButton
             key={o.id}
             id={o.id}
+            onFocus={selectOnFocus ? () => onChange(o.id) : undefined}
             className="h-8 cursor-pointer rounded-md px-3 text-sm font-medium text-muted-foreground outline-none ring-focus ring-focus-inset data-[hovered]:text-foreground data-[selected]:bg-background data-[selected]:text-foreground data-[selected]:shadow-sm"
           >
             {o.label}

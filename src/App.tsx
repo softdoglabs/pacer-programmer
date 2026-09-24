@@ -4,6 +4,7 @@ import { Tab, TabList, TabPanel, Tabs } from "@/components/ui/tabs";
 import { usePacerStore } from "./store/pacerStore";
 import { Faceplate } from "./ui/panel/Faceplate";
 import { RearJacks } from "./ui/RearJacks";
+import { useAppHistory } from "./ui/appHistory";
 import { ContextBar } from "./ui/ContextBar";
 import { ConfigurationButton, DeviceDrawer } from "./ui/DeviceDrawer";
 import { SwitchEditorView } from "./ui/editor/SwitchEditorView";
@@ -28,6 +29,7 @@ function SupportPanels() {
 }
 
 export function App() {
+  useAppHistory();
   const sessionId = usePacerStore((s) => s.sessionId);
   const uiMode = usePacerStore((s) => s.uiMode);
   const selectedControlId = usePacerStore((s) => s.selectedControlId);

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { panelRow, rearControls } from "../../pacer/hardware";
 import { controlLabel } from "../../pacer/simulator";
 import { usePacerStore } from "../../store/pacerStore";
+import { goBack } from "../appHistory";
 import { EditorPanel } from "./EditorPanel";
 import { LiveControl } from "./LiveControl";
 
@@ -59,13 +60,13 @@ export function SwitchEditorView({ controlId }: { controlId: number }) {
         <div className="min-w-0 flex-1">
           <SwitchPicker selected={controlId} onSelect={selectControl} />
         </div>
-        {/* Closes this control's editor and returns to the faceplate, still in Edit mode. */}
+        {/* Returns to the faceplate, still in Edit mode — as a history step, so Back agrees. */}
         <Button
           size="icon"
           variant="outline"
           aria-label="Back to faceplate"
           title="Back to faceplate"
-          onPress={() => selectControl(undefined)}
+          onPress={() => goBack(() => selectControl(undefined))}
         >
           ✕
         </Button>

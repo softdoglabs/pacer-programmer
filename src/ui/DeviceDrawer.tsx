@@ -2,6 +2,7 @@ import { ChevronDown, Usb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { usePacerStore } from "../store/pacerStore";
+import { goBack } from "./appHistory";
 import { ConfigurationsPanel } from "./ConfigurationsPanel";
 
 /*
@@ -67,7 +68,12 @@ export function DeviceDrawer() {
   const isOpen = usePacerStore((s) => s.deviceDrawerOpen);
   const setOpen = usePacerStore((s) => s.setDeviceDrawerOpen);
   return (
-    <Drawer isOpen={isOpen} onOpenChange={setOpen} title="Device & configurations">
+    // Dismissing is a step back, so Escape, the ✕ and a tap outside all agree with the Back button.
+    <Drawer
+      isOpen={isOpen}
+      onOpenChange={(open) => (open ? setOpen(true) : goBack(() => setOpen(false)))}
+      title="Device & configurations"
+    >
       <ConfigurationsPanel />
     </Drawer>
   );

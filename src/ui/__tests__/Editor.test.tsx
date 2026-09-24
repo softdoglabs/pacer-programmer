@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "../../App";
@@ -74,7 +74,7 @@ describe("programming interface", () => {
     expect(screen.queryByText("● unsaved")).toBeNull();
   });
 
-  it("changes a step's type from the picker, and the faceplate caption follows", () => {
+  it("changes a step's type from the picker, and the faceplate caption follows", async () => {
     render(<App />);
     enterEditMode();
     tap(screen.getByRole("button", { name: /^Switch 1:/ }));
@@ -85,8 +85,9 @@ describe("programming interface", () => {
     const step = store().board.config.presets[A1]!.controls[ControlId.Stompswitch1]!.steps[2]!;
     expect(step).toMatchObject({ active: true, data: [0, 0, 127] });
     // Closing the switch's editor returns to the faceplate, which shows what it now sends.
+    // It's a history step, so the browser applies it asynchronously.
     fireEvent.click(screen.getByRole("button", { name: /Back to faceplate/ }));
-    expect(screen.getByRole("button", { name: "Switch 1: PC0 CC0⇅" })).toBeTruthy();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Switch 1: PC0 CC0⇅" })).toBeTruthy());
   });
 
   it("adds steps up to six, then disables +; removing a step keeps its settings for next time", () => {
@@ -153,7 +154,7 @@ describe("programming interface", () => {
     expect(screen.queryByRole("region", { name: "Preset settings" })).toBeNull();
   });
 
-  it("entering Edit mode starts at the faceplate, and closing a switch stays in Edit mode", () => {
+  it("entering Edit mode starts at the faceplate, and closing a switch stays in Edit mode", async () => {
     render(<App />);
     tap(screen.getByRole("button", { name: /^Switch 2:/ })); // pressed in Play mode: not a choice to program it
     expect(store().selectedControlId).toBe(ControlId.Stompswitch2);
@@ -163,8 +164,8 @@ describe("programming interface", () => {
     tap(screen.getByRole("button", { name: /^Switch 1:/ }));
     expect(screen.getByRole("region", { name: "Step 1" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Back to faceplate/ }));
-    expect(store().uiMode).toBe("program");
-    expect(store().selectedControlId).toBeUndefined();
+    await waitFor(() => expect(store().selectedControlId).toBeUndefined());
+    expect(store().uiMode).toBe("program"); // back to the faceplate, still programming
     expect(screen.getByRole("button", { name: /^Switch 1:/ })).toBeTruthy();
   });
 

@@ -624,6 +624,24 @@ no hover-only UI, for tablets.
     hold-[Preset]-bank-number path is still the hardware's own way.
   - What's left below is the output log. The tab strip survives a
     configuration switch; only the simulator views remount.
+- **Browser navigation** (`ui/appHistory.ts`), without a router — the app
+  has no URLs to speak of, but it has places, and Back used to leave it
+  entirely because nothing was ever pushed.
+  - A place is the mode, the control opened for programming, and whether
+    the device drawer is showing. Each change pushes an entry; the first
+    load replaces rather than pushes, so arriving costs nothing.
+  - **The selected control counts only in Program mode.** While
+    simulating, the same field just remembers the last switch pressed, so
+    counting it would push an entry per press and make Back an undo of the
+    performance. The loaded preset is excluded for the same reason: a
+    Preset Select step changes it without anyone navigating.
+  - In-app closes (the editor's ✕, the drawer's dismiss) go through
+    `goBack`, so they land on the entry they came from instead of pushing
+    a new one that Back would then reopen. It falls back to closing
+    directly when the current entry isn't one of ours — on a fresh load,
+    going back would leave the app.
+  - The push effect skips when the store already matches `history.state`,
+    which is what stops a Back from immediately re-pushing what it undid.
   - **A preset's own settings sit with the faceplate in Program mode**
     (`ui/PresetPanel`): the MIDI it sends when it loads, read-only for
     now. It's preset-level config, like the name edited on the display, so

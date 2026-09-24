@@ -617,13 +617,21 @@ no hover-only UI, for tablets.
     log, inspector, preset list — sits in one tab strip below. The tab
     you're on survives a configuration switch; only the simulator views
     remount.
-  - **The device and its snapshots live in a drawer** (`ui/DeviceDrawer`),
-    opened from the header by the configuration's name or by the Pacer
-    status chip: pulling, importing, the Pacer's MIDI ports, the firmware
-    check and the saved configurations. All occasional, so none of it
-    holds permanent space. Whether it's open is stored as *which session
-    it was opened in*, not a boolean, so loading a configuration closes it
-    without an effect having to notice.
+  - **The device and its snapshots live in a drawer** (`ui/DeviceDrawer`):
+    pulling, importing, the Pacer's MIDI ports, the firmware check and the
+    saved configurations. All occasional, so none of it holds permanent
+    space. Two ordinary buttons open it — the configuration's name, and
+    the device status — because a status chip that turns out to be
+    clickable is a trap. `deviceDrawerOpen` is part of `freshSession`, so
+    loading a configuration closes the panel that loaded it.
+  - **The header's right slot is the device slot.** It asks for MIDI
+    access, then becomes the Pacer's status in the same place, so the
+    question turns into its answer instead of leaving a gap: `Pacer
+    connected` or `No Pacer found`, by whether its ports are chosen.
+  - **The two MIDI connections are named, not just separated.** Simulate's
+    output reads "Simulated MIDI output", and stays visible before MIDI is
+    granted so the idea is discoverable at all. An unexplained port picker
+    next to a device connection gets read as the same thing.
   - This replaced a two-column layout that gave the bulk of the width to
     panels nobody interacts with and squeezed the editor into a 360-440px
     side column.

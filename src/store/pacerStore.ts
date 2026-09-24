@@ -82,6 +82,9 @@ export interface PacerStore extends ConfigurationsSlice, EditingSlice, SendSlice
    */
   swallowedReleases: number[];
   selectedControlId?: number;
+  /** Whether the device & configurations drawer is showing (see `ui/DeviceDrawer`). */
+  deviceDrawerOpen: boolean;
+  setDeviceDrawerOpen: (open: boolean) => void;
   press: (controlId: number) => void;
   release: (controlId: number) => void;
   /** An expression pedal swept to a position (0 = heel down, 1 = toe down). */
@@ -130,6 +133,8 @@ function freshSession(config: PacerConfig, initialPresetIndex: number) {
     log: [] as LogEntry[],
     swallowedReleases: [] as number[],
     selectedControlId: undefined as number | undefined,
+    // Part of the session, so loading a configuration closes the panel that loaded it.
+    deviceDrawerOpen: false,
   };
 }
 
@@ -302,6 +307,8 @@ export const usePacerStore = create<PacerStore>((set, get) => {
     },
 
     selectControl: (controlId) => set({ selectedControlId: controlId }),
+
+    setDeviceDrawerOpen: (deviceDrawerOpen) => set({ deviceDrawerOpen }),
 
     loadConfig: (config, source, initialPresetIndex = FIRST_USER_PRESET_INDEX) => {
       // A new configuration means a new simulator session: the firmware mode machine and all

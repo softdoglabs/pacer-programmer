@@ -5,7 +5,7 @@ import { usePacerStore } from "./store/pacerStore";
 import { Faceplate } from "./ui/panel/Faceplate";
 import { RearJacks } from "./ui/RearJacks";
 import { ContextBar } from "./ui/ContextBar";
-import { DeviceDrawer } from "./ui/DeviceDrawer";
+import { ConfigurationButton, DeviceDrawer } from "./ui/DeviceDrawer";
 import { SwitchEditorView } from "./ui/editor/SwitchEditorView";
 import { Inspector } from "./ui/Inspector";
 import { MessageLog } from "./ui/MessageLog";
@@ -47,14 +47,16 @@ export function App() {
     <div className="flex min-h-screen flex-col">
       <header className="flex flex-wrap items-center gap-3 px-4 py-2.5">
         <h1 className="text-base font-semibold">Pacer Programmer</h1>
-        <DeviceDrawer />
+        <ConfigurationButton />
         <ModeBar />
         {/* MIDI access is one grant for the whole app, so it's asked for here, not per mode. */}
+        {/* The device slot: asks for MIDI access, then shows whether the Pacer is there. */}
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <MidiAccessControl />
         </div>
       </header>
       <ContextBar />
+      <DeviceDrawer />
 
       <main className="mx-auto flex w-full max-w-[var(--page-max)] flex-1 flex-col gap-4 p-4">
         {/* Simulator views are keyed on the session, so a configuration switch remounts them. */}

@@ -72,7 +72,14 @@ export function createSendSlice(
 ): Omit<SendSlice, "sendBaseline"> {
   let abort: AbortController | undefined;
 
-  const busy = () => isSendingToPacer(get()) || get().pull.status === "pulling" || get().deviceInfo.kind === "querying";
+  /*
+   * A send waits only for things that would collide with it on the wire. An identity query in
+   * flight isn't one: its request has already gone out and it's only listening, and the hardware
+   * rule runs the other way — nothing may reach the Pacer while *writes* are settling (see
+   * pacerWrite.ts), which `checkFirmware` respects. Counting it here meant connecting and
+   * immediately sending did nothing at all.
+   */
+  const busy = () => isSendingToPacer(get()) || get().pull.status === "pulling";
 
   return {
     send: { status: "idle" },

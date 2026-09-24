@@ -569,7 +569,7 @@ no hover-only UI, for tablets.
     - Paced at 10 ms per message, like the reference editor's dump upload.
       Cancelable; a partial send is reported as such.
     - **Then a 1 s settle, during which nothing else goes to the Pacer**
-      (`PACER_WRITE_SETTLE_MS`; pull, read-back and "Check firmware" are
+      (`PACER_WRITE_SETTLE_MS`; pull, read-back and the identity query are
       blocked). Found on hardware: after preset writes, a full-dump
       request within ~200 ms makes the Pacer drop the writes and fill the
       written preset with D6's contents, so the preset gets corrupted. With
@@ -675,7 +675,15 @@ no hover-only UI, for tablets.
   are all settings.
   - The app sends a standard MIDI Device Inquiry (Universal SysEx
     `F0 7E 7F 06 01 F7`, `protocol/identity.ts`, `midi/deviceIdentity.ts`)
-    before each pull, and on demand via "Check firmware".
+    before each pull, and automatically as soon as both of the Pacer's
+    ports are known — on connect, on a re-plug, or when they're chosen by
+    hand. It's a read-only inquiry with nothing to confirm, so there's no
+    button: the drawer simply shows what the device said.
+  - It's skipped while a send or pull is running, because nothing may
+    reach the Pacer while writes are settling. The reverse doesn't hold:
+    an inquiry in flight is only listening, so it no longer blocks a send
+    (it used to, which made connecting and immediately sending do
+    nothing).
   - The reply (manufacturer, family, model, 4 version bytes) is stored on
     the pulled snapshot.
   - Confirmed on hardware: the Pacer answers (Nektar, family 9319, model

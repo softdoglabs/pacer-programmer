@@ -138,6 +138,20 @@ export function createConfigurationsSlice(
     }
   }
 
+  /**
+   * Asks the Pacer who it is as soon as both its ports are known — on connect, on a re-plug, or
+   * when they're chosen by hand. It's a read-only Device Inquiry, so there's nothing to confirm,
+   * and it saves making the firmware a thing you have to remember to go and ask for. Skipped while
+   * the device is busy: a dump request too soon after a write corrupts the preset (see
+   * pacerWrite.ts), and a retry comes free with the next port change.
+   */
+  function identifyWhenReachable() {
+    const { pacerPorts, deviceInfo, pull } = get();
+    if (!pacerPorts.inputId || !pacerPorts.outputId) return;
+    if (deviceInfo.kind === "querying" || isSendingToPacer(get()) || pull.status === "pulling") return;
+    void get().checkFirmware();
+  }
+
   return {
     library: { entries: library.list(), persistent: deps.persistent },
     activeConfigId: undefined,
@@ -293,18 +307,23 @@ export function createConfigurationsSlice(
       }
     },
 
-    selectPacerPorts: (ports) => set((s) => ({ pacerPorts: { ...s.pacerPorts, ...ports } })),
+    selectPacerPorts: (ports) => {
+      set((s) => ({ pacerPorts: { ...s.pacerPorts, ...ports } }));
+      identifyWhenReachable();
+    },
 
     refreshPacerPorts: () => {
       const { inputs, outputs } = get().midi;
       const { inputId, outputId } = get().pacerPorts;
       const detected = findPacerPorts(inputs, outputs);
-      set({
-        pacerPorts: {
-          inputId: inputs.some((p) => p.id === inputId) ? inputId : detected.inputId,
-          outputId: outputs.some((p) => p.id === outputId) ? outputId : detected.outputId,
-        },
-      });
+      const next = {
+        inputId: inputs.some((p) => p.id === inputId) ? inputId : detected.inputId,
+        outputId: outputs.some((p) => p.id === outputId) ? outputId : detected.outputId,
+      };
+      // A Pacer that has gone away takes its firmware reading with it.
+      const lost = !next.inputId || !next.outputId;
+      set({ pacerPorts: next, ...(lost ? { deviceInfo: { kind: "unknown" as const } } : {}) });
+      if (next.inputId !== inputId || next.outputId !== outputId) identifyWhenReachable();
     },
 
     restoreLastOpened: () => {

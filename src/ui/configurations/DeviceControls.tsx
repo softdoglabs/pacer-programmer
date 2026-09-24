@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { isSendingToPacer, type DeviceInfoView } from "../../store/configurationsSlice";
+import type { DeviceInfoView } from "../../store/configurationsSlice";
 import { usePacerStore } from "../../store/pacerStore";
+import { ConnectMidiButton } from "../MidiControls";
 import { PortSelect } from "../PortSelect";
 import { describeIdentity } from "./describe";
 
@@ -32,12 +33,14 @@ export function PullControls() {
   const selectPacerPorts = usePacerStore((s) => s.selectPacerPorts);
   const cancelPull = usePacerStore((s) => s.cancelPull);
   const deviceInfo = usePacerStore((s) => s.deviceInfo);
-  const checkFirmware = usePacerStore((s) => s.checkFirmware);
-  const sending = usePacerStore(isSendingToPacer);
 
   if (midi.status !== "connected") {
+    // The thing to do goes where the lack of it is noticed, rather than a sentence pointing elsewhere.
     return (
-      <p className="text-xs text-muted-foreground">Connect MIDI (top right) to pull a configuration from a Pacer.</p>
+      <div className="flex flex-wrap items-center gap-3">
+        <ConnectMidiButton />
+        <span className="text-xs text-muted-foreground">Needed to pull from a Pacer or write to it.</span>
+      </div>
     );
   }
   return (
@@ -62,22 +65,8 @@ export function PullControls() {
           <span className="text-xs text-warning">No Pacer found; connect it over USB or pick its ports.</span>
         )}
       </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          size="sm"
-          variant="ghost"
-          isDisabled={!pacerPorts.inputId || !pacerPorts.outputId || deviceInfo.kind === "querying" || sending}
-          title={
-            pacerPorts.inputId && pacerPorts.outputId
-              ? "Ask the Pacer to identify itself: manufacturer, model and version"
-              : "Choose the Pacer's MIDI ports first"
-          }
-          onPress={() => void checkFirmware()}
-        >
-          Check firmware
-        </Button>
-        <DeviceInfo info={deviceInfo} />
-      </div>
+      {/* The Pacer is asked who it is as soon as its ports are known, so there's nothing to press. */}
+      <DeviceInfo info={deviceInfo} />
       {!midi.sysexEnabled && (
         <p className="text-xs text-warning">Pulling needs the SysEx permission, which wasn't granted.</p>
       )}

@@ -138,6 +138,12 @@ describe("pulling from the Pacer", () => {
     expect(store().deviceInfo).toEqual({ kind: "noReply" });
   });
 
+  it("asks the Pacer who it is as soon as its ports are known, with nothing to press", async () => {
+    await connectFakePacer("silent", { answersIdentity: true });
+    await vi.runAllTimersAsync();
+    expect(store().deviceInfo).toMatchObject({ kind: "identified", identity: { version: [1, 1, 1, 2] } });
+  });
+
   it("checks firmware on demand", async () => {
     await connectFakePacer("silent", { answersIdentity: true });
     const checked = store().checkFirmware();
@@ -149,6 +155,9 @@ describe("pulling from the Pacer", () => {
 
   it("switching configurations never sends anything to the Pacer", async () => {
     const { output } = await connectFakePacer("silent");
+    // Connecting asks the Pacer who it is; that's the only thing allowed to have gone out here.
+    expect(output.sent).toEqual([[0xf0, 0x7e, 0x7f, 0x06, 0x01, 0xf7]]);
+    output.sent.length = 0;
     store().selectMidiOutput("pacer-out"); // even with the Pacer as the simulator's MIDI out
     store().importSyxFile("a.syx", FIXTURE);
     const id = store().library.entries[0]!.id;

@@ -89,17 +89,29 @@
 }
 
 /*
- * The focus ring, in one place: React Aria exposes focus as data-focus-visible / data-focused /
- * data-focus-within depending on the component, and repeating the same three utilities at each
- * of those selectors is how they drift apart.
+ * The focus ring, in one place.
+ *
+ * Only keyboard focus: React Aria's `data-focused` is set for *any* focus, pointer included, so
+ * matching it painted a ring on every mouse click that read as a stuck highlight.
+ * `data-focus-visible` is the keyboard-only one, and `:focus-visible` covers plain elements.
+ *
+ * An outline, not a box-shadow. A shadow shares the property with `shadow-sm` and friends, so the
+ * two overwrite each other, and it's painted with the element, so a later sibling's background
+ * covers it. Outlines are painted after everything else in the stacking context, which is what a
+ * focus ring needs to be legible against whatever it sits next to.
  */
 .ring-focus:focus-visible,
-.ring-focus[data-focus-visible],
-.ring-focus[data-focused],
-.ring-focus[data-focus-within] {
-  --tw-ring-color: var(--ring);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
-  outline: none;
+.ring-focus[data-focus-visible] {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+/*
+ * For controls packed tight inside a container — a segmented group's buttons sit in 3px of
+ * padding — an outward ring spills past the container onto its neighbours, so draw it inside.
+ */
+.ring-focus-inset:focus-visible,
+.ring-focus-inset[data-focus-visible] {
+  outline-offset: -2px;
 }
 
 /*

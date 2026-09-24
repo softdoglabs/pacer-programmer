@@ -37,7 +37,7 @@ export function ToggleGroup<T extends string>({
           <ToggleButton
             key={o.id}
             id={o.id}
-            className="h-8 cursor-pointer rounded-md px-3 text-sm font-medium text-muted-foreground outline-none ring-focus data-[hovered]:text-foreground data-[selected]:bg-background data-[selected]:text-foreground data-[selected]:shadow-sm"
+            className="h-8 cursor-pointer rounded-md px-3 text-sm font-medium text-muted-foreground outline-none ring-focus ring-focus-inset data-[hovered]:text-foreground data-[selected]:bg-background data-[selected]:text-foreground data-[selected]:shadow-sm"
           >
             {o.label}
           </ToggleButton>

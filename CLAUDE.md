@@ -427,9 +427,23 @@ no hover-only UI, for tablets.
 - **Shared style facts live in `index.css`, not repeated in components:**
   `--page-max` and `--faceplate-min` (the width the page stops growing at,
   and the one below which the faceplate scrolls), `--badge-overhang` with
-  `.badge-room`, and `.ring-focus`, which carries the focus ring for all
-  of React Aria's focus attributes (`data-focus-visible`, `data-focused`,
-  `data-focus-within`) so they can't drift apart.
+  `.badge-room`, and `.ring-focus`, the focus ring.
+  - **Keyboard focus only**: `:focus-visible` and React Aria's
+    `data-focus-visible`. Not `data-focused`, which RAC also sets for
+    pointer focus — matching it painted a ring on every mouse click, which
+    read as a stuck highlight.
+  - **An outline, not a box-shadow.** A shadow shares its property with
+    `shadow-sm` and friends, so the two overwrite each other, and it's
+    painted with the element, so a later sibling's background covers it.
+    Outlines are painted after everything else in the stacking context.
+  - `.ring-focus-inset` draws it inside the control, for ones packed tight
+    in a container: a segmented group's buttons sit in 3px of padding, so
+    an outward ring spills onto its neighbours.
+- **Tooltips go through `Titled`** (`components/ui/titled.tsx`). React
+  Aria filters unknown props out of the DOM, so `title` set on any of its
+  components never reaches the element; a `display: contents` wrapper
+  carries it without joining the layout, and still works on a disabled
+  control, whose `pointer-events: none` would swallow its own tooltip.
 - **`palette.ts`** is the only place semantic colors become CSS.
   **`icons.tsx`** holds our own SVG icon drawings.
 - **Hints** are drawn as teal italic annotations below each switch, visibly

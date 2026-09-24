@@ -642,8 +642,9 @@ no hover-only UI, for tablets.
     device's working copy rather than a front-panel preset. This retired a
     tab that showed the same 24 slots and nothing more; the faceplate's
     hold-[Preset]-bank-number path is still the hardware's own way.
-  - What's left below is the output log. The tab strip survives a
-    configuration switch; only the simulator views remount.
+  - What's left below is the output log, on its own: the preset chooser,
+    the device drawer and the preset panel took the other tabs, and a
+    strip with one tab in it is just a heading that can be clicked.
 - **Browser navigation** (`ui/appHistory.ts`), without a router — the app
   has no URLs to speak of, but it has places, and Back used to leave it
   entirely because nothing was ever pushed.

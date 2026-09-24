@@ -1,6 +1,5 @@
 import { Fragment } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Tab, TabList, TabPanel, Tabs } from "@/components/ui/tabs";
 import { usePacerStore } from "./store/pacerStore";
 import { Faceplate } from "./ui/panel/Faceplate";
 import { RearJacks } from "./ui/RearJacks";
@@ -13,20 +12,6 @@ import { MessageLog } from "./ui/MessageLog";
 import { PresetPanel } from "./ui/PresetPanel";
 import { MidiAccessControl } from "./ui/MidiControls";
 import { ModeBar } from "./ui/ModeBar";
-
-/** Panels that support the work but aren't it: kept together so the faceplate and editor own the width. */
-function SupportPanels() {
-  return (
-    <Tabs defaultSelectedKey="log" className="min-h-0">
-      <TabList aria-label="Panels">
-        <Tab id="log">Output log</Tab>
-      </TabList>
-      <TabPanel id="log" className="min-h-64">
-        <MessageLog />
-      </TabPanel>
-    </Tabs>
-  );
-}
 
 export function App() {
   useAppHistory();
@@ -86,7 +71,10 @@ export function App() {
               </>
             )}
           </Fragment>
-          <SupportPanels />
+          {/* What the simulator has sent. The last of the support panels, so it's no longer a tab. */}
+          <div className="min-h-64">
+            <MessageLog />
+          </div>
         </main>
       </div>
     </div>

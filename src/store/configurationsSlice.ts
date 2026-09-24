@@ -118,6 +118,19 @@ export function createConfigurationsSlice(
     rememberActive(id);
   }
 
+  /**
+   * Runs a library action, reporting a failure where the user is looking instead of throwing out
+   * of a press handler, where nothing catches it and nothing is said. Storage throws for real:
+   * the browser's quota is about 5 MB and a dump is a quarter of a megabyte.
+   */
+  function reportFailure(what: string, action: () => void) {
+    try {
+      action();
+    } catch (err) {
+      refreshEntries({ error: `Couldn't ${what}: ${errorMessage(err)}` });
+    }
+  }
+
   /** Saves bytes as a snapshot, then opens it. Reports failures in the library view instead of throwing. */
   function saveAndOpen(
     name: string,
@@ -261,15 +274,19 @@ export function createConfigurationsSlice(
     renameSavedConfig: (id, name) => {
       const trimmed = name.trim();
       if (!trimmed) return;
-      library.rename(id, trimmed);
-      refreshEntries();
-      if (get().activeConfigId === id) set({ configSource: trimmed });
+      reportFailure("rename that configuration", () => {
+        library.rename(id, trimmed);
+        refreshEntries();
+        if (get().activeConfigId === id) set({ configSource: trimmed });
+      });
     },
 
     deleteSavedConfig: (id) => {
-      library.remove(id);
-      refreshEntries();
-      if (get().activeConfigId === id) get().openFactoryDefaults();
+      reportFailure("delete that configuration", () => {
+        library.remove(id);
+        refreshEntries();
+        if (get().activeConfigId === id) get().openFactoryDefaults();
+      });
     },
 
     savedConfigBytes: (id) => library.loadBytes(id),

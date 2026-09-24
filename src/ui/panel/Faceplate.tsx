@@ -184,12 +184,22 @@ function DisplayNameField({ editable }: { editable: boolean }) {
     field.current?.select(); // typing replaces the old name, as renaming usually means a new one
   }, [renaming]);
   const label = `Preset ${presetIndexToLabel(presetIndex)} name`;
+  // Blurring is how the field also commits, so committing must not re-enter through it and apply
+  // the rename a second time — which would take two undos to put back.
+  const committing = useRef(false);
   const commit = () => {
-    if (draft === undefined) return;
-    const checked = checkPresetName(draft);
-    if (checked.error) return; // keep editing until it's something the Pacer can store
-    if (checked.name.trimEnd() !== name.trimEnd()) applyEdit((c) => renamePreset(c, presetIndex, draft));
-    setDraft(undefined);
+    if (draft === undefined || committing.current) return;
+    committing.current = true;
+    try {
+      const checked = checkPresetName(draft);
+      if (checked.error) return; // keep editing until it's something the Pacer can store
+      if (checked.name.trimEnd() !== name.trimEnd()) applyEdit((c) => renamePreset(c, presetIndex, draft));
+      setDraft(undefined);
+      // Closing the field hides it from assistive tech again, so focus must not stay on it.
+      field.current?.blur();
+    } finally {
+      committing.current = false;
+    }
   };
   const problem = check?.error ?? check?.warning;
 
@@ -213,7 +223,10 @@ function DisplayNameField({ editable }: { editable: boolean }) {
           onBlur={commit}
           onKeyDown={(e) => {
             if (e.key === "Enter") commit();
-            if (e.key === "Escape") setDraft(undefined);
+            if (e.key === "Escape") {
+              setDraft(undefined);
+              field.current?.blur();
+            }
           }}
         />
         {editable && !renaming && (

@@ -118,8 +118,21 @@ export class ConfigLibrary {
       const parsed: unknown = JSON.parse(this.storage.getItem(INDEX_KEY) ?? "[]");
       return Array.isArray(parsed) ? (parsed as LibraryEntry[]) : [];
     } catch {
-      return [];
+      return []; // reading: show nothing rather than break the app
     }
+  }
+
+  /**
+   * The index for a *write*, which can't treat an unreadable one as empty the way `list` does:
+   * every snapshot it names is still in storage, and overwriting it would strand all of them —
+   * unreachable and still consuming the quota. Absent is empty; unparseable is a failure.
+   */
+  private indexForWrite(): LibraryEntry[] {
+    const raw = this.storage.getItem(INDEX_KEY);
+    if (raw === null) return [];
+    const parsed: unknown = JSON.parse(raw); // throws on damage, which is the point
+    if (!Array.isArray(parsed)) throw new Error("The saved-configuration index is damaged");
+    return parsed as LibraryEntry[];
   }
 
   private writeIndex(entries: LibraryEntry[]) {
@@ -138,7 +151,7 @@ export class ConfigLibrary {
     };
     try {
       this.storage.setItem(dataKey(entry.id), toBase64(bytes));
-      this.writeIndex([entry, ...this.list()]);
+      this.writeIndex([entry, ...this.indexForWrite()]);
     } catch (err) {
       this.storage.removeItem(dataKey(entry.id));
       throw isQuotaError(err) ? new LibraryFullError() : err;

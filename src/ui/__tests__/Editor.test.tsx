@@ -69,6 +69,9 @@ describe("programming interface", () => {
     expect(store().board.config.presets[A1]!.name).toBe("LOOP ");
     expect(display()).toContain("LOOP");
     expect(screen.getByText("● unsaved")).toBeTruthy();
+    // Committing also blurs the field, and blurring is itself a commit: one edit, one undo.
+    expect(document.activeElement).not.toBe(field);
+    expect(store().editHistory.past).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
     expect(store().board.config.presets[A1]!.name).toBe("PRGM1");
     expect(screen.queryByText("● unsaved")).toBeNull();

@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { deviceModeMachine, type DeviceMode } from "../pacer/device";
 import { isStompswitch } from "../pacer/hardware";
 import { FIRST_USER_PRESET_INDEX, presetBank, presetIndexToLabel } from "../pacer/protocol/constants";
+import { EXPECTED_FULL_DUMP_MESSAGES } from "../pacer/protocol/requests";
 import { loadFactoryDefaults } from "../pacer/factoryDefaults";
 import type { PacerConfig } from "../pacer/protocol/types";
 import {
@@ -25,9 +26,14 @@ import {
   type MidiConnection,
   type MidiPortInfo,
 } from "../midi/webMidi";
-import { createConfigurationsSlice, isSendingToPacer, type ConfigurationsSlice } from "./configurationsSlice";
+import {
+  createConfigurationsSlice,
+  isSendingToPacer,
+  type ConfigurationsSlice,
+  type PullView,
+} from "./configurationsSlice";
 import { createEditingSlice, type EditHistory, type EditingSlice } from "./editingSlice";
-import { createSendSlice, type SendSlice } from "./sendSlice";
+import { createSendSlice, type SendSlice, type SendView } from "./sendSlice";
 
 export interface LogEntry {
   id: number;
@@ -135,6 +141,13 @@ function freshSession(config: PacerConfig, initialPresetIndex: number) {
     selectedControlId: undefined as number | undefined,
     // Part of the session, so loading a configuration closes the panel that loaded it.
     deviceDrawerOpen: false,
+    /*
+     * Device results belong to the session that asked for them: a "No reply from the Pacer"
+     * from before you opened this snapshot is stale, and nothing else ever clears it.
+     * `loadConfig` refuses while either is running, so neither is dropped mid-flight.
+     */
+    pull: { status: "idle", received: 0, expected: EXPECTED_FULL_DUMP_MESSAGES } as PullView,
+    send: { status: "idle" } as SendView,
   };
 }
 

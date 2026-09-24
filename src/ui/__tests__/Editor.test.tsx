@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "../../App";
 import { loadFactoryDefaults } from "../../pacer/factoryDefaults";
-import { ControlId, userPresetIndex } from "../../pacer/protocol/constants";
+import { ControlId, PresetMidiMessageType, userPresetIndex } from "../../pacer/protocol/constants";
 import { usePacerStore } from "../../store/pacerStore";
 
 const store = () => usePacerStore.getState();
@@ -152,6 +152,31 @@ describe("programming interface", () => {
     // It belongs to the preset, so drilling into a switch leaves it behind.
     tap(screen.getByRole("button", { name: /^Switch 1:/ }));
     expect(screen.queryByRole("region", { name: "Preset settings" })).toBeNull();
+  });
+
+  it("edits the messages a preset sends when it loads", () => {
+    render(<App />);
+    enterEditMode();
+    const panel = screen.getByRole("region", { name: "Preset settings" });
+    const settings = () => store().board.config.presets[A1]!.midiSettings;
+    // Factory A1 sends nothing on load, so the first message has to be added.
+    expect(within(panel).getByText(/sends nothing when it loads/)).toBeTruthy();
+
+    fireEvent.click(within(panel).getByRole("button", { name: /^\+ Add message/ }));
+    expect(settings()[1]).toMatchObject({ msgType: PresetMidiMessageType.ProgramAndBank });
+    const row = within(panel).getByRole("listitem", { name: "Message 1" });
+
+    expect(within(row).getAllByRole("textbox")).toHaveLength(3); // Program, Bank LSB, Bank MSB
+
+    // A preset CC is (controller, value) — two bytes, where a step's CC Toggle uses three.
+    fireEvent.click(within(row).getByRole("button", { name: /Message 1 type/ }));
+    fireEvent.click(screen.getByRole("option", { name: "CC" }));
+    expect(settings()[1]).toMatchObject({ msgType: PresetMidiMessageType.Cc });
+    expect(within(row).getAllByRole("textbox")).toHaveLength(2);
+
+    fireEvent.click(within(row).getByRole("button", { name: "Remove message 1" }));
+    expect(settings()[1]).toMatchObject({ msgType: PresetMidiMessageType.Off });
+    expect(within(panel).getByText(/sends nothing when it loads/)).toBeTruthy();
   });
 
   it("entering Edit mode starts at the faceplate, and closing a switch stays in Edit mode", async () => {

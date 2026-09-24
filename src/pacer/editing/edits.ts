@@ -1,5 +1,12 @@
-import { ExpressionMessageType, STEPS_PER_CONTROL, SwitchMessageType, type ControlMode } from "../protocol/constants";
-import type { LedConfig, PacerConfig, Preset, Step, SwitchControl } from "../protocol/types";
+import {
+  ExpressionMessageType,
+  PRESET_MIDI_SETTINGS,
+  PresetMidiMessageType,
+  STEPS_PER_CONTROL,
+  SwitchMessageType,
+  type ControlMode,
+} from "../protocol/constants";
+import type { LedConfig, PacerConfig, Preset, PresetMidiSetting, Step, SwitchControl } from "../protocol/types";
 
 /*
  * Pure edit operations on a PacerConfig, used by the programming interface. Each returns a new
@@ -187,4 +194,75 @@ export function updateStepLed(
     ...control,
     led: { ...control.led, [stepNumber]: { ...DEFAULT_LED, ...control.led[stepNumber], ...patch } },
   }));
+}
+
+/*
+ * A preset's own MIDI: up to 16 messages the hardware fires when the preset is recalled. There's
+ * no counterpart for leaving a preset — the User Guide documents this hook only, and acting on
+ * the way out is done with a step on the switch that leaves.
+ *
+ * Unlike a control's steps these have no `active` flag: an unused slot is one whose type is Off,
+ * which is how the dumps store them, so removing one sets the type rather than clearing a bit.
+ */
+const EMPTY_PRESET_MIDI: PresetMidiSetting = { channel: 0, msgType: PresetMidiMessageType.Off, data: [0, 0, 0] };
+
+export function isValidPresetMidiNumber(n: number): boolean {
+  return Number.isInteger(n) && n >= 1 && n <= PRESET_MIDI_SETTINGS;
+}
+
+export function updatePresetMidi(
+  config: PacerConfig,
+  presetIndex: number,
+  settingNumber: number,
+  patch: Partial<Omit<PresetMidiSetting, "settingNumber">>,
+): PacerConfig {
+  if (!isValidPresetMidiNumber(settingNumber)) throw new RangeError(`preset MIDI ${settingNumber} out of range`);
+  const clamped = { ...patch };
+  if (clamped.data) {
+    clamped.data = clamped.data.map((v) => Math.max(0, Math.min(127, Math.round(v)))) as PresetMidiSetting["data"];
+  }
+  if (clamped.channel !== undefined) clamped.channel = Math.max(0, Math.min(16, Math.round(clamped.channel)));
+  return withPreset(config, presetIndex, (preset) => ({
+    ...preset,
+    midiSettings: {
+      ...preset.midiSettings,
+      [settingNumber]: { ...(preset.midiSettings[settingNumber] ?? EMPTY_PRESET_MIDI), ...clamped },
+    },
+  }));
+}
+
+/** Sensible starting data for a preset message's type, as `setStepType` does for a step. */
+function defaultPresetMidiData(msgType: number, previous: PresetMidiSetting | undefined): PresetMidiSetting["data"] {
+  switch (msgType) {
+    case PresetMidiMessageType.Cc:
+      return [previous?.data[0] ?? 0, 127, 0];
+    case PresetMidiMessageType.Note:
+      return [60, 127, 0]; // middle C, full velocity
+    case PresetMidiMessageType.Relay:
+      return [0, 1, 0]; // relay 1, momentary
+    default:
+      return [0, 0, 0];
+  }
+}
+
+export function setPresetMidiType(
+  config: PacerConfig,
+  presetIndex: number,
+  settingNumber: number,
+  msgType: number,
+): PacerConfig {
+  const previous = config.presets[presetIndex]?.midiSettings[settingNumber];
+  return updatePresetMidi(config, presetIndex, settingNumber, {
+    msgType,
+    data: defaultPresetMidiData(msgType, previous),
+  });
+}
+
+/** The lowest slot not in use, or undefined when all 16 are. Used slots are the ones not set to Off. */
+export function nextFreePresetMidi(preset: Preset | undefined): number | undefined {
+  for (let n = 1; n <= PRESET_MIDI_SETTINGS; n++) {
+    const setting = preset?.midiSettings[n];
+    if (!setting || setting.msgType === PresetMidiMessageType.Off) return n;
+  }
+  return undefined;
 }

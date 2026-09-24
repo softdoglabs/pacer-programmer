@@ -246,6 +246,9 @@ export function presetIndexToPresetSelectTarget(idx: number): number {
 
 export const STEPS_PER_CONTROL = 6;
 
+/** Messages a preset can fire when it loads (User Guide, "MIDI Configuration"). */
+export const PRESET_MIDI_SETTINGS = 16;
+
 /**
  * `LedConfig.midiFeedback` values — the Control Edit -> LED menu's "MIDI" setting. On means the
  * light's two colors follow the step's assigned message *received* on USB MIDI instead of what

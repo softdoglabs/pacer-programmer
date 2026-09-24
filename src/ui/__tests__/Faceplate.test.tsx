@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PRESET_HOLD_MS } from "../../pacer/device";
 import { userPresetIndex } from "../../pacer/protocol/constants";
 import { loadFactoryDefaults } from "../../pacer/factoryDefaults";
+import { renamePreset } from "../../pacer/editing";
 import { usePacerStore } from "../../store/pacerStore";
 import { App } from "../../App";
 
@@ -219,6 +220,22 @@ describe("Faceplate (factory defaults)", () => {
 
     tap(switchButton("B")); // another bank: no loaded preset among 1-6
     expect(led(switchButton("3"))).toEqual(["dim", "true"]);
+  });
+
+  it("jumps to a preset from the chooser, and marks the ones edited since opening", () => {
+    render(<App />);
+    const openChooser = () => fireEvent.click(screen.getByRole("button", { name: /^Preset: / }));
+    openChooser();
+    fireEvent.click(screen.getByRole("option", { name: "B2 HELX2" }));
+    expect(usePacerStore.getState().board.activePresetIndex).toBe(userPresetIndex(1, 2));
+    expect(display()).toBe("B2");
+    expect(displayName()).toBe("HELX2");
+
+    // An edit to A1 marks A1 alone, wherever you happen to be standing.
+    act(() => usePacerStore.getState().applyEdit((c) => renamePreset(c, userPresetIndex(0, 1), "LOOP")));
+    openChooser();
+    expect(screen.getByRole("option", { name: /^A1 LOOP.*edited/ })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "B2 HELX2" })).toBeTruthy(); // unmarked
   });
 
   it("A enters the Track preset; a [Preset] tap returns to the remembered preset", () => {

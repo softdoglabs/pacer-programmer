@@ -12,21 +12,16 @@ import { MessageLog } from "./ui/MessageLog";
 import { PresetPanel } from "./ui/PresetPanel";
 import { MidiAccessControl } from "./ui/MidiControls";
 import { ModeBar } from "./ui/ModeBar";
-import { PresetList } from "./ui/PresetList";
 
 /** Panels that support the work but aren't it: kept together so the faceplate and editor own the width. */
-function SupportPanels({ sessionId }: { sessionId: number }) {
+function SupportPanels() {
   return (
     <Tabs defaultSelectedKey="log" className="min-h-0">
       <TabList aria-label="Panels">
         <Tab id="log">Output log</Tab>
-        <Tab id="presets">Presets</Tab>
       </TabList>
       <TabPanel id="log" className="min-h-64">
         <MessageLog />
-      </TabPanel>
-      <TabPanel id="presets">
-        <PresetList key={sessionId} />
       </TabPanel>
     </Tabs>
   );
@@ -88,7 +83,7 @@ export function App() {
             </>
           )}
         </Fragment>
-        <SupportPanels sessionId={sessionId} />
+        <SupportPanels />
       </main>
     </div>
   );

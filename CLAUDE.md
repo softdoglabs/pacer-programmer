@@ -613,9 +613,17 @@ no hover-only UI, for tablets.
   - Rear-jack controls sit with the faceplate (they're hardware, not a
     panel), rendered by the same `ui/panel/RearControl` the editor's live
     copy uses, so a control looks the same in both places.
-  - Everything that supports the work rather than being it — the output
-    log and the preset list — sits in one tab strip below. The tab you're
-    on survives a configuration switch; only the simulator views remount.
+  - **Choosing a preset is a popover in every mode's context bar**
+    (`ui/PresetChooser`), laid out as the hardware's own 4x6 banks. It
+    also marks which presets you've edited since opening the
+    configuration (a filled dot) and which the Pacer hasn't been given yet
+    (a hollow one) — both from `changedPresets` against `savedConfig` and
+    `sendBaseline`. The Current slot is listed separately, since it's the
+    device's working copy rather than a front-panel preset. This retired a
+    tab that showed the same 24 slots and nothing more; the faceplate's
+    hold-[Preset]-bank-number path is still the hardware's own way.
+  - What's left below is the output log. The tab strip survives a
+    configuration switch; only the simulator views remount.
   - **A preset's own settings sit with the faceplate in Program mode**
     (`ui/PresetPanel`): the MIDI it sends when it loads, read-only for
     now. It's preset-level config, like the name edited on the display, so
@@ -805,11 +813,11 @@ full-width, with no faceplate:
 **Build order**: the mode bar and context bars first (everything hangs off
 them), then the device drawer (which empties the tab strip), then the
 preset chooser, then the analysis views.
-- Done: the mode bar with per-mode context bars, the device drawer, and
-  the Inspector's split (its preset MIDI moved into Program mode, the rest
-  removed).
-- Next: the preset chooser, then the analysis views. The "N presets differ
-  from the device" chip is still unbuilt and still cheap.
+- Done: the mode bar with per-mode context bars, the device drawer, the
+  Inspector's split (its preset MIDI moved into Program mode, the rest
+  removed), and the preset chooser.
+- Next: the analysis views. The chooser's dots made the "N presets differ
+  from the device" chip redundant, so that idea is dropped.
 
 ## Open questions
 

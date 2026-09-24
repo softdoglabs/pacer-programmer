@@ -4,10 +4,13 @@ import { panelRow, type SwitchSpec } from "@/pacer/hardware";
 import { checkPresetName, renamePreset } from "@/pacer/editing";
 import { presetIndexToLabel } from "@/pacer/protocol/constants";
 import { computePanelState, switchHint, type DisplayState, type SwitchPanelState } from "@/pacer/panel";
+import { Button } from "react-aria-components";
+import { Titled } from "@/components/ui/titled";
 import { cn } from "@/lib/utils";
+import { PresetChooser } from "../PresetChooser";
 import { usePacerStore } from "@/store/pacerStore";
 import { useControlPress } from "../useControlPress";
-import { EditBadge } from "./EditBadge";
+import { EditBadge, PresetBadge } from "./EditBadge";
 import { FaceplateDefs } from "./FaceplateDefs";
 import { HOUSING_H, HOUSING_W, SwitchView } from "./SwitchView";
 
@@ -112,6 +115,7 @@ function Marking({ spec }: { spec: SwitchSpec }) {
 
 /** The LED display and the encoder below it, in the back row's last cell. */
 function Display({ display, nameLine }: { display: DisplayState; nameLine: React.ReactNode }) {
+  const presetIndex = usePacerStore((s) => s.board.activePresetIndex);
   return (
     <div className="flex w-full flex-col items-center gap-[1cqw]">
       <div
@@ -128,6 +132,23 @@ function Display({ display, nameLine }: { display: DisplayState; nameLine: React
         >
           {display.line2}
         </span>
+        {/*
+         * The preset number is where the preset lives on the hardware, so it's where you change it
+         * here: an overlay across the display's lower half, badged so it doesn't rely on anyone
+         * guessing. The name line above keeps its own half for renaming.
+         */}
+        <PresetChooser
+          trigger={
+            <Titled title="Choose a preset">
+              <Button
+                aria-label={`Preset ${presetIndexToLabel(presetIndex)} — choose another`}
+                className="ring-focus absolute inset-x-0 top-1/2 bottom-0 cursor-pointer rounded-[4%] outline-none"
+              >
+                <PresetBadge />
+              </Button>
+            </Titled>
+          }
+        />
       </div>
       <Encoder />
     </div>
@@ -175,37 +196,37 @@ function DisplayNameField({ editable }: { editable: boolean }) {
 
   return (
     <>
-      <input
-        ref={field}
-        value={draft ?? name}
-        // Outside editing it's the display: focusable and clickable, but not typed into.
-        readOnly={!renaming}
-        aria-label={renaming ? label : undefined}
-        aria-hidden={!renaming}
-        tabIndex={renaming ? 0 : -1}
-        aria-invalid={check?.error !== undefined}
-        aria-describedby={problem ? "preset-name-problem" : undefined}
-        className={cn("display-line", check?.error && "text-destructive")}
-        data-testid="display-line1"
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commit();
-          if (e.key === "Escape") setDraft(undefined);
-        }}
-      />
-      {/* The button gives the affordance and the accessible name; pressing it opens the field. */}
-      {editable && !renaming && (
-        <button
-          type="button"
-          className="ring-focus absolute inset-0 rounded-[4%] outline-none"
-          title={`Rename preset ${presetIndexToLabel(presetIndex)}`}
-          aria-label={`Rename preset ${presetIndexToLabel(presetIndex)} (currently ${name.trim() || "unnamed"})`}
-          onClick={() => setDraft(name.trimEnd())}
-        >
-          <EditBadge />
-        </button>
-      )}
+      {/* The name line and its own small pencil, which sits with the text it edits. */}
+      <div className="relative">
+        <input
+          ref={field}
+          value={draft ?? name}
+          // Outside editing it's the display: focusable and clickable, but not typed into.
+          readOnly={!renaming}
+          aria-label={renaming ? label : undefined}
+          aria-hidden={!renaming}
+          tabIndex={renaming ? 0 : -1}
+          aria-invalid={check?.error !== undefined}
+          aria-describedby={problem ? "preset-name-problem" : undefined}
+          className={cn("display-line", check?.error && "text-destructive")}
+          data-testid="display-line1"
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") setDraft(undefined);
+          }}
+        />
+        {editable && !renaming && (
+          <EditBadge
+            size="small"
+            // Clear of the name's last character: just outside the display, level with the line.
+            className="right-[calc(-1*var(--badge-overhang))] bottom-[-25%]"
+            onPress={() => setDraft(name.trimEnd())}
+            label={`Rename preset ${presetIndexToLabel(presetIndex)} (currently ${name.trim() || "unnamed"})`}
+          />
+        )}
+      </div>
       {problem && (
         <p
           id="preset-name-problem"

@@ -1,11 +1,11 @@
-import { Pencil, PencilOff } from "lucide-react";
+import { LayoutGrid, Pencil, PencilOff } from "lucide-react";
 import { Button } from "react-aria-components";
 import { cn } from "@/lib/utils";
 import { Titled } from "@/components/ui/titled";
 
 const BADGE_CLASS = cn(
   // Offset by --badge-overhang, the same value `.badge-room` reserves (see index.css).
-  "absolute right-[calc(-1*var(--badge-overhang))] bottom-[calc(-1*var(--badge-overhang))] z-10",
+  "absolute z-10 right-[calc(-1*var(--badge-overhang))] bottom-[calc(-1*var(--badge-overhang))]",
   "flex size-9 cursor-pointer items-center justify-center",
   "rounded-full bg-primary text-primary-foreground shadow-lg shadow-black/70 ring-2 ring-black/40",
   "outline-none data-[focus-visible]:ring-ring/50",
@@ -19,18 +19,31 @@ const BADGE_CLASS = cn(
  * click on the overhanging part still reaches that button. Where the control isn't a button (an
  * expression pedal, say), pass `onPress` and it becomes a button of its own.
  */
-export function EditBadge({ onPress, label, className }: { onPress?: () => void; label?: string; className?: string }) {
-  const icon = <Pencil className="size-5" strokeWidth={2.5} />;
+export function EditBadge({
+  onPress,
+  label,
+  className,
+  size = "default",
+}: {
+  onPress?: () => void;
+  label?: string;
+  className?: string;
+  /** "small" sits beside the thing it edits rather than on a control's corner. */
+  size?: "default" | "small";
+}) {
+  const small = size === "small";
+  const badgeClass = cn(BADGE_CLASS, small && "size-6 shadow-md ring-1", className);
+  const icon = <Pencil className={small ? "size-3.5" : "size-5"} strokeWidth={2.5} />;
   if (!onPress) {
     return (
-      <span aria-hidden title={label} className={cn(BADGE_CLASS, className)}>
+      <span aria-hidden title={label} className={badgeClass}>
         {icon}
       </span>
     );
   }
   return (
     <Titled title={label}>
-      <Button aria-label={label} className={cn(BADGE_CLASS, className)} onPress={onPress}>
+      <Button aria-label={label} className={badgeClass} onPress={onPress}>
         {icon}
       </Button>
     </Titled>
@@ -50,6 +63,19 @@ export function NoEditBadge({ title }: { title?: string }) {
       )}
     >
       <PencilOff className="size-5" strokeWidth={2.5} />
+    </span>
+  );
+}
+
+/**
+ * Marks the display as the way to change preset. It takes the display's bottom-right corner, the
+ * same place every other programmable control carries its badge, so the faceplate has one habit.
+ * A plain element: it sits inside the button that opens the chooser.
+ */
+export function PresetBadge() {
+  return (
+    <span aria-hidden className={BADGE_CLASS}>
+      <LayoutGrid className="size-5" strokeWidth={2.5} />
     </span>
   );
 }

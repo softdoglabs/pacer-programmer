@@ -224,7 +224,8 @@ describe("Faceplate (factory defaults)", () => {
 
   it("jumps to a preset from the chooser, and marks the ones edited since opening", () => {
     render(<App />);
-    const openChooser = () => fireEvent.click(screen.getByRole("button", { name: /^Preset: / }));
+    // The display's lower half is the preset control.
+    const openChooser = () => fireEvent.click(screen.getByRole("button", { name: /choose another/ }));
     openChooser();
     fireEvent.click(screen.getByRole("option", { name: "B2 HELX2" }));
     expect(usePacerStore.getState().board.activePresetIndex).toBe(userPresetIndex(1, 2));

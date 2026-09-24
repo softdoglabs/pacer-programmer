@@ -37,7 +37,7 @@ function presetName(name: string | undefined): string {
   return name?.trim() ? name : "—";
 }
 
-export function PresetChooser() {
+export function PresetChooser({ trigger }: { trigger: React.ReactNode }) {
   const index = usePacerStore((s) => s.board.activePresetIndex);
   const presets = usePacerStore((s) => s.board.config.presets);
   const jumpToPreset = usePacerStore((s) => s.jumpToPreset);
@@ -78,18 +78,7 @@ export function PresetChooser() {
 
   return (
     <DialogTrigger>
-      <Titled title="Choose which preset the simulator is on">
-        <Button
-          aria-label={`Preset: ${label}`}
-          className="flex h-9 cursor-pointer items-center gap-2 rounded-md border bg-card px-3 text-sm ring-focus outline-none data-[hovered]:bg-accent"
-        >
-          <span className="font-semibold tabular-nums">{presetIndexToLabel(index)}</span>
-          <span className="font-mono text-xs whitespace-pre text-muted-foreground">
-            {presetName(presets[index]?.name)}
-          </span>
-          <ChevronDown aria-hidden className="size-3.5 opacity-60" />
-        </Button>
-      </Titled>
+      {trigger}
       <Popover className="rounded-md border bg-popover p-2 shadow-lg">
         <Dialog aria-label={`Preset: ${label}`} className="outline-none">
           {({ close }) => (
@@ -125,5 +114,27 @@ export function PresetChooser() {
         </Dialog>
       </Popover>
     </DialogTrigger>
+  );
+}
+
+/** The chooser as a labelled button, for places with room for one (the switch editor's header). */
+export function PresetChooserButton() {
+  const index = usePacerStore((s) => s.board.activePresetIndex);
+  const name = usePacerStore((s) => s.board.config.presets[s.board.activePresetIndex]?.name);
+  return (
+    <PresetChooser
+      trigger={
+        <Titled title="Choose a preset">
+          <Button
+            aria-label={`Preset: ${presetIndexToLabel(index)} ${presetName(name)} — choose another`}
+            className="flex h-9 cursor-pointer items-center gap-2 rounded-md border bg-card px-3 text-sm ring-focus outline-none data-[hovered]:bg-accent"
+          >
+            <span className="font-semibold tabular-nums">{presetIndexToLabel(index)}</span>
+            <span className="font-mono text-xs whitespace-pre text-muted-foreground">{presetName(name)}</span>
+            <ChevronDown aria-hidden className="size-3.5 opacity-60" />
+          </Button>
+        </Titled>
+      }
+    />
   );
 }

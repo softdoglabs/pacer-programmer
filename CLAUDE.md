@@ -613,9 +613,21 @@ no hover-only UI, for tablets.
   - Rear-jack controls sit with the faceplate (they're hardware, not a
     panel), rendered by the same `ui/panel/RearControl` the editor's live
     copy uses, so a control looks the same in both places.
-  - **Choosing a preset is a popover in every mode's context bar**
-    (`ui/PresetChooser`), laid out as the hardware's own 4x6 banks. It
-    also marks which presets you've edited since opening the
+  - **Choosing a preset happens on the display** (`ui/PresetChooser`),
+    whose lower half — the preset number, which is where the preset lives
+    on the hardware — opens a popover laid out as the hardware's own 4x6
+    banks. Its badge takes the display's bottom-right corner, the same
+    place every other programmable control carries one, so the faceplate
+    keeps a single habit. The name line keeps the upper half for renaming,
+    which is why renaming lost its full-display overlay and became a badge
+    of its own — a smaller one, level with the name and just clear of its
+    last character, since it belongs to that line rather than to the
+    display as a whole.
+  - In the switch editor the faceplate isn't on screen, so its header
+    leads with the same chooser as a breadcrumb: `A1 PRGM1 › Stomp 1`.
+    That also fills a gap — the editor never used to say which preset the
+    switch it's editing belongs to.
+  - The popover marks which presets you've edited since opening the
     configuration (a filled dot) and which the Pacer hasn't been given yet
     (a hollow one) — both from `changedPresets` against `savedConfig` and
     `sendBaseline`. The Current slot is listed separately, since it's the

@@ -1,7 +1,7 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { panelRow, rearControls } from "../../pacer/hardware";
 import { controlLabel } from "../../pacer/simulator";
+import { PresetChooserButton } from "../PresetChooser";
 import { usePacerStore } from "../../store/pacerStore";
 import { goBack } from "../appHistory";
 import { EditorPanel } from "./EditorPanel";
@@ -55,8 +55,14 @@ export function SwitchEditorView({ controlId }: { controlId: number }) {
       className="rounded-lg border border-primary/50 bg-card p-4"
     >
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Badge>Edit mode</Badge>
-        <h2 className="text-base font-semibold">{controlLabel(controlId)}</h2>
+        {/* Which preset this switch belongs to — the faceplate's display isn't on screen here. */}
+        <PresetChooserButton />
+        <h2 className="text-base font-semibold">
+          <span aria-hidden className="mr-2 text-muted-foreground">
+            ›
+          </span>
+          {controlLabel(controlId)}
+        </h2>
         <div className="min-w-0 flex-1">
           <SwitchPicker selected={controlId} onSelect={selectControl} />
         </div>

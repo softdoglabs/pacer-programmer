@@ -603,7 +603,15 @@ no hover-only UI, for tablets.
   - The simulator views are keyed on `sessionId`, so React remounts them
     and no component state (a held press, the inspector tab) survives the
     switch.
-- **Layout** (`src/App.tsx`): the faceplate spans the full width as the
+- **Layout** (`src/App.tsx`): the header and context bar stay put and
+  everything below them scrolls in one container, `.app-scroll`, whose
+  scrollbar gutter is always reserved. The faceplate scales with the width
+  available to it, so a scrollbar appearing used to narrow it: switching
+  to Program mode, which adds a band and the preset panel, made the
+  hardware visibly resize. The gutter has to live on a scroll container of
+  its own — Chrome honours `scrollbar-gutter` there but not on the
+  viewport, where the page used to scroll.
+  - The faceplate spans the full width as the
   overview, since it's wide and is what you point at. Programming is a
   drill-in: in Edit mode, tapping a switch replaces the faceplate with that
   control's editor across the whole width (`ui/editor/SwitchEditorView`),

@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { Badge } from "@/components/ui/badge";
 import { usePacerStore } from "./store/pacerStore";
 import { Faceplate } from "./ui/panel/Faceplate";
+import { FaceplateDefs } from "./ui/panel/FaceplateDefs";
 import { RearJacks } from "./ui/RearJacks";
 import { useAppHistory } from "./ui/appHistory";
 import { ContextBar } from "./ui/ContextBar";
@@ -24,6 +25,9 @@ export function App() {
 
   return (
     <div className="flex h-dvh flex-col">
+      {/* The switch glow filters, at the app root: a switch is also drawn in the editor, where the
+          faceplate isn't on screen, and an element referencing a missing filter isn't drawn at all. */}
+      <FaceplateDefs />
       <header className="flex flex-wrap items-center gap-3 px-4 py-2.5">
         <h1 className="text-base font-semibold">Pacer Programmer</h1>
         <ConfigurationButton />

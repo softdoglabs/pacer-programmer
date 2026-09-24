@@ -11,7 +11,6 @@ import { PresetChooser } from "../PresetChooser";
 import { usePacerStore } from "@/store/pacerStore";
 import { useControlPress } from "../useControlPress";
 import { EditBadge, PresetBadge } from "./EditBadge";
-import { FaceplateDefs } from "./FaceplateDefs";
 import { HOUSING_H, HOUSING_W, SwitchView } from "./SwitchView";
 
 /*
@@ -286,7 +285,6 @@ export function Faceplate() {
       role="group"
       aria-label={editing ? "Pacer faceplate (editing: tap a switch to program it)" : "Pacer faceplate"}
     >
-      <FaceplateDefs />
       <div className="grid grid-cols-6 gap-x-[1.6cqw] gap-y-[2cqw] rounded-[1.6cqw] p-[1.2cqw] ring-[0.2cqw] ring-[#5fa99b]/80">
         {back.map(cell)}
         <Display display={panel.display} nameLine={<DisplayNameField editable={editing} />} />

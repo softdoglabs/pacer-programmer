@@ -17,7 +17,9 @@ interface MessageTypeInfo {
 const SWITCH_TYPES: Partial<Record<number, MessageTypeInfo>> = {
   [SwitchMessageType.Off]: { name: "Off", dataFields: [undefined, undefined, undefined] },
   [SwitchMessageType.CcTrigger]: { name: "CC Trigger", dataFields: ["CC#", "Press", "Release"] },
-  [SwitchMessageType.CcToggle]: { name: "CC Toggle", dataFields: ["CC#", "Off", "On"] },
+  // "Press 1"/"Press 2" are the User Guide's own names. They are not Off/On: the light follows
+  // whichever value data[1] holds (see the LED model), and every dump puts the pressed one there.
+  [SwitchMessageType.CcToggle]: { name: "CC Toggle", dataFields: ["CC#", "Press 1", "Press 2"] },
   [SwitchMessageType.CcStep]: { name: "CC Step", dataFields: ["CC#", "Start", "End"] },
   [SwitchMessageType.Note]: { name: "Note", dataFields: ["Note", "Velocity", undefined] },
   [SwitchMessageType.NoteToggle]: { name: "Note Toggle", dataFields: ["Note", "Velocity", undefined] },

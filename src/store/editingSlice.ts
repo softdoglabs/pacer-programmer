@@ -47,7 +47,12 @@ export function createEditingSlice(set: Set, get: Get): EditingSlice {
     uiMode: "simulate",
     // Entering Program mode starts from the faceplate: the control selected while simulating was
     // chosen by pressing it, which isn't a choice to program it.
-    setUiMode: (uiMode) => set(uiMode === "program" ? { uiMode, selectedControlId: undefined } : { uiMode }),
+    setUiMode: (uiMode) => {
+      // Selecting the mode already in force is not a change: re-focusing the mode bar (or a
+      // keyboard arrow landing back on it) must not close the control being programmed.
+      if (uiMode === get().uiMode) return;
+      set(uiMode === "program" ? { uiMode, selectedControlId: undefined } : { uiMode });
+    },
 
     applyEdit: (edit) => {
       const { board, editHistory } = get();

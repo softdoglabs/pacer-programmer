@@ -55,7 +55,7 @@ describe("Send to Pacer", () => {
     render(<SendToPacer />);
     tap(screen.getByRole("button", { name: "Send to Pacer…" }));
     expect(screen.getByRole("radio", { name: "This preset (A1)" }).getAttribute("aria-checked")).toBe("true");
-    tap(screen.getByRole("radio", { name: "All 24" }));
+    tap(screen.getByRole("radio", { name: "All (24)" }));
     expect(screen.getByRole("button", { name: "Overwrite 24 presets on the Pacer" })).toBeTruthy();
   });
 });

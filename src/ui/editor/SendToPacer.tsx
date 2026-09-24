@@ -111,7 +111,10 @@ function SendForm({ onClose }: { onClose: () => void }) {
   const busy = isBusy(send);
 
   const current = isUserPresetIndex(activeIndex) ? [activeIndex] : [];
-  const presets = scope === "changed" ? changed : scope === "current" ? current : ALL_USER_PRESETS;
+  // Only slots this configuration actually holds: the encoder skips the rest, so listing them
+  // would promise to overwrite presets that were never going to be sent.
+  const all = ALL_USER_PRESETS.filter((i) => config.presets[i] !== undefined);
+  const presets = scope === "changed" ? changed : scope === "current" ? current : all;
 
   return (
     <>
@@ -120,7 +123,7 @@ function SendForm({ onClose }: { onClose: () => void }) {
         options={[
           { id: "changed", label: `Changed (${changed.length})` },
           { id: "current", label: `This preset (${presetIndexToLabel(activeIndex)})` },
-          { id: "all", label: "All 24" },
+          { id: "all", label: `All (${all.length})` },
         ]}
         value={scope}
         onChange={setScope}

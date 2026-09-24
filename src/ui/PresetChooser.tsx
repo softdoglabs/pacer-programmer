@@ -51,6 +51,10 @@ export function PresetChooser({ trigger }: { trigger: React.ReactNode }) {
   const unsent = useMemo(() => new Set(changedPresets(sendBaseline, config)), [sendBaseline, config]);
 
   const label = `${presetIndexToLabel(index)} · ${presetName(presets[index]?.name)}`;
+  const pick = (slot: number, close: () => void) => {
+    jumpToPreset(slot);
+    close();
+  };
 
   const cell = (slot: number) => {
     const marks = [edited.has(slot) && "edited", unsent.has(slot) && "not sent to the Pacer"].filter(Boolean);
@@ -90,9 +94,15 @@ export function PresetChooser({ trigger }: { trigger: React.ReactNode }) {
               selectedKeys={[String(index)]}
               onSelectionChange={(keys) => {
                 const [key] = keys as Set<string>;
-                if (key !== undefined) jumpToPreset(Number(key));
-                close();
+                if (key !== undefined) pick(Number(key), close);
               }}
+              /*
+               * Picking the preset already loaded is not a selection change, so nothing would
+               * report it — but it still means something, because a recall re-fires the preset's
+               * load-time MIDI. `onAction` covers that one case; a different preset is a real
+               * selection change and is handled above, so neither fires twice.
+               */
+              onAction={(key) => Number(key) === index && pick(Number(key), close)}
               className="grid grid-cols-[repeat(4,minmax(0,1fr))] gap-x-3 outline-none"
             >
               {Array.from({ length: BANK_COUNT }, (_, bank) => (

@@ -1,4 +1,4 @@
-import { pullFullDump } from "../midi/pacerDump";
+import { DumpError, pullFullDump } from "../midi/pacerDump";
 import { queryLoadedPreset } from "../midi/pacerState";
 import { SendError, sendPaced } from "../midi/pacerWrite";
 import type { MidiConnection } from "../midi/webMidi";
@@ -172,6 +172,14 @@ export function createSendSlice(
                 },
         });
       } catch (err) {
+        /*
+         * Cancelling the read-back isn't a failed send. By then the writes have landed and the
+         * baseline has moved, so reporting an error invites sending again what already arrived.
+         */
+        if (err instanceof DumpError && err.message === "Cancelled") {
+          set({ send: { status: "done", presets, verified: false, current } });
+          return;
+        }
         const partial = err instanceof SendError && err.sent > 0 && err.sent < messages.length;
         set({
           send: {

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { UiMode } from "../store/editingSlice";
 import { usePacerStore } from "../store/pacerStore";
 
@@ -68,14 +68,35 @@ export function useAppHistory() {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
+  /*
+   * The first render replaces rather than pushes, so arriving costs no entry. It has to be the
+   * *render* that decides, not whether an entry exists: `history.state` survives a reload while
+   * the store doesn't, so on reload the two disagree and pushing would add a phantom entry that
+   * Back walks into — a control opened over whatever configuration is now loaded.
+   */
+  const first = useRef(true);
   useEffect(() => {
     const here: Place = { mode, controlId, drawer };
     const state = entry();
     // Already where the current entry says: this render came *from* a Back, so pushing would
     // bury the entry we just returned to.
-    if (samePlace(state, here)) return;
-    if (!state)
-      window.history.replaceState({ ...here, n: 0 }, ""); // first load adds no entry
-    else window.history.pushState({ ...here, n: state.n + 1 }, "");
+    if (samePlace(state, here) && !first.current) return;
+    /*
+     * Swapping one open control for another (the editor's switch picker) is a lateral move, so it
+     * replaces the entry. Pushing would stack one per control, and "Back to faceplate" — which is
+     * a step back — would walk through them instead of leaving.
+     */
+    const lateral =
+      state !== null &&
+      state.mode === here.mode &&
+      state.drawer === here.drawer &&
+      state.controlId !== undefined &&
+      here.controlId !== undefined;
+    if (first.current || lateral) {
+      first.current = false;
+      window.history.replaceState({ ...here, n: state?.n ?? 0 }, "");
+    } else {
+      window.history.pushState({ ...here, n: (state?.n ?? 0) + 1 }, "");
+    }
   }, [mode, controlId, drawer]);
 }

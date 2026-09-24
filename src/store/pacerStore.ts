@@ -25,7 +25,7 @@ import {
   type MidiConnection,
   type MidiPortInfo,
 } from "../midi/webMidi";
-import { createConfigurationsSlice, type ConfigurationsSlice } from "./configurationsSlice";
+import { createConfigurationsSlice, isSendingToPacer, type ConfigurationsSlice } from "./configurationsSlice";
 import { createEditingSlice, type EditHistory, type EditingSlice } from "./editingSlice";
 import { createSendSlice, type SendSlice } from "./sendSlice";
 
@@ -209,6 +209,15 @@ export const usePacerStore = create<PacerStore>((set, get) => {
   function sendMidi(messages: OutgoingMidiMessage[]): string | undefined {
     const { outputId, outputs } = get().midi;
     if (!midiConnection || outputId === undefined || messages.length === 0) return undefined;
+    /*
+     * The simulator's output is whatever port the user picked, and that can be the Pacer's own.
+     * While a send is running, anything arriving there restarts the quiet window the firmware
+     * uses to commit writes — the condition that corrupts a preset (see midi/pacerWrite.ts) — so
+     * presses are dropped rather than queued: they're a performance, and a late one is a lie.
+     */
+    if (outputId === get().pacerPorts.outputId && isSendingToPacer(get())) {
+      return "(not sent) the Pacer is being written to; its port is quiet until that finishes";
+    }
     const failures = messages
       .map((m) => midiConnection!.send(outputId, midiMessageToBytes(m)))
       .filter((r): r is { ok: false; reason: string } => !r.ok);

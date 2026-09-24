@@ -8,6 +8,7 @@ import { indicatorForLedNum, type SwitchSpec } from "../../pacer/hardware";
 import {
   ControlMode,
   ExpressionMessageType,
+  MIDI_CHANNEL_CHOICES,
   LED_MIDI_FEEDBACK_OFF,
   LED_MIDI_FEEDBACK_ON,
   PresetSelectTarget,
@@ -71,11 +72,6 @@ const NO_CHANNEL: readonly number[] = [
   SwitchMessageType.StepIncDec,
   SwitchMessageType.Mmc,
   SwitchMessageType.Off,
-];
-
-const CHANNEL_OPTIONS = [
-  { id: "0", label: "Global" },
-  ...Array.from({ length: 16 }, (_, i) => ({ id: String(i + 1), label: String(i + 1) })),
 ];
 
 const PRESET_TARGET_OPTIONS: SelectGroup[] = [
@@ -300,7 +296,7 @@ export function StepCard({
           <Select
             label="Channel"
             title="MIDI channel this step transmits on. Global follows the configuration's own channel."
-            options={CHANNEL_OPTIONS}
+            options={MIDI_CHANNEL_CHOICES}
             value={String(step.channel)}
             onChange={(v) => v && applyEdit((c) => updateStep(c, presetIndex, controlId, n, { channel: Number(v) }))}
           />

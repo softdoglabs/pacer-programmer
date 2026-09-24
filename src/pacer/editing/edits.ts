@@ -239,7 +239,7 @@ function defaultPresetMidiData(msgType: number, previous: PresetMidiSetting | un
     case PresetMidiMessageType.Note:
       return [60, 127, 0]; // middle C, full velocity
     case PresetMidiMessageType.Relay:
-      return [0, 1, 0]; // relay 1, momentary
+      return [0, 0, 0]; // relay 1 (the byte is 0-based, as `Relay R${index + 1}` elsewhere)
     default:
       return [0, 0, 0];
   }

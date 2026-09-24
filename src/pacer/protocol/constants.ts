@@ -246,6 +246,12 @@ export function presetIndexToPresetSelectTarget(idx: number): number {
 
 export const STEPS_PER_CONTROL = 6;
 
+/** MIDI channels a step or preset message can be set to: 0 follows the configuration's own. */
+export const MIDI_CHANNEL_CHOICES = [
+  { id: "0", label: "Global" },
+  ...Array.from({ length: 16 }, (_, i) => ({ id: String(i + 1), label: String(i + 1) })),
+];
+
 /** Messages a preset can fire when it loads (User Guide, "MIDI Configuration"). */
 export const PRESET_MIDI_SETTINGS = 16;
 

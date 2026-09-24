@@ -1,9 +1,29 @@
 import { Button } from "@/components/ui/button";
-import type { DeviceInfoView } from "../../store/configurationsSlice";
+import { isSendingToPacer, type DeviceInfoView } from "../../store/configurationsSlice";
 import { usePacerStore } from "../../store/pacerStore";
 import { ConnectMidiButton } from "../MidiControls";
 import { PortSelect } from "../PortSelect";
 import { describeIdentity } from "./describe";
+
+/**
+ * The inquiry runs by itself when the ports appear, so there's no button for the happy path — but
+ * a device that didn't answer would otherwise stay unidentified until it's unplugged and back in.
+ */
+function RetryIdentity() {
+  const checkFirmware = usePacerStore((s) => s.checkFirmware);
+  const busy = usePacerStore((s) => isSendingToPacer(s) || s.pull.status === "pulling");
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      isDisabled={busy}
+      title={busy ? "Waiting for the Pacer to finish" : "Ask the Pacer to identify itself again"}
+      onPress={() => void checkFirmware()}
+    >
+      Ask again
+    </Button>
+  );
+}
 
 export function DeviceInfo({ info }: { info: DeviceInfoView }) {
   switch (info.kind) {
@@ -15,12 +35,18 @@ export function DeviceInfo({ info }: { info: DeviceInfoView }) {
       return <span className="text-xs">{describeIdentity(info.identity)}</span>;
     case "noReply":
       return (
-        <span className="text-xs text-muted-foreground">
+        <span className="flex items-center gap-2 text-xs text-muted-foreground">
           The Pacer didn't answer a MIDI Device Inquiry, so its firmware version isn't available.
+          <RetryIdentity />
         </span>
       );
     case "error":
-      return <span className="text-xs text-destructive">{info.message}</span>;
+      return (
+        <span className="flex items-center gap-2 text-xs text-destructive">
+          {info.message}
+          <RetryIdentity />
+        </span>
+      );
   }
 }
 

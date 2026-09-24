@@ -382,8 +382,10 @@ every control on every real factory preset).
     - Unknown: Preset Select whose target is the current preset, and
       explicit colors on a Track/Transport selector.
   - `userPresetLights` applies that model to each showing step, lighting
-    the indicator its LED num selects. Fixed-ink legends keep their ink and
-    take only the brightness.
+    the indicator its LED num selects. Every light is RGB, legends
+    included, so the step's own color is what shows; a legend's printed ink
+    only decides how it looks when the *firmware* lights it for an assigned
+    function (see `legendLights`).
     - Color "Default" (0x7F, used on almost every factory LED) is the step
       message type's default hue: bright A when on, dimmed b when off.
       Documented in User Guide p. 12, Chart 2 and implemented in
@@ -726,6 +728,8 @@ no hover-only UI, for tablets.
     ports are known — on connect, on a re-plug, or when they're chosen by
     hand. It's a read-only inquiry with nothing to confirm, so there's no
     button: the drawer simply shows what the device said.
+  - A device that doesn't answer keeps an "Ask again" button beside the
+    message, since the automatic inquiry only runs when the ports change.
   - It's skipped while a send or pull is running, because nothing may
     reach the Pacer while writes are settling. The reverse doesn't hold:
     an inquiry in flight is only listening, so it no longer blocks a send

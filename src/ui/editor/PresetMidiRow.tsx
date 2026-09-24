@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { NumberField } from "@/components/ui/number-field";
 import { Select, type SelectGroup } from "@/components/ui/select";
 import { setPresetMidiType, updatePresetMidi } from "../../pacer/editing";
-import { PresetMidiMessageType } from "../../pacer/protocol/constants";
+import { MIDI_CHANNEL_CHOICES, PresetMidiMessageType } from "../../pacer/protocol/constants";
 import type { PresetMidiSetting } from "../../pacer/protocol/types";
 import { presetMidiTypeInfo, presetMidiTypeName } from "../../pacer/simulator";
 import { usePacerStore } from "../../store/pacerStore";
@@ -32,11 +32,6 @@ const TYPE_OPTIONS: SelectGroup[] = TYPE_GROUPS.map((g) => ({
   title: g.title,
   options: g.types.map((t) => ({ id: String(t), label: presetMidiTypeName(t) })),
 }));
-
-const CHANNEL_OPTIONS = [
-  { id: "0", label: "Global" },
-  ...Array.from({ length: 16 }, (_, i) => ({ id: String(i + 1), label: String(i + 1) })),
-];
 
 export function PresetMidiRow({
   presetIndex,
@@ -70,7 +65,7 @@ export function PresetMidiRow({
         <Select
           label="Channel"
           title="MIDI channel this message is sent on. Global follows the configuration's own channel."
-          options={CHANNEL_OPTIONS}
+          options={MIDI_CHANNEL_CHOICES}
           value={String(setting.channel)}
           onChange={(v) => v && applyEdit((c) => updatePresetMidi(c, presetIndex, n, { channel: Number(v) }))}
         />

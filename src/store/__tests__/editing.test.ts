@@ -14,7 +14,7 @@ const nameOf = () => store().board.config.presets[A1]?.name;
 beforeEach(() => {
   for (const e of store().library.entries) store().deleteSavedConfig(e.id);
   store().openFactoryDefaults();
-  store().setUiMode("play");
+  store().setUiMode("simulate");
 });
 
 describe("editing", () => {

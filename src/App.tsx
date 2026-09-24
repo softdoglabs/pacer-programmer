@@ -1,16 +1,16 @@
 import { Fragment } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Tab, TabList, TabPanel, Tabs } from "@/components/ui/tabs";
 import { usePacerStore } from "./store/pacerStore";
 import { ConfigurationsPanel } from "./ui/ConfigurationsPanel";
 import { Faceplate } from "./ui/panel/Faceplate";
 import { RearJacks } from "./ui/RearJacks";
-import { EditToolbar } from "./ui/editor/EditToolbar";
+import { ContextBar } from "./ui/ContextBar";
 import { SwitchEditorView } from "./ui/editor/SwitchEditorView";
 import { Inspector } from "./ui/Inspector";
 import { MessageLog } from "./ui/MessageLog";
-import { MidiOutputControl } from "./ui/MidiOutputControl";
+import { MidiAccessControl } from "./ui/MidiControls";
+import { ModeBar } from "./ui/ModeBar";
 import { PresetList } from "./ui/PresetList";
 
 /** Panels that support the work but aren't it: kept together so the faceplate and editor own the width. */
@@ -44,23 +44,24 @@ export function App() {
   const sessionId = usePacerStore((s) => s.sessionId);
   const uiMode = usePacerStore((s) => s.uiMode);
   const selectedControlId = usePacerStore((s) => s.selectedControlId);
-  const resetMidiState = usePacerStore((s) => s.resetMidiState);
   // Programming a control takes over the faceplate's space: the faceplate is the overview, and a
   // switch's settings need the width more than the picture does.
-  const programming = uiMode === "edit" && selectedControlId !== undefined;
+  const programming = uiMode === "program" && selectedControlId !== undefined;
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="flex flex-wrap items-center gap-3 border-b px-4 py-2.5">
+      <header className="flex flex-wrap items-center gap-3 px-4 py-2.5">
         <h1 className="text-base font-semibold">Pacer Programmer</h1>
         <Badge variant="outline" className="font-mono">
           {configSource}
         </Badge>
+        <ModeBar />
+        {/* MIDI access is one grant for the whole app, so it's asked for here, not per mode. */}
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <EditToolbar />
-          <MidiOutputControl />
+          <MidiAccessControl />
         </div>
       </header>
+      <ContextBar />
 
       <main className="mx-auto flex w-full max-w-[var(--page-max)] flex-1 flex-col gap-4 p-4">
         {/* Simulator views are keyed on the session, so a configuration switch remounts them. */}
@@ -79,25 +80,14 @@ export function App() {
                   <RearJacks />
                 </div>
               </div>
-              {uiMode === "edit" && (
+              {uiMode === "program" && (
                 <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/50 bg-primary/5 p-3">
-                  <Badge>Edit mode</Badge>
+                  <Badge>Program mode</Badge>
                   <span className="text-sm text-muted-foreground">
                     Tap a ✎ control to program it, or the display to rename the preset.
                   </span>
                 </div>
               )}
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  title="Forget the programs, CC values and notes the simulator has sent, so switches light as they would from a fresh start"
-                  onPress={resetMidiState}
-                >
-                  Reset MIDI state
-                </Button>
-                <span>Switches light from the values the Pacer last sent; this forgets them.</span>
-              </div>
             </>
           )}
         </Fragment>

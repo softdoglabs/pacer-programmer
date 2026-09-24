@@ -4,8 +4,7 @@ import { Input, Label, TextField } from "react-aria-components";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ModalDialog } from "@/components/ui/dialog";
-import { ToggleGroup } from "@/components/ui/toggle-group";
-import { hasUnsavedEdits, type UiMode } from "../../store/editingSlice";
+import { hasUnsavedEdits } from "../../store/editingSlice";
 import { usePacerStore } from "../../store/pacerStore";
 import { SendToPacer } from "./SendToPacer";
 
@@ -66,10 +65,8 @@ function SaveDialog({ isOpen, onOpenChange }: { isOpen: boolean; onOpenChange: (
   );
 }
 
-/** Header controls for the programming interface: Play/Edit, undo/redo, save, and send to the Pacer. */
-export function EditToolbar() {
-  const uiMode = usePacerStore((s) => s.uiMode);
-  const setUiMode = usePacerStore((s) => s.setUiMode);
+/** Program mode's context bar: undo/redo, save, and send to the Pacer. */
+export function ProgramBar() {
   const undo = usePacerStore((s) => s.undo);
   const redo = usePacerStore((s) => s.redo);
   const canUndo = usePacerStore((s) => s.editHistory.past.length > 0);
@@ -91,15 +88,6 @@ export function EditToolbar() {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <ToggleGroup<UiMode>
-        label="Mode"
-        options={[
-          { id: "play", label: "Play", title: "Pressing a control simulates it and sends its MIDI" },
-          { id: "edit", label: "Edit", title: "Pressing a control opens it for programming instead of firing it" },
-        ]}
-        value={uiMode}
-        onChange={setUiMode}
-      />
       {/* Icon-only, so each carries a tooltip naming it and its shortcut: bare arrow glyphs read as nothing. */}
       <Button
         size="icon"

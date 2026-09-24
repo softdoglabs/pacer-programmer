@@ -45,7 +45,7 @@ function Jack({
 /** An NP-1 footswitch: a plain press. */
 function FootswitchControl({ controlId, live }: { controlId: number; live: boolean }) {
   const selected = usePacerStore((s) => s.selectedControlId === controlId);
-  const editable = usePacerStore((s) => s.uiMode === "edit") && !live;
+  const editable = usePacerStore((s) => s.uiMode === "program") && !live;
   const { pressProps } = useControlPress(controlId, { live });
   const pressed = usePacerStore((s) => getControlDisplayState(s.board, controlId).pressed);
   const control = usePacerStore((s) => s.board.config.presets[s.board.activePresetIndex]?.controls[controlId]);
@@ -81,7 +81,7 @@ function FootswitchControl({ controlId, live }: { controlId: number; live: boole
  */
 function PedalControl({ controlId, live }: { controlId: number; live: boolean }) {
   const selected = usePacerStore((s) => s.selectedControlId === controlId);
-  const editing = usePacerStore((s) => s.uiMode === "edit");
+  const editing = usePacerStore((s) => s.uiMode === "program");
   const editable = editing && !live;
   const movePedal = usePacerStore((s) => s.movePedal);
   const selectControl = usePacerStore((s) => s.selectControl);

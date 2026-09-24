@@ -14,7 +14,7 @@ export function useControlPress(controlId: number, { live = false }: { live?: bo
   const press = usePacerStore((s) => s.press);
   const release = usePacerStore((s) => s.release);
   const selectControl = usePacerStore((s) => s.selectControl);
-  const editing = usePacerStore((s) => s.uiMode === "edit") && !live;
+  const editing = usePacerStore((s) => s.uiMode === "program") && !live;
   return usePress({
     onPressStart: () => {
       if (!live) selectControl(controlId);

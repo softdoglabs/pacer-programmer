@@ -108,9 +108,9 @@ describe("Faceplate (factory defaults)", () => {
     expect(display()).toBe("A1");
     expect(screen.getByRole("group", { name: /Pacer faceplate/ }).textContent).toContain("PRGM1");
 
-    act(() => usePacerStore.getState().setUiMode("edit"));
+    act(() => usePacerStore.getState().setUiMode("program"));
     expect(displayName().trim()).toBe("PRGM1");
-    act(() => usePacerStore.getState().setUiMode("play"));
+    act(() => usePacerStore.getState().setUiMode("simulate"));
     expect(displayName().trim()).toBe("PRGM1");
   });
 

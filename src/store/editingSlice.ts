@@ -8,7 +8,11 @@ import type { PacerStore } from "./pacerStore";
  * `freshSession`, so opening another configuration resets them along with everything else.
  */
 
-export type UiMode = "play" | "edit";
+/**
+ * Which top-level mode the app is in. Simulate and Program share the faceplate; the analysis
+ * views planned in CLAUDE.md ("Planned UI reorganization") join this union as they're built.
+ */
+export type UiMode = "simulate" | "program";
 
 export interface EditHistory {
   past: PacerConfig[];
@@ -16,7 +20,7 @@ export interface EditHistory {
 }
 
 export interface EditingSlice {
-  /** Play: pressing a switch simulates it. Edit: pressing a switch selects it for editing, and nothing fires. */
+  /** Simulate: pressing a switch runs it. Program: pressing a switch selects it for editing, and nothing fires. */
   uiMode: UiMode;
   setUiMode: (mode: UiMode) => void;
   /** Applies one edit to the working config (undoable). A no-op edit (same config back) records nothing. */
@@ -40,10 +44,10 @@ export function createEditingSlice(set: Set, get: Get): EditingSlice {
     set((s) => ({ board: { ...s.board, config }, editHistory: history }));
 
   return {
-    uiMode: "play",
-    // Entering Edit mode starts from the faceplate: the control selected in Play mode was chosen
-    // by pressing it, which isn't a choice to program it.
-    setUiMode: (uiMode) => set(uiMode === "edit" ? { uiMode, selectedControlId: undefined } : { uiMode }),
+    uiMode: "simulate",
+    // Entering Program mode starts from the faceplate: the control selected while simulating was
+    // chosen by pressing it, which isn't a choice to program it.
+    setUiMode: (uiMode) => set(uiMode === "program" ? { uiMode, selectedControlId: undefined } : { uiMode }),
 
     applyEdit: (edit) => {
       const { board, editHistory } = get();

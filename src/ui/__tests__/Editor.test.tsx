@@ -27,7 +27,7 @@ beforeEach(() => {
   act(() => {
     for (const e of store().library.entries) store().deleteSavedConfig(e.id);
     store().loadConfig(loadFactoryDefaults(), "Factory defaults");
-    store().setUiMode("play");
+    store().setUiMode("simulate");
   });
 });
 afterEach(cleanup);
@@ -38,8 +38,8 @@ function openTab(name: string) {
 }
 
 function enterEditMode() {
-  fireEvent.click(screen.getByRole("radio", { name: "Edit" }));
-  expect(store().uiMode).toBe("edit");
+  fireEvent.click(screen.getByRole("radio", { name: "Program" }));
+  expect(store().uiMode).toBe("program");
   expect(store().selectedControlId).toBeUndefined(); // starts at the faceplate
 }
 
@@ -151,7 +151,7 @@ describe("programming interface", () => {
     tap(screen.getByRole("button", { name: /^Switch 1:/ }));
     expect(screen.getByRole("region", { name: "Step 1" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Back to faceplate/ }));
-    expect(store().uiMode).toBe("edit");
+    expect(store().uiMode).toBe("program");
     expect(store().selectedControlId).toBeUndefined();
     expect(screen.getByRole("button", { name: /^Switch 1:/ })).toBeTruthy();
   });

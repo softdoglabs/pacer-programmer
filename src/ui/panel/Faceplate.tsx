@@ -49,7 +49,7 @@ interface PanelSwitchProps {
 function StompPanelSwitch({ spec, controlId, state, hint }: PanelSwitchProps & { controlId: number }) {
   const { pressProps } = useControlPress(controlId);
   const selected = usePacerStore((s) => s.selectedControlId === controlId);
-  const editing = usePacerStore((s) => s.uiMode === "edit");
+  const editing = usePacerStore((s) => s.uiMode === "program");
   return (
     <SwitchView
       spec={spec}
@@ -71,7 +71,7 @@ function PresetPanelSwitch({ spec, state, hint }: PanelSwitchProps) {
   const onPressStart = usePacerStore((s) => s.presetButtonDown);
   const onPressEnd = usePacerStore((s) => s.presetButtonUp);
   // [Preset] isn't programmable, so in Edit mode it does nothing.
-  const editing = usePacerStore((s) => s.uiMode === "edit");
+  const editing = usePacerStore((s) => s.uiMode === "program");
   const { pressProps } = usePress({ onPressStart, onPressEnd, isDisabled: editing });
   return (
     <SwitchView
@@ -223,7 +223,7 @@ function DisplayNameField({ editable }: { editable: boolean }) {
 }
 
 export function Faceplate() {
-  const editing = usePacerStore((s) => s.uiMode === "edit");
+  const editing = usePacerStore((s) => s.uiMode === "program");
   const board = usePacerStore((s) => s.board);
   const deviceMode = usePacerStore((s) => s.deviceMode);
   const panel = useMemo(() => computePanelState(board, deviceMode), [board, deviceMode]);

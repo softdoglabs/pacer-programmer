@@ -614,9 +614,16 @@ no hover-only UI, for tablets.
     panel), rendered by the same `ui/panel/RearControl` the editor's live
     copy uses, so a control looks the same in both places.
   - Everything that supports the work rather than being it — the output
-    log, inspector, preset list, configurations — sits in one tab strip
-    below. The tab you're on survives a configuration switch;
-    only the simulator views remount.
+    log, inspector, preset list — sits in one tab strip below. The tab
+    you're on survives a configuration switch; only the simulator views
+    remount.
+  - **The device and its snapshots live in a drawer** (`ui/DeviceDrawer`),
+    opened from the header by the configuration's name or by the Pacer
+    status chip: pulling, importing, the Pacer's MIDI ports, the firmware
+    check and the saved configurations. All occasional, so none of it
+    holds permanent space. Whether it's open is stored as *which session
+    it was opened in*, not a boolean, so loading a configuration closes it
+    without an effect having to notice.
   - This replaced a two-column layout that gave the bulk of the width to
     panels nobody interacts with and squeezed the editor into a 360-440px
     side column.
@@ -772,6 +779,11 @@ full-width, with no faceplate:
 **Build order**: the mode bar and context bars first (everything hangs off
 them), then the device drawer (which empties the tab strip), then the
 preset chooser, then the analysis views.
+- Done: the mode bar with per-mode context bars, and the device drawer.
+- Next: the Inspector's preset MIDI settings move into Program mode and
+  the rest of that panel goes (decided); then the preset chooser; then the
+  analysis views. The "N presets differ from the device" chip is still
+  unbuilt and still cheap.
 
 ## Open questions
 

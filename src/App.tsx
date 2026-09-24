@@ -2,10 +2,10 @@ import { Fragment } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Tab, TabList, TabPanel, Tabs } from "@/components/ui/tabs";
 import { usePacerStore } from "./store/pacerStore";
-import { ConfigurationsPanel } from "./ui/ConfigurationsPanel";
 import { Faceplate } from "./ui/panel/Faceplate";
 import { RearJacks } from "./ui/RearJacks";
 import { ContextBar } from "./ui/ContextBar";
+import { DeviceDrawer } from "./ui/DeviceDrawer";
 import { SwitchEditorView } from "./ui/editor/SwitchEditorView";
 import { Inspector } from "./ui/Inspector";
 import { MessageLog } from "./ui/MessageLog";
@@ -21,7 +21,6 @@ function SupportPanels({ sessionId }: { sessionId: number }) {
         <Tab id="log">Output log</Tab>
         <Tab id="inspector">Inspector</Tab>
         <Tab id="presets">Presets</Tab>
-        <Tab id="configs">Configurations</Tab>
       </TabList>
       <TabPanel id="log" className="min-h-64">
         <MessageLog />
@@ -32,15 +31,11 @@ function SupportPanels({ sessionId }: { sessionId: number }) {
       <TabPanel id="presets">
         <PresetList key={sessionId} />
       </TabPanel>
-      <TabPanel id="configs">
-        <ConfigurationsPanel />
-      </TabPanel>
     </Tabs>
   );
 }
 
 export function App() {
-  const configSource = usePacerStore((s) => s.configSource);
   const sessionId = usePacerStore((s) => s.sessionId);
   const uiMode = usePacerStore((s) => s.uiMode);
   const selectedControlId = usePacerStore((s) => s.selectedControlId);
@@ -52,9 +47,7 @@ export function App() {
     <div className="flex min-h-screen flex-col">
       <header className="flex flex-wrap items-center gap-3 px-4 py-2.5">
         <h1 className="text-base font-semibold">Pacer Programmer</h1>
-        <Badge variant="outline" className="font-mono">
-          {configSource}
-        </Badge>
+        <DeviceDrawer />
         <ModeBar />
         {/* MIDI access is one grant for the whole app, so it's asked for here, not per mode. */}
         <div className="ml-auto flex flex-wrap items-center gap-2">

@@ -25,6 +25,12 @@ function openTab(name: string) {
   fireEvent.click(screen.getByRole("tab", { name }));
 }
 
+/** The device and its snapshots live in a drawer, opened from the configuration's name. */
+function openDeviceDrawer() {
+  const trigger = screen.getByTitle("Open configurations and the Pacer connection");
+  fireEvent.click(within(trigger).getByRole("button"));
+}
+
 beforeEach(() => {
   globalThis.ResizeObserver ??= class {
     observe() {}
@@ -54,7 +60,7 @@ describe("Faceplate (factory defaults)", () => {
     fireEvent.pointerDown(sw1, pointer); // held (and selected in the inspector) when the config changes
     expect(usePacerStore.getState().selectedControlId).toBeDefined();
 
-    openTab("Configurations");
+    openDeviceDrawer();
     const list = screen.getByRole("list", { name: "Saved configurations" });
     fireEvent.click(within(list).getByRole("button", { name: /^other/ }));
     fireEvent.pointerUp(sw1, pointer);
@@ -72,8 +78,12 @@ describe("Faceplate (factory defaults)", () => {
     const fixture = new Uint8Array(readFileSync("fixtures/factory-presets.syx"));
     act(() => usePacerStore.getState().importSyxFile("gig-rig.syx", fixture));
     render(<App />);
-    openTab("Configurations");
-    const list = screen.getByRole("list", { name: "Saved configurations" });
+    // Opening a configuration closes the drawer, so each visit re-opens it and re-queries the list.
+    const openList = () => {
+      openDeviceDrawer();
+      return screen.getByRole("list", { name: "Saved configurations" });
+    };
+    let list = openList();
     expect(within(list).getByText("gig-rig")).toBeTruthy();
     expect(within(list).getByText(/Imported gig-rig.syx .* 24 presets$/)).toBeTruthy(); // no firmware for files
 
@@ -84,9 +94,12 @@ describe("Faceplate (factory defaults)", () => {
     fireEvent.keyDown(input, { key: "Enter" });
     expect(within(list).getByText("Friday gig")).toBeTruthy();
 
-    // Clicking a row opens it (and only in the simulator).
+    // Clicking a row opens it (and only in the simulator) and dismisses the drawer.
     fireEvent.click(within(list).getByRole("button", { name: /^Factory defaults/ }));
     expect(usePacerStore.getState().activeConfigId).toBeUndefined();
+    expect(screen.queryByRole("list", { name: "Saved configurations" })).toBeNull();
+
+    list = openList();
     expect(
       within(list)
         .getByRole("button", { name: /^Factory defaults/ })
@@ -94,9 +107,12 @@ describe("Faceplate (factory defaults)", () => {
     ).toBe("true");
     fireEvent.click(within(list).getByRole("button", { name: /^Friday gig/ }));
     expect(usePacerStore.getState().configSource).toBe("Friday gig");
+
+    list = openList();
     fireEvent.click(within(list).getByRole("button", { name: /^Factory defaults/ }));
 
     // Delete the snapshot (two clicks).
+    list = openList();
     fireEvent.click(within(list).getByRole("button", { name: "Delete" }));
     fireEvent.click(within(list).getByRole("button", { name: "Confirm delete" }));
     expect(within(list).queryByText("Friday gig")).toBeNull();

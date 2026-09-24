@@ -32,9 +32,10 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-/** The support panels (log, presets, configurations, rear jacks) live behind tabs. */
-function openTab(name: string) {
-  fireEvent.click(screen.getByRole("tab", { name }));
+/** The device and its snapshots live in a drawer, opened from the configuration's name. */
+function openDeviceDrawer() {
+  const trigger = screen.getByTitle("Open configurations and the Pacer connection");
+  fireEvent.click(within(trigger).getByRole("button"));
 }
 
 function enterEditMode() {
@@ -282,7 +283,7 @@ describe("programming interface", () => {
     fireEvent.change(field, { target: { value: "EDIT" } });
     fireEvent.keyDown(field, { key: "Enter" });
 
-    openTab("Configurations");
+    openDeviceDrawer();
     const list = screen.getByRole("list", { name: "Saved configurations" });
     fireEvent.click(within(list).getByRole("button", { name: /^Factory defaults/ }));
     expect(screen.getByRole("dialog", { name: /Discard unsaved changes to “other”/ })).toBeTruthy();

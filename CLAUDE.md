@@ -614,9 +614,19 @@ no hover-only UI, for tablets.
     panel), rendered by the same `ui/panel/RearControl` the editor's live
     copy uses, so a control looks the same in both places.
   - Everything that supports the work rather than being it — the output
-    log, inspector, preset list — sits in one tab strip below. The tab
-    you're on survives a configuration switch; only the simulator views
-    remount.
+    log and the preset list — sits in one tab strip below. The tab you're
+    on survives a configuration switch; only the simulator views remount.
+  - **A preset's own settings sit with the faceplate in Program mode**
+    (`ui/PresetPanel`): the MIDI it sends when it loads, read-only for
+    now. It's preset-level config, like the name edited on the display, so
+    it doesn't belong inside a switch's editor and drilling into one
+    leaves it behind. This replaced an Inspector tab whose per-control
+    step table the editor had made redundant; the part worth keeping was
+    this, which nothing else showed.
+  - `ui/FirmwareModeNote` says when the firmware has taken the panel over
+    (preset select, Track, Transport), since those presets aren't in the
+    config and the faceplate would otherwise look like a preset whose
+    switches can't be found anywhere.
   - **The device and its snapshots live in a drawer** (`ui/DeviceDrawer`):
     pulling, importing, the Pacer's MIDI ports, the firmware check and the
     saved configurations. All occasional, so none of it holds permanent
@@ -698,8 +708,8 @@ no hover-only UI, for tablets.
   Channel Aftertouch) interpolate between the step's own min and max. The
   UI renders them as sliders. A press or release still means toe or heel,
   so a pedal driven as a button behaves as before.
-- Not simulated yet: a preset's own load-time MIDI settings (shown in the
-  inspector only). LED `midiFeedback` steps are modeled as far as they can
+- Not simulated yet: a preset's own load-time MIDI settings (listed by
+  `ui/PresetPanel`, not fired on a preset change). LED `midiFeedback` steps are modeled as far as they can
   be without a MIDI input path (see the LED model above).
 - Checks: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm format:check`.
 
@@ -787,11 +797,11 @@ full-width, with no faceplate:
 **Build order**: the mode bar and context bars first (everything hangs off
 them), then the device drawer (which empties the tab strip), then the
 preset chooser, then the analysis views.
-- Done: the mode bar with per-mode context bars, and the device drawer.
-- Next: the Inspector's preset MIDI settings move into Program mode and
-  the rest of that panel goes (decided); then the preset chooser; then the
-  analysis views. The "N presets differ from the device" chip is still
-  unbuilt and still cheap.
+- Done: the mode bar with per-mode context bars, the device drawer, and
+  the Inspector's split (its preset MIDI moved into Program mode, the rest
+  removed).
+- Next: the preset chooser, then the analysis views. The "N presets differ
+  from the device" chip is still unbuilt and still cheap.
 
 ## Open questions
 

@@ -142,6 +142,17 @@ describe("programming interface", () => {
     expect(led().midiFeedback).toBe(0);
   });
 
+  it("shows the preset's load-time MIDI in Program mode, beside the faceplate", () => {
+    render(<App />);
+    expect(screen.queryByRole("region", { name: "Preset settings" })).toBeNull(); // not while simulating
+    enterEditMode();
+    const panel = screen.getByRole("region", { name: "Preset settings" });
+    expect(within(panel).getByRole("heading", { name: /^A1 — MIDI sent on load/ })).toBeTruthy();
+    // It belongs to the preset, so drilling into a switch leaves it behind.
+    tap(screen.getByRole("button", { name: /^Switch 1:/ }));
+    expect(screen.queryByRole("region", { name: "Preset settings" })).toBeNull();
+  });
+
   it("entering Edit mode starts at the faceplate, and closing a switch stays in Edit mode", () => {
     render(<App />);
     tap(screen.getByRole("button", { name: /^Switch 2:/ })); // pressed in Play mode: not a choice to program it

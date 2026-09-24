@@ -7,8 +7,9 @@ import { RearJacks } from "./ui/RearJacks";
 import { ContextBar } from "./ui/ContextBar";
 import { ConfigurationButton, DeviceDrawer } from "./ui/DeviceDrawer";
 import { SwitchEditorView } from "./ui/editor/SwitchEditorView";
-import { Inspector } from "./ui/Inspector";
+import { FirmwareModeNote } from "./ui/FirmwareModeNote";
 import { MessageLog } from "./ui/MessageLog";
+import { PresetPanel } from "./ui/PresetPanel";
 import { MidiAccessControl } from "./ui/MidiControls";
 import { ModeBar } from "./ui/ModeBar";
 import { PresetList } from "./ui/PresetList";
@@ -19,14 +20,10 @@ function SupportPanels({ sessionId }: { sessionId: number }) {
     <Tabs defaultSelectedKey="log" className="min-h-0">
       <TabList aria-label="Panels">
         <Tab id="log">Output log</Tab>
-        <Tab id="inspector">Inspector</Tab>
         <Tab id="presets">Presets</Tab>
       </TabList>
       <TabPanel id="log" className="min-h-64">
         <MessageLog />
-      </TabPanel>
-      <TabPanel id="inspector" className="rounded-lg border bg-card p-3">
-        <Inspector />
       </TabPanel>
       <TabPanel id="presets">
         <PresetList key={sessionId} />
@@ -68,6 +65,7 @@ export function App() {
               {/* Scales down to fit, then scrolls: below this the switches get too small to hit. */}
               {/* `badge-room` keeps space for Edit mode's overhanging badges, in both modes, so
                   switching doesn't shift the layout or raise a scrollbar (see index.css). */}
+              <FirmwareModeNote />
               <div className="overflow-x-auto overflow-y-hidden">
                 <div className="badge-room min-w-[var(--faceplate-min)] space-y-3">
                   <Faceplate />
@@ -76,12 +74,16 @@ export function App() {
                 </div>
               </div>
               {uiMode === "program" && (
-                <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/50 bg-primary/5 p-3">
-                  <Badge>Program mode</Badge>
-                  <span className="text-sm text-muted-foreground">
-                    Tap a ✎ control to program it, or the display to rename the preset.
-                  </span>
-                </div>
+                <>
+                  <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/50 bg-primary/5 p-3">
+                    <Badge>Program mode</Badge>
+                    <span className="text-sm text-muted-foreground">
+                      Tap a ✎ control to program it, or the display to rename the preset.
+                    </span>
+                  </div>
+                  {/* Preset-level config, so it sits with the faceplate rather than in a switch's editor. */}
+                  <PresetPanel />
+                </>
               )}
             </>
           )}

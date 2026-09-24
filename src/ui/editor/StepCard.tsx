@@ -196,7 +196,9 @@ function LedFields({
       {
         id: String(num),
         label: LED_TARGET_NAMES[indicator.face.kind],
-        title: `Light this step's colors on the switch's ${LED_TARGET_NAMES[indicator.face.kind].toLowerCase()}`,
+        title: `Light this step's colors on the switch's ${LED_TARGET_NAMES[
+          indicator.face.kind
+        ].toLowerCase()} (LED num ${num})`,
       },
     ];
   });

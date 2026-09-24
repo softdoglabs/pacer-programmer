@@ -20,11 +20,6 @@ const display = () => screen.getByTestId("display-line2").textContent;
 const displayName = () => (screen.getByTestId("display-line1") as HTMLInputElement).value;
 const switchButton = (name: string) => screen.getByRole("button", { name: new RegExp(`^Switch ${name}:`) });
 
-/** The support panels (log, presets, configurations, rear jacks) live behind tabs. */
-function openTab(name: string) {
-  fireEvent.click(screen.getByRole("tab", { name }));
-}
-
 /** The device and its snapshots live in a drawer, opened from the configuration's name. */
 function openDeviceDrawer() {
   const trigger = screen.getByTitle("Open configurations and the Pacer connection");
@@ -224,14 +219,6 @@ describe("Faceplate (factory defaults)", () => {
 
     tap(switchButton("B")); // another bank: no loaded preset among 1-6
     expect(led(switchButton("3"))).toEqual(["dim", "true"]);
-  });
-
-  it("the inspector shows the pressed control's steps", () => {
-    render(<App />);
-    tap(switchButton("2"));
-    openTab("Inspector");
-    expect(screen.getByRole("heading", { name: "Stomp 2" })).toBeTruthy();
-    expect(screen.getByText("All steps at once")).toBeTruthy();
   });
 
   it("A enters the Track preset; a [Preset] tap returns to the remembered preset", () => {

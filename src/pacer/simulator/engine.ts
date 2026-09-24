@@ -9,6 +9,7 @@ import { globalMidiChannel, wireChannel } from "../protocol/globalSettings";
 import { EMPTY_MIDI_STATE, recordMidi, stepValueOn, type MidiState } from "./midiState";
 import type { PacerConfig } from "../protocol/types";
 import { resolveControl, type ControlKind } from "./controlEffects";
+import { presetLoadEffect } from "./presetLoad";
 import {
   createControlRuntimeState,
   type BoardEffect,
@@ -31,9 +32,19 @@ export function createBoardState(
  * Switches to another preset (or reloads this one). Per-control runtime state starts fresh (an
  * assumption: step counters and sequence positions reset), but the device's remembered MIDI
  * values carry over (observed).
+ *
+ * A recall fires the preset's own load-time messages, so this returns them with the board: they
+ * go out on the wire, and they update the remembered values, which is what lets a load-time
+ * Program Change light a switch that sends the same program. Loading a configuration is not a
+ * recall — `createBoardState` stays silent, so opening a file sends nothing.
  */
-export function changePreset(board: BoardState, index: number): BoardState {
-  return createBoardState(board.config, index, board.midi, board.pedals);
+export function changePreset(board: BoardState, index: number): { board: BoardState; effect: BoardEffect } {
+  const load = presetLoadEffect(board.config, index);
+  const midi = recordMidi(board.midi, load.messages);
+  return {
+    board: createBoardState(board.config, index, midi, board.pedals),
+    effect: { messages: load.messages, relayActions: load.relayActions, warnings: [] },
+  };
 }
 
 /** Forgets every remembered MIDI value (the simulator's "Reset MIDI state"). */
@@ -137,11 +148,13 @@ export function applyBoardEvent(board: BoardState, event: BoardEvent): { board: 
     // Preset change resets ALL controls' runtime state (assumption, see the simulator plan) —
     // this also means the just-computed `resolved.nextRuntimeState` for the pressed control is
     // discarded, so a release that follows (still addressed to this controlId) lands on nothing.
+    // The press's own messages go out first, then whatever the preset fires as it loads.
+    const load = presetLoadEffect(board.config, nextPresetIndex);
     return {
-      board: createBoardState(board.config, nextPresetIndex, midi, pedals),
+      board: createBoardState(board.config, nextPresetIndex, recordMidi(midi, load.messages), pedals),
       effect: {
-        messages: resolved.messages,
-        relayActions,
+        messages: [...resolved.messages, ...load.messages],
+        relayActions: [...relayActions, ...load.relayActions],
         presetChanged: { from: board.activePresetIndex, to: nextPresetIndex },
         warnings,
       },

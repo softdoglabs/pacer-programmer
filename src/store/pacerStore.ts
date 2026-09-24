@@ -149,26 +149,32 @@ export const usePacerStore = create<PacerStore>((set, get) => {
   const firmwareLog = (title: string, line: string) =>
     set((s) => ({ log: appendLog(s.log, { kind: "firmware", title, lines: [line] }) }));
 
+  /**
+   * A preset recall: the board moves, and whatever the preset sends on load goes out and is
+   * logged with it. Every path that recalls one goes through here (the firmware's preset select,
+   * returning from a DAW preset, the app's own jump) so none of them can forget the messages.
+   */
+  function recallPreset(index: number, title: string, line: string, kind: LogEntry["kind"] = "firmware") {
+    set((s) => {
+      const { board, effect } = changePreset(s.board, index);
+      const sentLine = sendMidi(effect.messages);
+      const lines = [line, ...formatBoardEffect(effect), ...(sentLine ? [sentLine] : [])];
+      return { board, log: appendLog(s.log, { kind, title, lines }) };
+    });
+  }
+
   const machine = deviceModeMachine.provide({
     actions: {
       loadPreset: (_, { index }) =>
-        set((s) => ({
-          board: changePreset(s.board, index),
-          log: appendLog(s.log, {
-            kind: "firmware",
-            title: "Preset select",
-            lines: [`Preset changed: ${presetIndexToLabel(s.board.activePresetIndex)} -> ${presetIndexToLabel(index)}`],
-          }),
-        })),
-      returnToLastPreset: () =>
-        set((s) => ({
-          board: changePreset(s.board, s.board.activePresetIndex),
-          log: appendLog(s.log, {
-            kind: "firmware",
-            title: "Preset button",
-            lines: [`Returned to last preset ${presetIndexToLabel(s.board.activePresetIndex)}`],
-          }),
-        })),
+        recallPreset(
+          index,
+          "Preset select",
+          `Preset changed: ${presetIndexToLabel(get().board.activePresetIndex)} -> ${presetIndexToLabel(index)}`,
+        ),
+      returnToLastPreset: () => {
+        const index = get().board.activePresetIndex;
+        recallPreset(index, "Preset button", `Returned to last preset ${presetIndexToLabel(index)}`);
+      },
       dawCommand: (_, { preset, command }) =>
         firmwareLog(MODE_TITLES[preset], `DAW: ${command} (via Nektar DAW Integration; MIDI bytes not modeled)`),
     },
@@ -293,17 +299,12 @@ export const usePacerStore = create<PacerStore>((set, get) => {
     presetButtonUp: () => deviceActor.send({ type: "PRESET_UP" }),
 
     jumpToPreset: (index) => {
-      // A direct jump always lands on a user preset, leaving any special preset.
+      // A direct jump always lands on a user preset, leaving any special preset. Choosing it here
+      // isn't something the hardware can do in one action, but what the preset then sends on load
+      // is the hardware's own behaviour, so it fires.
       resetDeviceActor();
-      set((s) => ({
-        board: changePreset(s.board, index),
-        swallowedReleases: [],
-        log: appendLog(s.log, {
-          kind: "app",
-          title: "Preset list",
-          lines: [`Jumped to ${presetIndexToLabel(index)} (app shortcut, no hardware action)`],
-        }),
-      }));
+      set({ swallowedReleases: [] });
+      recallPreset(index, "Preset chooser", `Jumped to ${presetIndexToLabel(index)} (app shortcut)`, "app");
     },
 
     selectControl: (controlId) => set({ selectedControlId: controlId }),

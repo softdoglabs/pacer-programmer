@@ -65,7 +65,7 @@ export function PresetPanel() {
           + Add message{nextFree === undefined ? ` (all ${PRESET_MIDI_SETTINGS} in use)` : ""}
         </Button>
         <span className="text-xs text-muted-foreground">
-          The hardware sends these when the preset is recalled; the simulator doesn't fire them on a preset change yet.
+          Sent whenever this preset is recalled, by the hardware and by the simulator.
         </span>
       </div>
     </section>

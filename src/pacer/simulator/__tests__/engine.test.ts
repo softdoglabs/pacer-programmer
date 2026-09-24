@@ -222,7 +222,7 @@ describe("applyBoardEvent: remembered MIDI state", () => {
     expect(board.activePresetIndex).toBe(A2);
     expect(board.midi.programs[0]).toMatchObject({ program: 5 });
 
-    board = changePreset(board, A1);
+    board = changePreset(board, A1).board;
     expect(board.midi.programs[0]).toMatchObject({ program: 5 }); // survives the preset change
     expect(getControlDisplayState(board, ControlId.Stompswitch2).valueOnSteps).toEqual([]); // 7 isn't current
 

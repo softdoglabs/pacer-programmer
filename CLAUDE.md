@@ -762,8 +762,25 @@ no hover-only UI, for tablets.
   Channel Aftertouch) interpolate between the step's own min and max. The
   UI renders them as sliders. A press or release still means toe or heel,
   so a pedal driven as a button behaves as before.
-- Not simulated yet: a preset's own load-time MIDI settings (listed by
-  `ui/PresetPanel`, not fired on a preset change). LED `midiFeedback` steps are modeled as far as they can
+- **A preset's load-time MIDI is simulated** (`simulator/presetLoad.ts`):
+  recalling a preset fires the messages stored with it, in slot order,
+  before anything else the new preset does. They're recorded in the
+  remembered values like any other message, so a load-time Program Change
+  lights a switch that sends the same program. Loading a *configuration*
+  isn't a recall — `createBoardState` stays silent, so opening a file
+  sends nothing.
+  - Every path that recalls a preset goes through one store helper
+    (`recallPreset`), so the firmware's preset select, returning from a
+    DAW preset and the app's own jump can't diverge on this.
+  - The byte layouts are the preset's own, from the User Guide's MIDI
+    Configuration chart: a preset CC is (controller, value) where a step's
+    CC Toggle is (controller, press 1, press 2). Crossing the two tables
+    would send the wrong value, so there's a test for exactly that.
+  - Assumed: a preset's Note setting sends note-on only. The guide gives
+    it a velocity but no duration or note-off, and the hardware has no
+    obvious moment to release it.
+  - Not modeled: the guide's "Nektar DAW Control" setting type, whose byte
+    we don't know. LED `midiFeedback` steps are modeled as far as they can
   be without a MIDI input path (see the LED model above).
 - Checks: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm format:check`.
 

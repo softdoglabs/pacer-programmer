@@ -170,7 +170,7 @@ export function PresetMap() {
           // itself in depth as soon as you click anything.
           elevateNodesOnSelect={false}
           colorMode="dark"
-          proOptions={{ hideAttribution: false }}
+          proOptions={{ hideAttribution: true }}
           nodesDraggable={false}
           onNodeClick={(_, node) => {
             const members = recoverMachine(config).members[node.id] ?? [];

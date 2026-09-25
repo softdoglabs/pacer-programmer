@@ -116,6 +116,24 @@ export default tseslint.config(
     },
   },
   {
+    files: ["src/pacer/authoring/**/*.ts"],
+    ignores: ["src/pacer/authoring/**/__tests__/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            ...noUiInDomain.patterns,
+            {
+              group: ["**/simulator/**", "**/device/**", "**/panel/**", "**/simulator", "**/device", "**/panel"],
+              message: "authoring is where analysis and editing meet; it may depend on those and protocol.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["src/pacer/simulator/**/*.ts"],
     ignores: ["src/pacer/simulator/**/__tests__/**"],
     rules: {

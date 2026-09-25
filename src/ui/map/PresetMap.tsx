@@ -1,5 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Background, MarkerType, ReactFlow, type Edge, type Node } from "@xyflow/react";
+import { ToggleGroup } from "@/components/ui/toggle-group";
+import { FlowEdge, type FlowEdgeData } from "./FlowEdge";
 import "@xyflow/react/dist/style.css";
 import { recoverMachine } from "@/pacer/analysis";
 import { presetIndexToLabel } from "@/pacer/protocol/constants";
@@ -16,7 +18,15 @@ import { layoutStates } from "./layout";
  * It's also how you navigate: a node is a place, and choosing one loads it in the simulator.
  */
 
+const EDGE_TYPES = { flow: FlowEdge };
+
+/** How far apart to bow the two halves of a reciprocal pair, in flow units. */
+const SEPARATION = 26;
+
+type Showing = "designed" | "all";
+
 export function PresetMap() {
+  const [showing, setShowing] = useState<Showing>("designed");
   const config = usePacerStore((s) => s.board.config);
   const activeIndex = usePacerStore((s) => s.board.activePresetIndex);
   const jumpToPreset = usePacerStore((s) => s.jumpToPreset);
@@ -60,25 +70,34 @@ export function PresetMap() {
       };
     });
 
-    const edges: Edge[] = machine.states.flatMap((state) =>
-      state.transitions.flatMap((t, i) => {
-        const target = t.to.kind === "state" ? t.to.id : undefined;
-        if (!target) return []; // a return points at whatever entered it, so it has no fixed end
-        return [
-          {
-            id: `${state.id}-${i}`,
-            source: state.id,
-            target,
-            label: controlLabel(t.controlId),
-            labelBgPadding: [4, 2] as [number, number],
-            style: { strokeWidth: 1.5 },
-            // Which way the press takes you. Two presets that step to each other are drawn as a
-            // pair of lines in the same place, so without heads there's no reading them.
-            markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18 },
-          },
-        ];
-      }),
+    const drawn = machine.states.flatMap((state) =>
+      state.transitions.flatMap((t, i) =>
+        t.to.kind === "state" && (showing === "all" || !t.viaStepping)
+          ? [{ id: `${state.id}-${i}`, source: state.id, target: t.to.id, t }]
+          : [],
+      ),
     );
+    // A pair that leads both ways sits on one line, so each half is bowed the other way.
+    const pairs = new Set(drawn.map((e) => `${e.source}>${e.target}`));
+    const edges: Edge[] = drawn.map((e) => {
+      const reciprocal = pairs.has(`${e.target}>${e.source}`);
+      const faded = e.t.viaStepping === true;
+      return {
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        type: "flow",
+        data: {
+          label: controlLabel(e.t.controlId),
+          faded,
+          offset: reciprocal ? (e.source < e.target ? SEPARATION : -SEPARATION) : 0,
+        } satisfies FlowEdgeData,
+        style: { strokeWidth: faded ? 1 : 1.75, opacity: faded ? 0.45 : 1 },
+        // Which way the press takes you. Slender rather than stubby: at this density a fat head
+        // reads as a blob on the node it points at.
+        markerEnd: { type: MarkerType.ArrowClosed, width: 10, height: 16 },
+      };
+    });
 
     // A return has no single destination to draw, so it's shown on the node it leaves from.
     for (const state of machine.states) {
@@ -98,10 +117,34 @@ export function PresetMap() {
     }
 
     return { nodes, edges, notes: machine.notes };
-  }, [config, activeIndex]);
+  }, [config, activeIndex, showing]);
 
   return (
     <section aria-label="Preset map" className="flex min-h-0 flex-1 flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-3">
+        <ToggleGroup<Showing>
+          label="Show"
+          labelVisible
+          options={[
+            {
+              id: "designed",
+              label: "Designed routes",
+              title: "Hide the plain next/previous stepping every factory preset carries",
+            },
+            { id: "all", label: "Everything", title: "Include the next/previous stepping on every preset" },
+          ]}
+          value={showing}
+          onChange={setShowing}
+        />
+        <span className="text-xs text-muted-foreground">
+          {showing === "designed"
+            ? edges.length === 0
+              ? // True of the factory set: its only routes are C and D stepping through the banks.
+                "Nothing here goes anywhere on purpose — every switch that changes preset just steps to a neighbour."
+              : "Switches that only step to the neighbouring preset are left out."
+            : "Stepping to a neighbour is drawn faintly."}
+        </span>
+      </div>
       {notes.length > 0 && (
         <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
           {notes.length} thing{notes.length === 1 ? "" : "s"} on this device the machine can't express, so they're drawn
@@ -113,6 +156,7 @@ export function PresetMap() {
         <ReactFlow
           nodes={nodes}
           edges={edges}
+          edgeTypes={EDGE_TYPES}
           fitView
           colorMode="dark"
           proOptions={{ hideAttribution: false }}

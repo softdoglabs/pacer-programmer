@@ -33,6 +33,12 @@ export interface MachineTransition {
   controlId: number;
   stepNumber: number;
   to: MachineTarget;
+  /**
+   * Set by the recovery, never by an author: this is a Preset Inc/Dec that does nothing but move
+   * to the neighbouring preset. Every factory preset has two, so a map that draws them all is
+   * mostly furniture — see `ui/map`. The compiler ignores it; it only ever emits Preset Select.
+   */
+  viaStepping?: boolean;
 }
 
 export interface MachineState {

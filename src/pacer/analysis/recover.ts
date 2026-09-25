@@ -113,10 +113,24 @@ export function recoverMachine(config: PacerConfig): RecoveredMachine {
         continue;
       }
 
+      // Plain stepping: Inc/Dec, carrying nothing else. It's what C and D do on every factory
+      // preset, so it's worth being able to put aside when reading a map.
+      const stepping = perMember.every((p) => {
+        const step = config.presets[p.member]?.controls[controlId]?.steps[stepNumber];
+        return step?.msgType === SwitchMessageType.PresetIncDec && p.edge!.alsoFires.length === 0;
+      });
+
       const targetStates = new Set(targets.map((t) => stateOf.get(t!)));
       if (targetStates.size === 1) {
         const [to] = targetStates;
-        if (to !== undefined) transitions.push({ controlId, stepNumber, to: { kind: "state", id: to } });
+        if (to !== undefined) {
+          transitions.push({
+            controlId,
+            stepNumber,
+            to: { kind: "state", id: to },
+            ...(stepping ? { viaStepping: true } : {}),
+          });
+        }
         continue;
       }
       notes.push({

@@ -333,6 +333,17 @@ Clicking a state loads its preset, so the map is also how you navigate.
   rather than noted. They're real and deliberate — the factory set puts
   them on A and B of every preset — just not places in this model, and
   noting them buried the genuine problems under fifty lines of noise.
+- **Two views**: "Designed routes" hides switches that only step to the
+  neighbouring preset, which every factory preset carries two of — on the
+  factory set that leaves the map empty, correctly, and it says so.
+  "Everything" draws them faintly. The recovery marks them
+  (`MachineTransition.viaStepping`, set by recovery and never by an
+  author): a Preset Inc/Dec carrying nothing else on the press.
+- **Reciprocal edges are bowed apart** (`FlowEdge`). Between neighbours
+  the two directions are the same vertical line, so whichever drew second
+  hid the other outright and put its label on top — the map looked like it
+  was missing half its edges. Each half now curves the opposite way and
+  carries its label on its own curve.
 - `layout.ts` picks its arrangement from the shape of the graph: a design
   with a beginning is drawn in layers left to right, while a graph with no
   beginning is a ring — which is exactly what the factory set is, every

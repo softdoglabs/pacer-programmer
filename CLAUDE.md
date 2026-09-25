@@ -311,90 +311,28 @@ a transition is a **return** when every copy leads back to whatever entered
 it, and a fixed jump when every copy leads to the same state. Anything it
 can't express becomes a `note` rather than a wrong answer.
 
-**A state's name is its identity.** In recovery that can repeat — a device
-that wasn't compiled from a machine may name two presets alike, as this
-owner's A1 and A4 are both "PRGM1". Ids that collide merge wherever ids
-are keys, and a node ends up showing another state's routes, so a repeated
-name qualifies *every* state that bears it with the slot it starts at,
-rather than the second one alone.
+**Two states are the same when they differ in nothing but where their
+navigation leads** — the rule the recovery groups on, and therefore the
+rule the model is held to. A state's *identity is its behaviour*, not its
+name: two states may share a name as long as they do something different,
+which matters on a five-character display. Names that repeat are still
+qualified by their starting slot when ids are needed as keys, but that's
+presentation, not identity.
 
- Ids exist only in memory; a dump has
-nowhere to keep one, so the recovery has nothing but the preset name to
-tell two states apart. The compiler therefore requires every state to be
-named, within the display's 5 characters, and distinct — the first real
-authoring restriction the invariant imposes, and it caught a collision in
-its own test fixture on the day it was written.
+**The invariant is checked, not assumed.** `compileMachine` recovers its
+own output and refuses if it didn't get the same machine back
+(`whatWontSurvive`). Hand-derived rules about what survives are guesses;
+this is the property itself, and it costs one pass over 24 presets. What
+it catches:
+- Two states that behave alike apart from their navigation, which come
+  back as one, because by the rule they *are* one.
+- A **return from a state only one place enters**. With a single origin a
+  return and a jump to that origin compile to the same preset, so nothing
+  records which was meant. This was previously accepted and documented as
+  a degeneracy; it's now refused, because the difference starts to matter
+  the moment a second origin is added.
 
-### The map (`ui/map/`)
 
-A third mode, drawing the recovered machine rather than 24 slots: one node
-per state however many copies the hardware needed, edges labelled with the
-switch that takes them, and a return marked on the node it leaves from —
-a return has no single destination to draw, which is the whole point of it.
-Clicking a state loads its preset, so the map is also how you navigate.
-
-- The Current slot is left out of the recovery: it's a duplicate of
-  whatever is loaded, not a place, and counting it made a state look like
-  it had an extra copy whose jumps disagreed with the rest.
-- Jumps to a reload or to the firmware's DAW presets are passed over
-  rather than noted. They're real and deliberate — the factory set puts
-  them on A and B of every preset — just not places in this model, and
-  noting them buried the genuine problems under fifty lines of noise.
-- **Two views**: "Designed routes" hides switches that only step to the
-  neighbouring preset, which every factory preset carries two of — on the
-  factory set that leaves the map empty, correctly, and it says so.
-  "Everything" draws them faintly. The recovery marks them
-  (`MachineTransition.viaStepping`, set by recovery and never by an
-  author): a Preset Inc/Dec carrying nothing else on the press.
-- **The arrowhead is ours** (`MapDefs`), a slender dart rather than React
-  Flow's squat triangle, which reads as a blob where edges converge.
-  - `markerEnd` takes the marker's **id**, not a url: React Flow wraps it
-    in `url(#...)` itself, so passing one produces
-    `url('#url(#map-arrow)')` and nothing is drawn at all.
-  - `markerUnits="userSpaceOnUse"` keeps it one size. The default scales
-    with stroke width, so faded edges would get smaller heads — a second
-    meaning nobody chose.
-  - `fill="context-stroke"` takes the colour from whichever edge draws it,
-    so one marker serves both the faded and the solid ones.
-- **An edge is labelled with the switch's own marking** in a disc — "C",
-  "1", "FS1" — not a sentence. A factory map has 48 of them.
-- **Reciprocal edges are bowed apart** (`FlowEdge`). Between neighbours
-  the two directions are the same vertical line, so whichever drew second
-  hid the other outright and put its label on top — the map looked like it
-  was missing half its edges. Each half now curves the opposite way and
-  carries its label on its own curve.
-  - The bow lives in the **middle**, not the control points: an edge is
-    two curves meeting at a displaced midpoint, so each end still leaves
-    along its handle's normal. Displacing a single curve's control points
-    tilts both ends, and a head arriving at a slant slides under the node
-    and vanishes — with a 26-unit bow only 6 of 48 edges still met a node
-    square on. Now none deviates by more than 6 degrees.
-  - "Across" is derived from the endpoints in a fixed order, so it names
-    the same direction for both halves of a pair. Taken from the edge's
-    own direction it flips with it, the opposite offsets cancel, and the
-    two land on top of each other again — which is exactly what happened:
-    the heads separated and the labels still coincided.
-- `layout.ts` picks its arrangement from the shape of the graph: a design
-  with a beginning goes to **dagre**, left to right, which ranks states by
-  distance from a beginning and orders each rank to cut crossings. A graph
-  with no beginning is a ring — which is exactly what the factory set is,
-  every preset stepping to its neighbours — and dagre strings those across
-  the screen, so they're laid out as banks instead.
-- **Edge colours are stated, not defaulted.** React Flow's stroke is a
-  dark grey that all but vanishes on this background.
-- **The label layer is lifted above the nodes** (`index.css`) and
-  `elevateNodesOnSelect` is off. Nodes paint after edges, so a label
-  between two nodes was covered by whichever overlapped it, and selecting
-  a node re-ordered the map in depth as you clicked.
-- React Flow needs a definite height: it's `height: 100%`, which resolves
-  to nothing against a parent with only a `min-height`, and the nodes end
-  up positioned outside a zero-height viewport.
-
-**A known degeneracy:** a return from a state with one copy is
-indistinguishable from a plain jump, because with one origin the two do
-the same thing and the presets record no difference. It recovers as the
-jump it literally is. That's a property of the compiled artefact, not of
-the modelling, and it stops mattering the moment a second origin exists.
 
 **Layering** (enforced by ESLint `no-restricted-imports`; nothing under
 `src/pacer` may import React, Zustand, or UI code):

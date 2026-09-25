@@ -6,6 +6,7 @@ import {
   presetIndexToPresetSelectTarget,
 } from "../protocol/constants";
 import { createEmptyPacerConfig, getOrCreateControl, getOrCreatePreset } from "../protocol/types";
+import { whatWontSurvive } from "./verify";
 import type { PacerConfig, Preset, Step } from "../protocol/types";
 
 /*
@@ -95,22 +96,15 @@ function navigates(step: Step | undefined): boolean {
 export function compileMachine(machine: StateMachine): CompileResult {
   const byId = new Map(machine.states.map((s) => [s.id, s]));
   /*
-   * A state's name is its identity. Ids exist only while a machine is in memory: a dump has
-   * nowhere to keep one, so the recovery has nothing but the preset name to tell two states
-   * apart. An unnamed or duplicated state would come back as a different machine — which the
-   * invariant forbids, so it's refused here rather than discovered later.
+   * Names need only fit the display. They are labels, not identities: what makes two states the
+   * same is behaving alike apart from where their navigation leads, which is what the recovery
+   * groups on, so two states may share a name as long as they do something different.
    */
-  const names = new Set<string>();
   for (const state of machine.states) {
     const name = state.name?.trim();
-    if (!name)
-      return { ok: false, error: `State "${state.id}" needs a name: it's the only identity a preset can carry.` };
-    if (name.length > PRESET_NAME_LENGTH) {
+    if (name !== undefined && name.length > PRESET_NAME_LENGTH) {
       return { ok: false, error: `"${name}" is longer than the ${PRESET_NAME_LENGTH} characters a preset name holds.` };
     }
-    if (names.has(name))
-      return { ok: false, error: `Two states are named "${name}"; after a round trip they'd be one.` };
-    names.add(name);
   }
   for (const state of machine.states) {
     for (const control of Object.values(state.body)) {
@@ -196,9 +190,19 @@ export function compileMachine(machine: StateMachine): CompileResult {
     }
   }
 
-  return {
-    ok: true,
-    config,
-    slots: keys.map((key) => ({ key, stateId: instances.get(key)!.stateId, presetIndex: slotOf.get(key)! })),
-  };
+  const compiledSlots = keys.map((key) => ({
+    key,
+    stateId: instances.get(key)!.stateId,
+    presetIndex: slotOf.get(key)!,
+  }));
+
+  /*
+   * The invariant, checked rather than assumed: read the machine back out of the presets just
+   * written and refuse if it isn't the same one. Hand-derived rules about what survives are
+   * guesses; this is the property itself.
+   */
+  const lost = whatWontSurvive(machine, config, compiledSlots);
+  if (lost) return { ok: false, error: lost };
+
+  return { ok: true, config, slots: compiledSlots };
 }

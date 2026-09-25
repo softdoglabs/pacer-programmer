@@ -139,22 +139,85 @@ describe("authoring and recovering a state machine", () => {
   });
 });
 
-describe("what the model refuses to let you author", () => {
-  it("won't let two states share a name, since the presets couldn't tell them apart", () => {
-    const twice = (id: string): MachineState => ({
-      id,
-      name: "SAME",
-      body: body(ControlId.Stompswitch1, SwitchMessageType.Note, [60, 127, 0]),
-      transitions: [],
-    });
-    expect(compileMachine({ states: [twice("a"), twice("b")] })).toMatchObject({
+describe("what makes two states the same", () => {
+  const withBody = (id: string, name: string, note: number): MachineState => ({
+    id,
+    name,
+    body: body(ControlId.Stompswitch1, SwitchMessageType.Note, [note, 127, 0]),
+    transitions: [],
+  });
+
+  it("lets two states share a name when they do different things", () => {
+    // A name is a label, not an identity: what tells two states apart is behaving differently,
+    // which is what the recovery groups on. Five characters is little enough to want to reuse.
+    const machine: StateMachine = { states: [withBody("a", "LOOP", 60), withBody("b", "LOOP", 62)] };
+    const compiled = compileMachine(machine);
+    expect(compiled.ok).toBe(true);
+    if (!compiled.ok) return;
+    const recovered = recoverMachine(compiled.config);
+    expect(recovered.states).toHaveLength(2);
+    expect(recovered.states.every((s) => s.name === "LOOP")).toBe(true);
+  });
+
+  it("refuses two states that differ in nothing but where they lead", () => {
+    // They would come back as one, because by the rule they *are* one.
+    const machine: StateMachine = { states: [withBody("a", "ONE", 60), withBody("b", "TWO", 60)] };
+    expect(compileMachine(machine)).toMatchObject({
       ok: false,
-      error: expect.stringContaining("after a round trip they'd be one"),
+      error: expect.stringContaining("come back as one state"),
     });
   });
 
-  it("won't let a state go unnamed", () => {
-    const machine: StateMachine = { states: [{ id: "a", body: {}, transitions: [] }] };
-    expect(compileMachine(machine)).toMatchObject({ ok: false, error: expect.stringContaining("needs a name") });
+  it("lets a state go unnamed", () => {
+    const machine: StateMachine = {
+      states: [{ id: "a", body: body(ControlId.Stompswitch1, SwitchMessageType.Note, [60, 127, 0]), transitions: [] }],
+    };
+    expect(compileMachine(machine)).toMatchObject({ ok: true });
+  });
+
+  it("refuses a name too long for the display", () => {
+    expect(compileMachine({ states: [withBody("a", "TOOLONG", 60)] })).toMatchObject({
+      ok: false,
+      error: expect.stringContaining("5 characters"),
+    });
+  });
+});
+
+describe("the invariant, enforced rather than assumed", () => {
+  it("refuses a return from a state only one place enters", () => {
+    /*
+     * With a single origin a return and a jump to that origin compile to the same preset, so the
+     * presets don't record which was meant and it comes back as the jump it literally is. It used
+     * to be accepted and documented as a degeneracy; the compiler now says so, because the
+     * difference starts to matter the moment a second origin is added.
+     */
+    const machine: StateMachine = {
+      states: [
+        {
+          id: "main",
+          name: "MAIN",
+          body: body(ControlId.Stompswitch1, SwitchMessageType.Note, [60, 127, 0]),
+          transitions: [{ controlId: ControlId.StompswitchA, stepNumber: 1, to: { kind: "state", id: "loop" } }],
+        },
+        {
+          id: "loop",
+          name: "LOOP",
+          body: body(ControlId.Stompswitch1, SwitchMessageType.CcTrigger, [53, 127, 0]),
+          transitions: [{ controlId: ControlId.StompswitchA, stepNumber: 1, to: { kind: "return" } }],
+        },
+      ],
+    };
+    expect(compileMachine(machine)).toMatchObject({
+      ok: false,
+      error: expect.stringContaining("can't be told from a jump"),
+    });
+  });
+
+  it("accepts the same design once a second origin exists", () => {
+    const machine = looperMachine(2);
+    const compiled = compileMachine(machine);
+    expect(compiled.ok).toBe(true);
+    if (!compiled.ok) return;
+    expect(shape(recoverMachine(compiled.config))).toEqual(shape(machine));
   });
 });

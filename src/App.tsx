@@ -11,6 +11,7 @@ import { SwitchEditorView } from "./ui/editor/SwitchEditorView";
 import { FirmwareModeNote } from "./ui/FirmwareModeNote";
 import { MessageLog } from "./ui/MessageLog";
 import { PresetPanel } from "./ui/PresetPanel";
+import { PresetMap } from "./ui/map/PresetMap";
 import { MidiAccessControl } from "./ui/MidiControls";
 import { ModeBar } from "./ui/ModeBar";
 
@@ -45,7 +46,9 @@ export function App() {
         <main className="mx-auto flex w-full max-w-[var(--page-max)] flex-col gap-4 p-4">
           {/* Simulator views are keyed on the session, so a configuration switch remounts them. */}
           <Fragment key={`sim-${sessionId}`}>
-            {programming ? (
+            {uiMode === "map" ? (
+              <PresetMap />
+            ) : programming ? (
               <SwitchEditorView controlId={selectedControlId} />
             ) : (
               <>

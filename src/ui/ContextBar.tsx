@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { usePacerStore } from "../store/pacerStore";
 import { ProgramBar } from "./editor/ProgramBar";
 import { MidiOutputSelect } from "./MidiControls";
+import { PresetChooserButton } from "./PresetChooser";
 
 /**
  * The row under the mode bar, holding only the controls the current mode needs. Simulate gets the
@@ -15,7 +16,15 @@ export function ContextBar() {
 
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-4 py-2">
-      {uiMode === "simulate" ? (
+      {uiMode === "map" ? (
+        <>
+          {/* No faceplate here, so the preset lives on a button rather than on the display. */}
+          <PresetChooserButton />
+          <span className="text-sm text-muted-foreground">
+            Presets that behave alike are one state; ↩ marks a jump back to whatever entered it.
+          </span>
+        </>
+      ) : uiMode === "simulate" ? (
         <>
           <MidiOutputSelect />
           <Button

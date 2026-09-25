@@ -12,7 +12,7 @@ import type { PacerStore } from "./pacerStore";
  * Which top-level mode the app is in. Simulate and Program share the faceplate; the analysis
  * views planned in CLAUDE.md ("Planned UI reorganization") join this union as they're built.
  */
-export type UiMode = "simulate" | "program";
+export type UiMode = "simulate" | "program" | "map";
 
 export interface EditHistory {
   past: PacerConfig[];

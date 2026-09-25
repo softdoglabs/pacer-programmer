@@ -318,6 +318,30 @@ named, within the display's 5 characters, and distinct — the first real
 authoring restriction the invariant imposes, and it caught a collision in
 its own test fixture on the day it was written.
 
+### The map (`ui/map/`)
+
+A third mode, drawing the recovered machine rather than 24 slots: one node
+per state however many copies the hardware needed, edges labelled with the
+switch that takes them, and a return marked on the node it leaves from —
+a return has no single destination to draw, which is the whole point of it.
+Clicking a state loads its preset, so the map is also how you navigate.
+
+- The Current slot is left out of the recovery: it's a duplicate of
+  whatever is loaded, not a place, and counting it made a state look like
+  it had an extra copy whose jumps disagreed with the rest.
+- Jumps to a reload or to the firmware's DAW presets are passed over
+  rather than noted. They're real and deliberate — the factory set puts
+  them on A and B of every preset — just not places in this model, and
+  noting them buried the genuine problems under fifty lines of noise.
+- `layout.ts` picks its arrangement from the shape of the graph: a design
+  with a beginning is drawn in layers left to right, while a graph with no
+  beginning is a ring — which is exactly what the factory set is, every
+  preset stepping to its neighbours — and is laid out as banks instead.
+  A layout engine would have been another dependency for two dozen nodes.
+- React Flow needs a definite height: it's `height: 100%`, which resolves
+  to nothing against a parent with only a `min-height`, and the nodes end
+  up positioned outside a zero-height viewport.
+
 **A known degeneracy:** a return from a state with one copy is
 indistinguishable from a plain jump, because with one origin the two do
 the same thing and the presets record no difference. It recovers as the

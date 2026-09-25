@@ -1,4 +1,4 @@
-import { SwitchMessageType, presetIndexToLabel } from "../protocol/constants";
+import { CURRENT_PRESET_INDEX, SwitchMessageType, presetIndexToLabel } from "../protocol/constants";
 import type { PacerConfig, Preset } from "../protocol/types";
 import type { MachineState, MachineTransition, StateMachine } from "./machine";
 import { presetStates } from "./states";
@@ -43,7 +43,14 @@ function bodyOf(preset: Preset): Preset["controls"] {
 }
 
 export function recoverMachine(config: PacerConfig): RecoveredMachine {
-  const groups = presetStates(config).filter((g) => g.members.every((m) => config.presets[m] !== undefined));
+  /*
+   * The Current slot is left out. It's the device's working copy of whatever preset is loaded —
+   * a duplicate of one of the others, not a place you can be sent to — so counting it makes a
+   * state look like it has an extra copy whose jumps disagree with the rest.
+   */
+  const groups = presetStates(config)
+    .map((g) => ({ ...g, members: g.members.filter((m) => m !== CURRENT_PRESET_INDEX) }))
+    .filter((g) => g.members.length > 0);
   const graph = presetTransitions(config);
   const notes: RecoveryNote[] = [];
 
@@ -89,13 +96,13 @@ export function recoverMachine(config: PacerConfig): RecoveredMachine {
       }
 
       const targets = perMember.map((p) => targetIndexOf(p.edge!));
-      if (targets.some((t) => t === undefined)) {
-        notes.push({
-          presetIndex: group.members[0]!,
-          message: `A jump leads somewhere the model can't name (a reload, or a DAW preset).`,
-        });
-        continue;
-      }
+      /*
+       * A reload, or a jump to the firmware's Track/Transport presets. Those are real and
+       * intentional — the factory set puts them on A and B of every preset — they're just not
+       * places in this model, which describes a configuration's own states. Passing over them is
+       * correct; noting them would bury the genuine problems in 50 lines of noise.
+       */
+      if (targets.some((t) => t === undefined)) continue;
 
       // Every copy going back to whatever entered it is a return; every copy going to the same
       // state is a fixed transition. With one copy the two are indistinguishable — the presets

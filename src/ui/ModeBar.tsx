@@ -11,6 +11,11 @@ import { usePacerStore } from "../store/pacerStore";
 const MODES: { id: UiMode; label: string; title: string }[] = [
   { id: "simulate", label: "Simulate", title: "Pressing a control runs it and sends its MIDI" },
   { id: "program", label: "Program", title: "Pressing a control opens it for programming instead of firing it" },
+  {
+    id: "map",
+    label: "Preset map",
+    title: "The configuration as the machine it is: presets that behave alike shown as one state",
+  },
 ];
 
 export function ModeBar() {

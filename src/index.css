@@ -230,3 +230,13 @@
   overflow-y: auto;
   scrollbar-gutter: stable;
 }
+
+/*
+ * The preset map's edge labels. React Flow paints nodes after edges, so a label sitting between
+ * two nodes is covered by whichever overlaps it — and selecting a node used to change the order,
+ * so the map shuffled in depth as you clicked. The label layer is lifted once, here, and node
+ * elevation on select is turned off in `PresetMap`.
+ */
+.react-flow__edgelabel-renderer {
+  z-index: 5;
+}

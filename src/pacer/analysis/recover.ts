@@ -54,11 +54,23 @@ export function recoverMachine(config: PacerConfig): RecoveredMachine {
   const graph = presetTransitions(config);
   const notes: RecoveryNote[] = [];
 
-  // A state per group, named for the slot its first member sits in when the presets don't agree
-  // on a name — an id has to be stable, and the dump has nowhere else to keep one.
+  /*
+   * A state per group, identified by its name — the only identity a dump can carry. A device
+   * that wasn't compiled from a machine can repeat one, though: this owner's A1 and A4 are both
+   * "PRGM1". Two states sharing an id merge wherever ids are keys, so a node ends up showing
+   * another state's routes. Where a name repeats, every state that bears it is qualified by the
+   * slot it starts at, rather than the second one alone, so the ids don't depend on order.
+   */
+  const nameCounts = new Map<string, number>();
+  for (const group of groups) {
+    const name = group.name?.trim();
+    if (name) nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1);
+  }
   const stateOf = new Map<number, string>();
   const ids = groups.map((group) => {
-    const id = group.name?.trim() || presetIndexToLabel(group.members[0]!);
+    const name = group.name?.trim();
+    const slot = presetIndexToLabel(group.members[0]!);
+    const id = !name ? slot : (nameCounts.get(name) ?? 0) > 1 ? `${name} (${slot})` : name;
     for (const member of group.members) stateOf.set(member, id);
     return id;
   });

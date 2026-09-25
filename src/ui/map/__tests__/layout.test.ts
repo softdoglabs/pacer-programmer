@@ -27,7 +27,9 @@ describe("laying out a machine", () => {
     expect(new Set(placed.map((p) => p.y)).size).toBe(6); // six each
   });
 
-  it("wraps a layer that grows taller than a bank", () => {
+  it("spreads a rank out without letting nodes overlap", () => {
+    // Nine states entered from one place: what a machine with a much-used state looks like, and
+    // the case where placing by hand fell over.
     const wide = [
       node(
         "start",
@@ -37,8 +39,15 @@ describe("laying out a machine", () => {
     ];
     for (let i = 0; i < 9; i++) wide.push(node(`n${i}`));
     const placed = layoutStates(wide);
-    const layer = placed.filter((p) => p.id.startsWith("n"));
-    expect(new Set(layer.map((p) => p.y)).size).toBeLessThanOrEqual(6);
-    expect(new Set(layer.map((p) => p.x)).size).toBe(2); // spilled into a second column
+    const start = placed.find((p) => p.id === "start")!;
+    const rank = placed.filter((p) => p.id.startsWith("n"));
+    expect(rank.every((p) => p.x > start.x)).toBe(true); // all downstream of the beginning
+    expect(new Set(rank.map((p) => p.y)).size).toBe(9); // and none on top of another
+  });
+
+  it("gives every node a place, even one nothing reaches", () => {
+    const placed = layoutStates([node("a", ["b"], true), node("b"), node("stray")]);
+    expect(placed.map((p) => p.id).sort()).toEqual(["a", "b", "stray"]);
+    expect(placed.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))).toBe(true);
   });
 });

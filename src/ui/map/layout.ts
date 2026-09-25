@@ -1,15 +1,19 @@
+import dagre from "@dagrejs/dagre";
+
 /*
- * Where the states sit. A layout engine would be another dependency; this is enough for two dozen
- * nodes, and it picks its arrangement from the shape of the graph:
+ * Where the states sit, chosen from the shape of the graph:
  *
- * - A design with a beginning — states nothing else leads to — is drawn in layers, left to right,
- *   which is what an authored machine looks like: mains on the left, the states they enter next.
+ * - A design with a beginning — states nothing else leads to — is laid out by dagre, left to
+ *   right. It ranks the states by how far they are from a beginning and orders each rank to cut
+ *   down crossings, which is the part worth not writing by hand: a machine with a state entered
+ *   from a dozen places has a dozen edges converging, and where those nodes sit decides whether
+ *   the map can be read at all.
  * - A graph with no beginning is a ring, which is exactly what the factory set is: every preset
- *   steps to its neighbours, so every state is entered and no layering means anything. Those are
- *   laid out as a grid shaped like the hardware's banks, six to a column.
+ *   steps to its neighbours, so no ranking means anything and dagre strings all 24 across the
+ *   screen. Those are laid out as a grid shaped like the hardware's banks instead.
  *
- * Cycles are ordinary either way — a looper returns to where it came from — so a node keeps the
- * first, shallowest column it is given.
+ * Only the nodes are placed. Edges route themselves (see `FlowEdge`), and their labels ride their
+ * own curve, so nothing here has to think about labels.
  */
 
 export interface LayoutNode {
@@ -26,16 +30,17 @@ export interface LayoutInput {
   isEntry: boolean;
 }
 
+/** Roughly what a state node measures; dagre needs a size to keep ranks apart. */
+const NODE_WIDTH = 190;
+const NODE_HEIGHT = 64;
 const COLUMN = 260;
 const ROW = 96;
 const BANK = 6;
 
 export function layoutStates(nodes: LayoutInput[]): LayoutNode[] {
-  const ids = new Set(nodes.map((n) => n.id));
-  const byId = new Map(nodes.map((n) => [n.id, n]));
-  const entries = nodes.filter((n) => n.isEntry);
+  if (nodes.length === 0) return [];
 
-  if (entries.length === 0) {
+  if (!nodes.some((n) => n.isEntry)) {
     // No beginning: a ring. Shaped like the banks rather than strung out in one line.
     return nodes.map((node, i) => ({
       id: node.id,
@@ -44,30 +49,23 @@ export function layoutStates(nodes: LayoutInput[]): LayoutNode[] {
     }));
   }
 
-  const depth = new Map<string, number>();
-  const walk = (from: string) => {
-    const queue: { id: string; d: number }[] = [{ id: from, d: 0 }];
-    while (queue.length > 0) {
-      const { id, d } = queue.shift()!;
-      if (depth.has(id)) continue; // already placed, and no deeper than this
-      depth.set(id, d);
-      for (const next of byId.get(id)?.leadsTo ?? []) {
-        if (ids.has(next) && !depth.has(next)) queue.push({ id: next, d: d + 1 });
-      }
-    }
-  };
-  for (const entry of entries) walk(entry.id);
-  // Anything the entries can't reach is its own little machine; give it a start of its own rather
-  // than piling it all into the first column.
-  for (const node of nodes) if (!depth.has(node.id)) walk(node.id);
+  const graph = new dagre.graphlib.Graph();
+  graph.setGraph({ rankdir: "LR", ranksep: 110, nodesep: 36, marginx: 20, marginy: 20 });
+  graph.setDefaultEdgeLabel(() => ({}));
+  const ids = new Set(nodes.map((n) => n.id));
+  for (const node of nodes) graph.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
+  for (const node of nodes) {
+    for (const next of node.leadsTo) if (ids.has(next) && next !== node.id) graph.setEdge(node.id, next);
+  }
+  dagre.layout(graph);
 
-  // Stack each column in the order the analysis found the states, so nothing jumps about between
-  // renders, and wrap a column that grows taller than a bank.
-  const nextRow = new Map<number, number>();
+  // dagre positions a node by its centre; React Flow places by the top-left corner.
   return nodes.map((node) => {
-    const layer = depth.get(node.id)!;
-    const taken = nextRow.get(layer) ?? 0;
-    nextRow.set(layer, taken + 1);
-    return { id: node.id, x: (layer + Math.floor(taken / BANK)) * COLUMN, y: (taken % BANK) * ROW };
+    const placed = graph.node(node.id) as { x: number; y: number } | undefined;
+    return {
+      id: node.id,
+      x: (placed?.x ?? 0) - NODE_WIDTH / 2,
+      y: (placed?.y ?? 0) - NODE_HEIGHT / 2,
+    };
   });
 }

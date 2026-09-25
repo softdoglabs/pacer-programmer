@@ -95,7 +95,9 @@ export function PresetMap() {
           faded,
           offset: reciprocal ? (e.source < e.target ? SEPARATION : -SEPARATION) : 0,
         } satisfies FlowEdgeData,
-        style: { strokeWidth: faded ? 1 : 1.75, opacity: faded ? 0.45 : 1 },
+        // Stated outright rather than left to the library's default, which is a dark grey that
+        // all but disappears on this background. Stepping stays quieter, but still readable.
+        style: faded ? { strokeWidth: 1.25, stroke: "#8b8b96" } : { strokeWidth: 2, stroke: "#d8d8de" },
         // Which way the press takes you, in our own slender head (see MapDefs).
         // The id, not a url: React Flow wraps it in url(#...) itself.
         markerEnd: MAP_ARROW,
@@ -164,6 +166,9 @@ export function PresetMap() {
           edges={edges}
           edgeTypes={EDGE_TYPES}
           fitView
+          // Selecting a node otherwise lifts it over the edge labels, so the map rearranges
+          // itself in depth as soon as you click anything.
+          elevateNodesOnSelect={false}
           colorMode="dark"
           proOptions={{ hideAttribution: false }}
           nodesDraggable={false}

@@ -311,7 +311,14 @@ a transition is a **return** when every copy leads back to whatever entered
 it, and a fixed jump when every copy leads to the same state. Anything it
 can't express becomes a `note` rather than a wrong answer.
 
-**A state's name is its identity.** Ids exist only in memory; a dump has
+**A state's name is its identity.** In recovery that can repeat — a device
+that wasn't compiled from a machine may name two presets alike, as this
+owner's A1 and A4 are both "PRGM1". Ids that collide merge wherever ids
+are keys, and a node ends up showing another state's routes, so a repeated
+name qualifies *every* state that bears it with the slot it starts at,
+rather than the second one alone.
+
+ Ids exist only in memory; a dump has
 nowhere to keep one, so the recovery has nothing but the preset name to
 tell two states apart. The compiler therefore requires every state to be
 named, within the display's 5 characters, and distinct — the first real
@@ -368,10 +375,17 @@ Clicking a state loads its preset, so the map is also how you navigate.
     two land on top of each other again — which is exactly what happened:
     the heads separated and the labels still coincided.
 - `layout.ts` picks its arrangement from the shape of the graph: a design
-  with a beginning is drawn in layers left to right, while a graph with no
-  beginning is a ring — which is exactly what the factory set is, every
-  preset stepping to its neighbours — and is laid out as banks instead.
-  A layout engine would have been another dependency for two dozen nodes.
+  with a beginning goes to **dagre**, left to right, which ranks states by
+  distance from a beginning and orders each rank to cut crossings. A graph
+  with no beginning is a ring — which is exactly what the factory set is,
+  every preset stepping to its neighbours — and dagre strings those across
+  the screen, so they're laid out as banks instead.
+- **Edge colours are stated, not defaulted.** React Flow's stroke is a
+  dark grey that all but vanishes on this background.
+- **The label layer is lifted above the nodes** (`index.css`) and
+  `elevateNodesOnSelect` is off. Nodes paint after edges, so a label
+  between two nodes was covered by whichever overlapped it, and selecting
+  a node re-ordered the map in depth as you clicked.
 - React Flow needs a definite height: it's `height: 100%`, which resolves
   to nothing against a parent with only a `min-height`, and the nodes end
   up positioned outside a zero-height viewport.

@@ -23,7 +23,7 @@ function withControl(
   presetIndex: number,
   controlId: number,
   steps: { msgType: number; data: [number, number, number]; active?: boolean }[],
-  controlMode = ControlMode.AllStepsAtOnce,
+  controlMode: ControlMode = ControlMode.AllStepsAtOnce,
 ): PacerConfig {
   const config = createEmptyPacerConfig();
   const control = getOrCreateControl(getOrCreatePreset(config, presetIndex), controlId);

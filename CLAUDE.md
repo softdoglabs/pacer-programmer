@@ -246,6 +246,47 @@ preset's own controls can take to another. Pure, and it depends on
   the hand-built pair A1 -> C1 "LOOPR" and back — Purpose #3's pattern in
   miniature.
 
+`presetStates` groups presets that behave identically apart from *where
+their navigation leads*: navigation steps are compared by shape rather
+than destination, so a switch that is a Preset Select in both presets
+matches whichever preset each one points at, while a preset lacking that
+switch does not. Names are excluded, so instances can be named apart on a
+5-character display and still be one state; a state takes a name only when
+every member shares one, which is the only name a dump can carry for it.
+Tested by building the twelve-origin looper shape and recovering it as a
+single state with twelve return routes.
+
+## The state machine: authoring, not just recovery
+
+Recovering the graph is half of it. The point is to **author** one "looper
+running" state and have the tool work out that the hardware needs twelve
+copies of it — one per origin, because the Pacer has nowhere to remember
+which preset it came from — then allocate the slots and keep the copies in
+step when the state changes. Doing that by hand in the stock editor, and
+keeping twelve copies in sync afterwards, is the work this project exists
+to remove.
+
+**The invariant: whatever can be authored must be recoverable.** The
+design is not persisted anywhere — the dump remains the only source of
+truth (see Persistence philosophy) — so a state machine survives only by
+being re-derived from the presets it compiled to. That constrains the
+authoring side more than the analysis: the editor must refuse to express
+anything `presetStates` and `presetTransitions` can't read back. The
+acceptance test is a round trip, `recover(compile(model))` equalling the
+model, and it should be written before the compiler, not after.
+
+If some authorable shape turns out not to be recoverable, the fallback is
+a saved design document plus tools to merge states — but that reintroduces
+the bespoke save format this project set out to avoid, and two things that
+can drift apart (the Pacer's front panel can edit presets behind it). Only
+if the round trip can't be made to hold.
+
+**Slot arithmetic is a hard constraint, not a detail.** A state entered
+from twelve origins costs twelve presets on top of the twelve originals —
+the whole device. The compiler has to price a design before writing
+anything and refuse one that doesn't fit, rather than compiling half of
+it.
+
 **Layering** (enforced by ESLint `no-restricted-imports`; nothing under
 `src/pacer` may import React, Zustand, or UI code):
 `protocol` → `hardware` → `simulator` → `device` → `panel` → `store` / `ui`,

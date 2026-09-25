@@ -5,7 +5,7 @@ import {
   presetSelectTargetToIndex,
 } from "../protocol/constants";
 import type { Step } from "../protocol/types";
-import { cc, channelAftertouch, mmc, noteOff, noteOn, pitchBend, programChange } from "./midiMessages";
+import { bendFrom7Bit, cc, channelAftertouch, mmc, noteOff, noteOn, pitchBend, programChange } from "./midiMessages";
 import { isNoteOn, rememberedCc, type MidiState } from "./midiState";
 import type { ControlPhase, DeviceAction, OutgoingMidiMessage } from "./types";
 
@@ -224,8 +224,10 @@ export function fireExpressionStep(
     }
 
     case ExpressionMessageType.PitchBend: {
+      // The stored range is 7-bit, the message is 14-bit: `bendFrom7Bit` is how the hardware
+      // spreads one across the other (measured, not assumed).
       const [, min, max] = data;
-      return { ...empty(), messages: [pitchBend(channel, sweep(min, max, at))] };
+      return { ...empty(), messages: [pitchBend(channel, bendFrom7Bit(sweep(min, max, at)))] };
     }
 
     case ExpressionMessageType.ChannelAftertouch: {

@@ -764,7 +764,19 @@ no hover-only UI, for tablets.
   sits is device state (`BoardState.pedals`), not component state — a
   pedal's position is physical, so it survives preset changes and every
   view of that pedal agrees. The continuous types (MIDI CC, Pitch Bend,
-  Channel Aftertouch) interpolate between the step's own min and max. The
+  Channel Aftertouch) interpolate between the step's own min and max.
+  - **Pitch Bend is 14-bit, the stored range is 7-bit.** A step's min and
+    max are single SysEx bytes (0-127), but pitch bend carries two data
+    bytes (LSB then MSB, 0-16383, centre 8192), so the firmware has to
+    spread one across the other. Measured on 1.01.12 by sweeping a pedal
+    assigned Pitch Bend: the 7-bit value becomes the **MSB with a zero
+    LSB**, except at full scale, where LSB 127 goes out too so the top is
+    exactly 16383 rather than 16256. 735 messages, MSB covering 0-127, no
+    exceptions. `bendFrom7Bit` in `simulator/midiMessages.ts`.
+  - The app used to put the 7-bit value straight into the 14-bit field, so
+    a full sweep moved under 1% of the range, all of it below centre. The
+    test that covered it used `[0, 0, 16383]` — a step no dump could
+    hold — which is why it passed. The
   UI renders them as sliders. A press or release still means toe or heel,
   so a pedal driven as a button behaves as before.
 - **A preset's load-time MIDI is simulated** (`simulator/presetLoad.ts`):

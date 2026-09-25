@@ -20,6 +20,19 @@ export function pitchBend(channel: number, value14: number): OutgoingMidiMessage
   return { kind: "pitchBend", channel, value14 };
 }
 
+/**
+ * The 14-bit bend value the Pacer sends for one of its 7-bit settings. Pitch bend is the one
+ * channel-voice message with 14 bits (LSB then MSB, 0-16383, centre 8192), while a step's range
+ * is stored in single SysEx bytes — so the firmware has to spread 0-127 across it.
+ *
+ * Confirmed on 1.01.12 by sweeping a pedal assigned Pitch Bend, full range: 735 messages, MSB
+ * covering 0-127 with LSB 0 throughout — except the two at the very top, which send LSB 127 as
+ * well, so full scale is exactly 16383 rather than 16256. No message broke that rule.
+ */
+export function bendFrom7Bit(value: number): number {
+  return value >= 127 ? 16383 : value << 7;
+}
+
 export function channelAftertouch(channel: number, value: number): OutgoingMidiMessage {
   return { kind: "channelAftertouch", channel, value };
 }

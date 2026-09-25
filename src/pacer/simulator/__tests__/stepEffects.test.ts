@@ -229,9 +229,18 @@ describe("fireExpressionStep", () => {
   });
 
   it("PitchBend and ChannelAftertouch use data[1]/data[2] (data[0] unused)", () => {
-    const pb = step(ExpressionMessageType.PitchBend, [0, 0, 16383]);
+    // The range is stored in SysEx bytes, so it's 7-bit: 16383 was never a step a dump could
+    // hold. The hardware spreads 0-127 over the 14-bit message as MSB with a zero LSB, and
+    // sends the exact top only at full scale (measured on 1.01.12 — see `bendFrom7Bit`).
+    const pb = step(ExpressionMessageType.PitchBend, [0, 0, 127]);
     expect(fireExpressionStep(pb, "press", noSubState, WIRE_CHANNEL).messages).toEqual([
       { kind: "pitchBend", channel: 1, value14: 16383 },
+    ]);
+    expect(fireExpressionStep(pb, "move", noSubState, WIRE_CHANNEL, 0.5).messages).toEqual([
+      { kind: "pitchBend", channel: 1, value14: 64 << 7 }, // mid-sweep: MSB only
+    ]);
+    expect(fireExpressionStep(pb, "release", noSubState, WIRE_CHANNEL).messages).toEqual([
+      { kind: "pitchBend", channel: 1, value14: 0 },
     ]);
     const at = step(ExpressionMessageType.ChannelAftertouch, [0, 0, 127]);
     expect(fireExpressionStep(at, "press", noSubState, WIRE_CHANNEL).messages).toEqual([

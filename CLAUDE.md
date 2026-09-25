@@ -356,6 +356,17 @@ Clicking a state loads its preset, so the map is also how you navigate.
   hid the other outright and put its label on top — the map looked like it
   was missing half its edges. Each half now curves the opposite way and
   carries its label on its own curve.
+  - The bow lives in the **middle**, not the control points: an edge is
+    two curves meeting at a displaced midpoint, so each end still leaves
+    along its handle's normal. Displacing a single curve's control points
+    tilts both ends, and a head arriving at a slant slides under the node
+    and vanishes — with a 26-unit bow only 6 of 48 edges still met a node
+    square on. Now none deviates by more than 6 degrees.
+  - "Across" is derived from the endpoints in a fixed order, so it names
+    the same direction for both halves of a pair. Taken from the edge's
+    own direction it flips with it, the opposite offsets cancel, and the
+    two land on top of each other again — which is exactly what happened:
+    the heads separated and the labels still coincided.
 - `layout.ts` picks its arrangement from the shape of the graph: a design
   with a beginning is drawn in layers left to right, while a graph with no
   beginning is a ring — which is exactly what the factory set is, every

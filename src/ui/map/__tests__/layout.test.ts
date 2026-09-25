@@ -1,20 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { layoutStates, type LayoutInput } from "../layout";
 
-const node = (id: string, leadsTo: string[] = [], isEntry = false): LayoutInput => ({ id, leadsTo, isEntry });
+const node = (id: string, leadsTo: string[] = []): LayoutInput => ({ id, leadsTo });
 
 describe("laying out a machine", () => {
   it("puts a design's beginning on the left and what follows to its right", () => {
-    const placed = layoutStates([node("main", ["looper"], true), node("looper", ["main"]), node("tuner", [], false)]);
+    const placed = layoutStates([node("main", ["looper"]), node("looper", ["main"]), node("tuner")]);
     const x = Object.fromEntries(placed.map((p) => [p.id, p.x]));
     expect(x.main).toBeLessThan(x.looper!);
-    // Nothing leads to the tuner from the entry, so it starts a column of its own rather than
-    // being stacked on top of the beginning.
-    expect(placed.find((p) => p.id === "tuner")).toBeDefined();
+    // No route touches the tuner, so it's parked below the part that has structure rather than
+    // threaded into the ranking, where it would push the design off screen.
+    const tuner = placed.find((p) => p.id === "tuner")!;
+    expect(tuner.y).toBeGreaterThan(Math.max(...placed.filter((p) => p.id !== "tuner").map((p) => p.y)));
   });
 
   it("doesn't loop forever on a state that returns to where it came from", () => {
-    const placed = layoutStates([node("a", ["b"], true), node("b", ["a"])]);
+    const placed = layoutStates([node("a", ["b"]), node("b", ["a"])]);
     expect(placed.map((p) => p.id)).toEqual(["a", "b"]);
   });
 
@@ -34,7 +35,6 @@ describe("laying out a machine", () => {
       node(
         "start",
         Array.from({ length: 9 }, (_, i) => `n${i}`),
-        true,
       ),
     ];
     for (let i = 0; i < 9; i++) wide.push(node(`n${i}`));
@@ -45,8 +45,20 @@ describe("laying out a machine", () => {
     expect(new Set(rank.map((p) => p.y)).size).toBe(9); // and none on top of another
   });
 
+  it("keeps a design readable when it's a corner of a device full of presets", () => {
+    // What a real Pacer looks like: one hand-built pair, and 22 presets with nothing to do with it.
+    const nodes = [node("main", ["loop"]), node("loop", ["main"])];
+    for (let i = 0; i < 22; i++) nodes.push(node(`p${i}`));
+    const placed = layoutStates(nodes);
+    const design = placed.filter((p) => p.id === "main" || p.id === "loop");
+    const parked = placed.filter((p) => p.id.startsWith("p"));
+    expect(design[0]!.x).toBeLessThan(design[1]!.x); // ranked left to right
+    expect(Math.min(...parked.map((p) => p.y))).toBeGreaterThan(Math.max(...design.map((p) => p.y)));
+    expect(new Set(parked.map((p) => p.x)).size).toBe(4); // and in banks of six
+  });
+
   it("gives every node a place, even one nothing reaches", () => {
-    const placed = layoutStates([node("a", ["b"], true), node("b"), node("stray")]);
+    const placed = layoutStates([node("a", ["b"]), node("b"), node("stray")]);
     expect(placed.map((p) => p.id).sort()).toEqual(["a", "b", "stray"]);
     expect(placed.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))).toBe(true);
   });

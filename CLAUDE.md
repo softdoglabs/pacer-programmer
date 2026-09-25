@@ -373,6 +373,34 @@ return — dropping a looper into the factory set would be refused. It's the
 same distinction the map's "hide default stepping" filter draws.
 
 
+### Editing the machine (`src/pacer/authoring/`)
+
+A new layer where `analysis` and `editing` meet, which neither may depend
+on the other to reach. `editRoute` points a state's switch at another
+state — on **every copy of it at once**, which is the part that can't be
+done a preset at a time without the copies drifting apart. `switchUses`
+says what each switch already carries, so a route lands somewhere it will
+actually fire.
+
+Refusals are checked, not guessed:
+- **Entering a state that returns needs another copy of it**, with its own
+  way back, and that's a preset the device may not have spare. Refused
+  outright, saying so.
+- **Everything else is judged by recovering the machine before and after.**
+  A return that no longer reads as a return refuses, and so does anything
+  the recovery couldn't read afterwards that it could read before. Returns
+  are what's worth guarding: nothing stores them — a copy returns because
+  one preset leads to it and it leads back — so breaking one is invisible
+  on the hardware.
+- **Only the first jump on a press happens** (the engine takes it and warns
+  about the rest), so a route written after an earlier jumping step would
+  never fire. Refused. That's the shape of every factory preset: switch A
+  already selects the firmware's Track preset, which isn't a state of the
+  configuration and so doesn't show on the map at all — hence
+  `SwitchUse.firmwareTarget`, which is why "nothing on it" isn't the same
+  as "free".
+
+
 
 **Layering** (enforced by ESLint `no-restricted-imports`; nothing under
 `src/pacer` may import React, Zustand, or UI code):
@@ -850,6 +878,38 @@ no hover-only UI, for tablets.
   - **This shell is itself due to be replaced** — see "Planned UI
     reorganization" below. Build toward that shape rather than extending
     the Play/Edit toggle and the tab strip.
+- **The preset map** (`src/ui/map/`) draws the configuration as the machine
+  its author meant: presets that behave alike are one node however many
+  copies the hardware needed, and a route that leads each copy back where
+  it came from is drawn as a return on the node it leaves.
+  - **Two toggles, not modes**: *Show* (designed routes / everything) hides
+    the plain next/previous stepping most presets carry, and *Clicking*
+    (loads a preset / edits routes) decides what the map is for at that
+    moment. Editing shows the handles, takes a drag from one state to
+    another, and opens a clicked route.
+  - **`RouteDialog`** is the one form for both: which switch carries the
+    route, where it goes, and taking it away. It describes each switch in
+    what it already does ("free", "sends 2 messages", "selects the Track
+    preset", "comes back to where it was entered from") and shows
+    `editRoute`'s refusals rather than writing something that won't survive.
+  - **The map carries the editing controls** (`ui/editor/EditingBar`, which
+    Program mode uses too): the same undo stack, unsaved badge, Save and
+    Send. It reroutes presets, so it can't be the one surface with no way
+    back. This is what "configuring the state machine is an editing layer
+    on the map" means in the plan below — not a fourth mode.
+  - **Layout** (`layout.ts`): the states the drawn routes connect are ranked
+    left to right by dagre; the rest are parked in banks of six below it.
+    On a real device a design is a corner of the 24, so threading the other
+    presets through the ranking pushes it off screen. A ring — every state
+    connected and none of them a beginning, which is the whole factory set
+    with stepping shown — is laid out as banks throughout, since there's no
+    direction to read it in.
+  - **Layout drives the geometry**: it says which way each node faces, and
+    `StateNode` carries a handle on all four sides so an edge meets the
+    side it's travelling towards. React Flow's stock node has one source
+    and one target, so every back edge — which is every return — left the
+    far side and looped around, arriving at a slant with its head under the
+    node.
 - **MIDI out** (`src/midi/webMidi.ts`): a thin Web MIDI wrapper, typed
   structurally so tests use fakes (`src/midi/__tests__/fakeMidi.ts`).
   - The header's "Connect MIDI" asks for SysEx access, falling back to

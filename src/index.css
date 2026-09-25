@@ -240,3 +240,15 @@
 .react-flow__edgelabel-renderer {
   z-index: 5;
 }
+
+/*
+ * A state carries a handle on each of its four sides so a route can meet it head on whichever way
+ * it travels (see `map/StateNode`). They're only something to grab while routes are being edited,
+ * so they show then: the rest of the time four dots per node is decoration nobody can use.
+ */
+.react-flow__handle {
+  opacity: 0;
+}
+.react-flow__handle.connectable {
+  opacity: 1;
+}

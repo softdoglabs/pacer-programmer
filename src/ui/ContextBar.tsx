@@ -1,14 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { usePacerStore } from "../store/pacerStore";
-import { ProgramBar } from "./editor/ProgramBar";
+import { EditingBar } from "./editor/EditingBar";
 import { MidiOutputSelect } from "./MidiControls";
 import { PresetChooserButton } from "./PresetChooser";
 
 /**
  * The row under the mode bar, holding only the controls the current mode needs. Simulate gets the
- * simulator's own MIDI output and its remembered-value reset; Program gets undo/save/send. That
- * split is what keeps "send to the rig" and "talk to the Pacer" from being confused for each
- * other — see "Planned UI reorganization" in CLAUDE.md.
+ * simulator's own MIDI output and its remembered-value reset; Program and the preset map, which
+ * both edit the working configuration, get undo/save/send. That split is what keeps "send to the
+ * rig" and "talk to the Pacer" from being confused for each other — see "Planned UI
+ * reorganization" in CLAUDE.md.
  */
 export function ContextBar() {
   const uiMode = usePacerStore((s) => s.uiMode);
@@ -20,7 +21,9 @@ export function ContextBar() {
         <>
           {/* No faceplate here, so the preset lives on a button rather than on the display. */}
           <PresetChooserButton />
-          <span className="text-sm text-muted-foreground">
+          {/* The map reroutes states, so it carries the same editing controls Program does. */}
+          <EditingBar />
+          <span className="text-xs text-muted-foreground">
             Presets that behave alike are one state; ↩ marks a jump back to whatever entered it.
           </span>
         </>
@@ -40,7 +43,7 @@ export function ContextBar() {
           </span>
         </>
       ) : (
-        <ProgramBar />
+        <EditingBar />
       )}
     </div>
   );

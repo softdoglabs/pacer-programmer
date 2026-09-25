@@ -19,6 +19,9 @@ export interface FlowEdgeData extends Record<string, unknown> {
   offset?: number;
   label?: string;
   faded?: boolean;
+  /** The switch and step that carry this route, so clicking it can open the route for editing. */
+  controlId?: number;
+  stepNumber?: number;
 }
 
 /** Which way a handle faces, as a unit vector pointing away from the node. */

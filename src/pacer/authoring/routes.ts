@@ -1,4 +1,5 @@
 import {
+  ControlMode,
   STEPS_PER_CONTROL,
   SWITCH_CONTROL_IDS,
   SwitchMessageType,
@@ -6,7 +7,7 @@ import {
   presetIndexToPresetSelectTarget,
 } from "../protocol/constants";
 import type { PacerConfig } from "../protocol/types";
-import { recoverMachine, type RecoveredMachine } from "../analysis";
+import { presetTransitions, recoverMachine, type RecoveredMachine } from "../analysis";
 import { setStepType, updateStep } from "../editing";
 
 /*
@@ -38,8 +39,19 @@ export interface SwitchUse {
   controlId: number;
   /** The route it already carries, if any. */
   route?: { stepNumber: number; toStateId?: string; isReturn: boolean; viaStepping: boolean };
-  /** Where a new route would be written: the first step free on every copy, if there is one. */
+  /**
+   * Where a new route would go: the first step that's free on every copy *and* would actually
+   * fire. A press in the default mode takes the first jump it finds and drops the rest, so a
+   * later step is somewhere a route would sit and never happen.
+   */
   freeStep?: number;
+  /**
+   * Somewhere the switch already goes that isn't a state of this configuration: the firmware's own
+   * Track or Transport preset, or a reload of the one that's loaded. The factory set puts Track on
+   * A and Transport on B of every preset, so this is most switches on most devices — and it's why
+   * "nothing on it" isn't the same as "free".
+   */
+  firmwareTarget?: "track" | "transport" | "reload";
   /** How many of its steps already send something, which a press would fire along with the jump. */
   sends: number;
 }
@@ -51,21 +63,47 @@ function isFree(config: PacerConfig, members: number[], controlId: number, stepN
   });
 }
 
+/** True when a press fires every step at once, which is when only the first jump counts. */
+function firesAllAtOnce(config: PacerConfig, presetIndex: number, controlId: number): boolean {
+  const mode = config.presets[presetIndex]?.controls[controlId]?.controlMode;
+  return mode === undefined || mode === ControlMode.AllStepsAtOnce;
+}
+
+/** The lowest active step that jumps, which is the only jump a single press makes. */
+function firstJump(config: PacerConfig, presetIndex: number, controlId: number): number | undefined {
+  if (!firesAllAtOnce(config, presetIndex, controlId)) return undefined;
+  for (let n = 1; n <= STEPS_PER_CONTROL; n++) {
+    const step = config.presets[presetIndex]?.controls[controlId]?.steps[n];
+    if (step?.active && navigates(step.msgType)) return n;
+  }
+  return undefined;
+}
+
 /** Every switch on a state, with what it does now — the material a route picker needs. */
 export function switchUses(config: PacerConfig, stateId: string): SwitchUse[] {
   const machine = recoverMachine(config);
   const state = machine.states.find((s) => s.id === stateId);
   const members = machine.members[stateId] ?? [];
-  if (!state) return [];
+  const first = members[0];
+  if (!state || first === undefined) return [];
+  const graph = presetTransitions(config);
 
   return SWITCH_CONTROL_IDS.map((controlId) => {
     const transition = state.transitions.find((t) => t.controlId === controlId);
     const steps = [];
     for (let n = 1; n <= STEPS_PER_CONTROL; n++) steps.push(n);
-    const freeStep = steps.find((n) => isFree(config, members, controlId, n));
+
+    // A step after the one that jumps would never fire, so it isn't anywhere to put a route.
+    const jump = firstJump(config, first, controlId);
+    const freeStep = steps.find((n) => (jump === undefined || n < jump) && isFree(config, members, controlId, n));
+
+    const elsewhere = (graph.from[first] ?? []).find((e) => e.controlId === controlId && e.target.kind !== "preset");
+    const firmwareTarget =
+      elsewhere?.target.kind === "special" ? elsewhere.target.preset : elsewhere ? ("reload" as const) : undefined;
+
     let sends = 0;
     for (const n of steps) {
-      const step = config.presets[members[0] ?? 0]?.controls[controlId]?.steps[n];
+      const step = config.presets[first]?.controls[controlId]?.steps[n];
       if (step?.active && step.msgType !== SwitchMessageType.Off && !navigates(step.msgType)) sends++;
     }
     return {
@@ -81,6 +119,7 @@ export function switchUses(config: PacerConfig, stateId: string): SwitchUse[] {
           }
         : {}),
       ...(freeStep !== undefined ? { freeStep } : {}),
+      ...(firmwareTarget !== undefined ? { firmwareTarget } : {}),
       sends,
     };
   });
@@ -129,6 +168,23 @@ export function editRoute(config: PacerConfig, change: RouteChange): RouteResult
       return { ok: false, error: `Can't route to "${to.name?.trim() || to.id}": ${because}` };
     }
     target = toMembers[0];
+  }
+
+  /*
+   * A press in the default mode fires every step but takes only the first jump it finds (the
+   * engine warns about the rest). A route written after one would sit there and never happen —
+   * most often behind the Track selector the factory set puts on switch A.
+   */
+  if (target !== undefined) {
+    for (const member of members) {
+      const jump = firstJump(config, member, change.controlId);
+      if (jump !== undefined && jump < change.stepNumber) {
+        return {
+          ok: false,
+          error: `Step ${jump} on that switch already jumps somewhere, and a press only takes the first jump — a route on step ${change.stepNumber} would never fire.`,
+        };
+      }
+    }
   }
 
   let edited = config;

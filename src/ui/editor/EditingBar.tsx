@@ -65,8 +65,14 @@ function SaveDialog({ isOpen, onOpenChange }: { isOpen: boolean; onOpenChange: (
   );
 }
 
-/** Program mode's context bar: undo/redo, save, and send to the Pacer. */
-export function ProgramBar() {
+/**
+ * The controls for editing the one working configuration: undo/redo, save, and send to the Pacer.
+ *
+ * Program mode and the preset map both edit it — the map by rerouting a state's switches, which is
+ * the same undo stack and the same unsaved configuration — so both carry these rather than the map
+ * quietly changing presets with no way back.
+ */
+export function EditingBar() {
   const undo = usePacerStore((s) => s.undo);
   const redo = usePacerStore((s) => s.redo);
   const canUndo = usePacerStore((s) => s.editHistory.past.length > 0);

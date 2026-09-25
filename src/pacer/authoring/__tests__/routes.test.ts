@@ -139,6 +139,25 @@ describe("routing between states", () => {
     expect(after.states.flatMap((s) => s.transitions)).toHaveLength(0);
   });
 
+  it("refuses a route that would sit behind an earlier jump and never fire", () => {
+    // The shape every factory preset has: switch A already selects the firmware's Track preset,
+    // which the map can't show because it isn't a state of the configuration.
+    const config = compiled(looper(2));
+    const machine = recoverMachine(config);
+    const a = machine.states.find((s) => s.name === "MAIN0")!;
+    const b = machine.states.find((s) => s.name === "MAIN1")!;
+
+    const result = editRoute(config, {
+      fromStateId: a.id,
+      controlId: ControlId.StompswitchA, // already jumps to the looper on step 1
+      stepNumber: 2,
+      toStateId: b.id,
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/only takes the first jump/);
+  });
+
   it("says what each switch already carries, so a route can be put somewhere free", () => {
     const config = compiled(looper(2));
     const machine = recoverMachine(config);
@@ -148,7 +167,9 @@ describe("routing between states", () => {
     const a = uses.find((u) => u.controlId === ControlId.StompswitchA)!;
     expect(a.route?.isReturn).toBe(true);
     expect(a.route?.stepNumber).toBe(1);
-    expect(a.freeStep).toBe(2); // step 1 is the return, so a new route goes on step 2
+    // Nowhere to put a second route: a press fires every step but takes only the first jump, so
+    // anything after the return on step 1 would sit there and never happen.
+    expect(a.freeStep).toBeUndefined();
 
     const one = uses.find((u) => u.controlId === ControlId.Stompswitch1)!;
     expect(one.route).toBeUndefined();

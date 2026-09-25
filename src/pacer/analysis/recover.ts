@@ -2,7 +2,7 @@ import { CURRENT_PRESET_INDEX, SwitchMessageType, presetIndexToLabel } from "../
 import type { PacerConfig, Preset } from "../protocol/types";
 import type { MachineState, MachineTransition, StateMachine } from "./machine";
 import { presetStates } from "./states";
-import { presetTransitions, type TransitionEdge } from "./transitions";
+import { isPlainStepping, presetTransitions, type TransitionEdge } from "./transitions";
 
 /*
  * Reading a state machine back out of the presets it compiled to. Nothing else is stored, so this
@@ -75,9 +75,20 @@ export function recoverMachine(config: PacerConfig): RecoveredMachine {
     return id;
   });
 
-  /** The single preset that enters `member`, if exactly one does — a return needs somewhere to go back to. */
+  /**
+   * The single preset that enters `member`, if exactly one does — a return needs somewhere to go
+   * back to.
+   *
+   * Plain stepping doesn't count as entering. Next/previous names a direction, not a preset: every
+   * slot has neighbours, so a preset surrounded by anything that steps would look entered from two
+   * places and no return could ever be recognised. That's not a corner case — it's every real
+   * device, where C and D step on almost every preset. What enters a state is a switch that names
+   * it.
+   */
   const soleEntrant = (member: number): number | undefined => {
-    const entrants = new Set((graph.into[member] ?? []).map((e) => e.from).filter((from) => from !== member));
+    const entrants = new Set(
+      (graph.into[member] ?? []).filter((e) => e.from !== member && !isPlainStepping(config, e)).map((e) => e.from),
+    );
     return entrants.size === 1 ? [...entrants][0] : undefined;
   };
 
@@ -125,12 +136,8 @@ export function recoverMachine(config: PacerConfig): RecoveredMachine {
         continue;
       }
 
-      // Plain stepping: Inc/Dec, carrying nothing else. It's what C and D do on every factory
-      // preset, so it's worth being able to put aside when reading a map.
-      const stepping = perMember.every((p) => {
-        const step = config.presets[p.member]?.controls[controlId]?.steps[stepNumber];
-        return step?.msgType === SwitchMessageType.PresetIncDec && p.edge!.alsoFires.length === 0;
-      });
+      // Worth being able to put aside when reading a map: it's what C and D do on every preset.
+      const stepping = perMember.every((p) => isPlainStepping(config, p.edge!));
 
       const targetStates = new Set(targets.map((t) => stateOf.get(t!)));
       if (targetStates.size === 1) {

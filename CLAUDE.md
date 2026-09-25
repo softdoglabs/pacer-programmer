@@ -342,6 +342,37 @@ structure, with that one equivalence allowed explicitly; the recompile is
 what justifies it.
 
 
+### Putting a machine into a configuration that exists (`analysis/apply.ts`)
+
+`compileMachine` builds its presets from nothing, which is the right thing
+to reason about but not a thing you can send: a real configuration also
+carries global settings, and usually presets the machine has no opinion
+about. `applyMachine` writes the slots the machine occupies and leaves
+everything else exactly as it was.
+
+The invariant is then checked against the **merged** configuration rather
+than the compiled one, because the presets around a machine change what it
+means:
+- A switch on an untouched preset that jumps into a copy gives that copy a
+  second way in, and a return is only recognisable while each copy has
+  exactly one.
+- An untouched preset that behaves like one of the states joins it, giving
+  the state a copy the machine never made and, if it returns, somewhere
+  else to come back from. Refused first, naming the preset, because the
+  symptoms it causes further down read as the design's fault.
+- Whatever those presets already say on their own — an unreadable jump of
+  their own making — is the user's business and isn't judged. Only notes
+  about the machine's own slots refuse it.
+
+**Plain stepping isn't an entrance.** Next/previous names a direction, not
+a preset, so it says nothing about which state a press meant to reach, and
+it doesn't count as entering one for the purpose of spotting a return. It
+can't: every slot has neighbours and C/D step on nearly every preset, so
+counting it would mean no state on a real device could ever be seen to
+return — dropping a looper into the factory set would be refused. It's the
+same distinction the map's "hide default stepping" filter draws.
+
+
 
 **Layering** (enforced by ESLint `no-restricted-imports`; nothing under
 `src/pacer` may import React, Zustand, or UI code):

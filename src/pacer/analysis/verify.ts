@@ -26,9 +26,42 @@ export interface CompiledSlot {
 /** Explains what wouldn't survive a round trip, or undefined when the machine is safe. */
 export function whatWontSurvive(machine: StateMachine, config: PacerConfig, slots: CompiledSlot[]): string | undefined {
   const recovered = recoverMachine(config);
-  if (recovered.notes.length > 0) return recovered.notes[0]!.message;
-
   const stateOfPreset = new Map(slots.map((s) => [s.presetIndex, s.stateId]));
+  const authored = new Map(machine.states.map((s) => [s.id, s]));
+
+  /** Which of the machine's states each recovered state came from, and which presets weren't its. */
+  const origins = recovered.states.map((state) => {
+    const members = recovered.members[state.id] ?? [];
+    return {
+      state,
+      members,
+      own: [...new Set(members.map((m) => stateOfPreset.get(m)))].filter((id): id is string => id !== undefined),
+      intruders: members.filter((m) => !stateOfPreset.has(m)),
+    };
+  });
+
+  /*
+   * A preset the machine never touched that behaves exactly like one of its states comes back as
+   * the same state — giving it a copy the machine never made and, if it returns, somewhere else to
+   * come back from. Said first, because the symptoms it causes further down read as the design's
+   * fault when they're the configuration's.
+   */
+  for (const { own, members, intruders } of origins) {
+    if (own.length === 0 || intruders.length === 0) continue;
+    const name = authored.get(own[0]!)?.name ?? own[0];
+    const where = intruders.map(presetIndexToLabel).join(", ");
+    return `${where} already ${intruders.length === 1 ? "behaves" : "behave"} like "${name}" apart from where ${intruders.length === 1 ? "it leads" : "they lead"}, so ${members.length} presets come back as one state. Give "${name}" something of its own to do, or clear ${intruders.length === 1 ? "that preset" : "those presets"}.`;
+  }
+
+  /*
+   * Only what the machine owns is judged from here. A configuration usually has presets the machine
+   * has no opinion about, and whatever those already say — an unreadable jump, a state that doesn't
+   * come back — is the user's business, not a reason to refuse their design. Compiling from nothing
+   * passes every preset here, so this narrows nothing in that case.
+   */
+  const ownNote = recovered.notes.find((n) => stateOfPreset.has(n.presetIndex));
+  if (ownNote) return ownNote.message;
+
   const slotOfKey = new Map(slots.map((s) => [s.key, s.presetIndex]));
   const presetsOfState = new Map<string, Set<number>>();
   for (const slot of slots) {
@@ -37,22 +70,20 @@ export function whatWontSurvive(machine: StateMachine, config: PacerConfig, slot
     presetsOfState.set(slot.stateId, set);
   }
 
-  const authored = new Map(machine.states.map((s) => [s.id, s]));
   const recoveredOf = new Map<string, (typeof recovered.states)[number]>();
 
-  for (const state of recovered.states) {
-    const members = recovered.members[state.id] ?? [];
-    const sources = new Set(members.map((m) => stateOfPreset.get(m)));
-    if (sources.size !== 1) {
-      const names = [...sources].map((id) => authored.get(id ?? "")?.name ?? id).join(" and ");
+  for (const { state, members, own } of origins) {
+    if (own.length === 0) continue; // none of this state's presets are the machine's
+    if (own.length !== 1) {
+      const names = own.map((id) => authored.get(id)?.name ?? id).join(" and ");
       return `"${names}" behave the same apart from where they lead, so they come back as one state. Give one of them something of its own to do, or make them one state.`;
     }
-    const [stateId] = sources;
-    const expected = presetsOfState.get(stateId ?? "");
+    const stateId = own[0]!;
+    const expected = presetsOfState.get(stateId);
     if (!expected || expected.size !== members.length) {
-      return `The copies of "${authored.get(stateId ?? "")?.name ?? stateId}" don't come back together.`;
+      return `The copies of "${authored.get(stateId)?.name ?? stateId}" don't come back together.`;
     }
-    recoveredOf.set(stateId!, state);
+    recoveredOf.set(stateId, state);
   }
 
   for (const state of machine.states) {

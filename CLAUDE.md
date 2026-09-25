@@ -326,11 +326,20 @@ this is the property itself, and it costs one pass over 24 presets. What
 it catches:
 - Two states that behave alike apart from their navigation, which come
   back as one, because by the rule they *are* one.
-- A **return from a state only one place enters**. With a single origin a
-  return and a jump to that origin compile to the same preset, so nothing
-  records which was meant. This was previously accepted and documented as
-  a degeneracy; it's now refused, because the difference starts to matter
-  the moment a second origin is added.
+**What the invariant actually demands is that the recovered machine
+*means* the same thing, not that it has the same shape.** A return from a
+state only one place enters comes back as a jump to that one place — and
+with a single origin those are the same machine: recompiling what came
+back produces the identical presets. It's allowed, and there's a test that
+recompiles the recovered model and compares the presets. The two only part
+company once a second origin exists, and a return is expressible and
+recovers as one from then on.
+
+An earlier version refused it on structural grounds, which conflated a
+harmless restatement with a real loss and would have stopped a design
+being built up one origin at a time. The verifier still compares
+structure, with that one equivalence allowed explicitly; the recompile is
+what justifies it.
 
 
 

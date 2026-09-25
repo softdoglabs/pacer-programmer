@@ -194,6 +194,7 @@ export function compileMachine(machine: StateMachine): CompileResult {
     key,
     stateId: instances.get(key)!.stateId,
     presetIndex: slotOf.get(key)!,
+    returnsTo: instances.get(key)!.returnTo,
   }));
 
   /*

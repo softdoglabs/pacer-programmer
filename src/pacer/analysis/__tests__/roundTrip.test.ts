@@ -184,33 +184,27 @@ describe("what makes two states the same", () => {
 });
 
 describe("the invariant, enforced rather than assumed", () => {
-  it("refuses a return from a state only one place enters", () => {
+  it("accepts a return from a state only one place enters, since it means the same thing", () => {
     /*
-     * With a single origin a return and a jump to that origin compile to the same preset, so the
-     * presets don't record which was meant and it comes back as the jump it literally is. It used
-     * to be accepted and documented as a degeneracy; the compiler now says so, because the
-     * difference starts to matter the moment a second origin is added.
+     * With a single origin, a return and a jump to that origin are the same machine: the presets
+     * are identical, and recompiling the recovered model yields them again. It reads back as the
+     * jump it literally is, which describes the configuration correctly — the two only part
+     * company once a second origin exists, and then a return is expressible and recovers as one.
      */
-    const machine: StateMachine = {
-      states: [
-        {
-          id: "main",
-          name: "MAIN",
-          body: body(ControlId.Stompswitch1, SwitchMessageType.Note, [60, 127, 0]),
-          transitions: [{ controlId: ControlId.StompswitchA, stepNumber: 1, to: { kind: "state", id: "loop" } }],
-        },
-        {
-          id: "loop",
-          name: "LOOP",
-          body: body(ControlId.Stompswitch1, SwitchMessageType.CcTrigger, [53, 127, 0]),
-          transitions: [{ controlId: ControlId.StompswitchA, stepNumber: 1, to: { kind: "return" } }],
-        },
-      ],
-    };
-    expect(compileMachine(machine)).toMatchObject({
-      ok: false,
-      error: expect.stringContaining("can't be told from a jump"),
-    });
+    const machine = looperMachine(1);
+    const compiled = compileMachine(machine);
+    expect(compiled.ok).toBe(true);
+    if (!compiled.ok) return;
+
+    const recovered = recoverMachine(compiled.config);
+    const loop = recovered.states.find((s) => s.name === "LOOPR")!;
+    expect(loop.transitions[0]?.to).toEqual({ kind: "state", id: "MAIN0" });
+
+    // The point of allowing it: what comes back builds the same presets.
+    const again = compileMachine({ states: recovered.states });
+    expect(again.ok).toBe(true);
+    if (!again.ok) return;
+    expect(again.config.presets).toEqual(compiled.config.presets);
   });
 
   it("accepts the same design once a second origin exists", () => {

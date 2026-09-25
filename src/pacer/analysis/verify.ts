@@ -19,6 +19,8 @@ export interface CompiledSlot {
   key: string;
   stateId: string;
   presetIndex: number;
+  /** Key of the copy this one goes back to, for a state that returns. */
+  returnsTo?: string;
 }
 
 /** Explains what wouldn't survive a round trip, or undefined when the machine is safe. */
@@ -27,6 +29,7 @@ export function whatWontSurvive(machine: StateMachine, config: PacerConfig, slot
   if (recovered.notes.length > 0) return recovered.notes[0]!.message;
 
   const stateOfPreset = new Map(slots.map((s) => [s.presetIndex, s.stateId]));
+  const slotOfKey = new Map(slots.map((s) => [s.key, s.presetIndex]));
   const presetsOfState = new Map<string, Set<number>>();
   for (const slot of slots) {
     const set = presetsOfState.get(slot.stateId) ?? new Set<number>();
@@ -66,9 +69,25 @@ export function whatWontSurvive(machine: StateMachine, config: PacerConfig, slot
         return `A route from "${state.name ?? state.id}" doesn't come back on the switch it was put on.`;
       }
       if (match.to.kind !== authoredTransition.to.kind) {
-        // The one that can't be told apart: a return from a state with a single copy looks
-        // exactly like a jump to the place that entered it, because with one origin it is one.
-        return `The route from "${state.name ?? state.id}" comes back as a ${match.to.kind === "return" ? "return" : "jump"} rather than a ${authoredTransition.to.kind === "return" ? "return" : "jump"}. A return from a state entered in only one place can't be told from a jump there.`;
+        /*
+         * One difference is not a loss. A return from a state with a single copy comes back as a
+         * jump to the one place that enters it — and with one origin those are the same machine:
+         * recompiling the recovered model yields the very same presets. The two only part company
+         * once a second origin exists, and then the return is expressible and recovers as one.
+         *
+         * What matters is that the recovered model *means* the same thing, not that it has the
+         * same shape. Anything else here does change the machine.
+         */
+        const copies = slots.filter((s) => s.stateId === state.id);
+        const equivalent =
+          authoredTransition.to.kind === "return" &&
+          match.to.kind === "state" &&
+          copies.length === 1 &&
+          recoveredOf.get(stateOfPreset.get(slotOfKey.get(copies[0]!.returnsTo ?? "") ?? -1) ?? "")?.id === match.to.id;
+        if (!equivalent) {
+          return `The route from "${state.name ?? state.id}" comes back as a ${match.to.kind === "return" ? "return" : "jump"} rather than a ${authoredTransition.to.kind === "return" ? "return" : "jump"}.`;
+        }
+        continue;
       }
       if (authoredTransition.to.kind === "state" && match.to.kind === "state") {
         const target = recoveredOf.get(authoredTransition.to.id);

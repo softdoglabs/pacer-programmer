@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Background, ReactFlow, type Edge, type Node } from "@xyflow/react";
+import { Background, MarkerType, ReactFlow, type Edge, type Node } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { recoverMachine } from "@/pacer/analysis";
 import { presetIndexToLabel } from "@/pacer/protocol/constants";
@@ -72,6 +72,9 @@ export function PresetMap() {
             label: controlLabel(t.controlId),
             labelBgPadding: [4, 2] as [number, number],
             style: { strokeWidth: 1.5 },
+            // Which way the press takes you. Two presets that step to each other are drawn as a
+            // pair of lines in the same place, so without heads there's no reading them.
+            markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18 },
           },
         ];
       }),

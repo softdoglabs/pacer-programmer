@@ -98,6 +98,24 @@ export default tseslint.config(
     },
   },
   {
+    files: ["src/pacer/analysis/**/*.ts"],
+    ignores: ["src/pacer/analysis/**/__tests__/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            ...noUiInDomain.patterns,
+            {
+              group: ["**/simulator/**", "**/device/**", "**/panel/**", "**/simulator", "**/device", "**/panel"],
+              message: "analysis derives views from the config alone; it may only depend on protocol.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["src/pacer/simulator/**/*.ts"],
     ignores: ["src/pacer/simulator/**/__tests__/**"],
     rules: {

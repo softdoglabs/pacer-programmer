@@ -222,9 +222,34 @@ to validate it without a real capture that exercises it). Covered by 40+
 unit tests (synthetic configs for behavior, plus a smoke test pressing
 every control on every real factory preset).
 
+`src/pacer/analysis/` — the derived views over a configuration, starting
+with the preset-transition graph (`presetTransitions`): every route one
+preset's own controls can take to another. Pure, and it depends on
+`protocol` alone.
+- Only a control step can change preset. A preset's load-time MIDI can't
+  (its table has no preset type) and neither can an expression pedal (all
+  its types are continuous). The firmware's own routes — [Preset] held,
+  Track/Transport — aren't edges: they're available everywhere and belong
+  to the device rather than to a configuration.
+- Which steps can fire depends on the control mode, so the trigger is part
+  of the edge: All-at-once reaches a jump on one press and carries
+  everything else that press sends (`alsoFires` — the "activate the looper
+  *and* go there" pattern); Sequence gives one edge per active navigating
+  step, reached after that many presses; External step select marks them
+  all possible, since cross-control targeting isn't modeled.
+- An all-at-once press with two jumps yields one edge, matching the
+  engine, which takes the first and warns about the rest.
+- Preset Inc/Dec is relative, so it resolves per source preset and wraps
+  (D6 next = A1). Preset Select's reserved targets stay distinct: 0 is a
+  reload, 1 and 2 are the firmware's DAW presets.
+- Verified against the factory dump and the owner's device, where it finds
+  the hand-built pair A1 -> C1 "LOOPR" and back — Purpose #3's pattern in
+  miniature.
+
 **Layering** (enforced by ESLint `no-restricted-imports`; nothing under
 `src/pacer` may import React, Zustand, or UI code):
-`protocol` → `hardware` → `simulator` → `device` → `panel` → `store` / `ui`.
+`protocol` → `hardware` → `simulator` → `device` → `panel` → `store` / `ui`,
+with `editing` and `analysis` alongside, both depending on `protocol` only.
 
 - `src/pacer/hardware/` is a declarative description of every physical
   control (`PACER_HARDWARE`). It records each control's programmable

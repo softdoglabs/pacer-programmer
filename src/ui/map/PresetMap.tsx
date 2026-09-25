@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
-import { Background, MarkerType, ReactFlow, type Edge, type Node } from "@xyflow/react";
+import { Background, ReactFlow, type Edge, type Node } from "@xyflow/react";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { FlowEdge, type FlowEdgeData } from "./FlowEdge";
+import { MAP_ARROW, MapDefs } from "./MapDefs";
 import "@xyflow/react/dist/style.css";
 import { recoverMachine } from "@/pacer/analysis";
 import { presetIndexToLabel } from "@/pacer/protocol/constants";
+import { switchSpecForControl } from "@/pacer/hardware";
 import { controlLabel } from "@/pacer/simulator";
 import { usePacerStore } from "../../store/pacerStore";
 import { layoutStates } from "./layout";
@@ -88,14 +90,15 @@ export function PresetMap() {
         target: e.target,
         type: "flow",
         data: {
-          label: controlLabel(e.t.controlId),
+          // "C", "1", "FS1" — the marking on the hardware, not a sentence about it.
+          label: switchSpecForControl(e.t.controlId)?.name ?? controlLabel(e.t.controlId),
           faded,
           offset: reciprocal ? (e.source < e.target ? SEPARATION : -SEPARATION) : 0,
         } satisfies FlowEdgeData,
         style: { strokeWidth: faded ? 1 : 1.75, opacity: faded ? 0.45 : 1 },
-        // Which way the press takes you. Slender rather than stubby: at this density a fat head
-        // reads as a blob on the node it points at.
-        markerEnd: { type: MarkerType.ArrowClosed, width: 10, height: 16 },
+        // Which way the press takes you, in our own slender head (see MapDefs).
+        // The id, not a url: React Flow wraps it in url(#...) itself.
+        markerEnd: MAP_ARROW,
       };
     });
 
@@ -103,7 +106,9 @@ export function PresetMap() {
     for (const state of machine.states) {
       if (!state.transitions.some((t) => t.to.kind === "return")) continue;
       const node = nodes.find((n) => n.id === state.id);
-      const via = state.transitions.filter((t) => t.to.kind === "return").map((t) => controlLabel(t.controlId));
+      const via = state.transitions
+        .filter((t) => t.to.kind === "return")
+        .map((t) => switchSpecForControl(t.controlId)?.name ?? controlLabel(t.controlId));
       if (node && typeof node.data.label !== "string") {
         node.data = {
           label: (
@@ -121,6 +126,7 @@ export function PresetMap() {
 
   return (
     <section aria-label="Preset map" className="flex min-h-0 flex-1 flex-col gap-2">
+      <MapDefs />
       <div className="flex flex-wrap items-center gap-3">
         <ToggleGroup<Showing>
           label="Show"

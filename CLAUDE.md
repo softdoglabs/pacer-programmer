@@ -339,6 +339,18 @@ Clicking a state loads its preset, so the map is also how you navigate.
   "Everything" draws them faintly. The recovery marks them
   (`MachineTransition.viaStepping`, set by recovery and never by an
   author): a Preset Inc/Dec carrying nothing else on the press.
+- **The arrowhead is ours** (`MapDefs`), a slender dart rather than React
+  Flow's squat triangle, which reads as a blob where edges converge.
+  - `markerEnd` takes the marker's **id**, not a url: React Flow wraps it
+    in `url(#...)` itself, so passing one produces
+    `url('#url(#map-arrow)')` and nothing is drawn at all.
+  - `markerUnits="userSpaceOnUse"` keeps it one size. The default scales
+    with stroke width, so faded edges would get smaller heads — a second
+    meaning nobody chose.
+  - `fill="context-stroke"` takes the colour from whichever edge draws it,
+    so one marker serves both the faded and the solid ones.
+- **An edge is labelled with the switch's own marking** in a disc — "C",
+  "1", "FS1" — not a sentence. A factory map has 48 of them.
 - **Reciprocal edges are bowed apart** (`FlowEdge`). Between neighbours
   the two directions are the same vertical line, so whichever drew second
   hid the other outright and put its label on top — the map looked like it

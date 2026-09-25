@@ -41,10 +41,12 @@ export function FlowEdge({
       {data?.label && (
         <EdgeLabelRenderer>
           <div
+            // The switch's own marking in a disc, the way it's printed on the hardware. A word
+            // per edge ("Stomp C") is a sentence where a badge will do, and there are 48 of them.
             className={
               data.faded
-                ? "pointer-events-none absolute rounded bg-background/70 px-1 text-[10px] text-muted-foreground"
-                : "pointer-events-none absolute rounded bg-background/90 px-1 text-[11px] text-foreground"
+                ? "pointer-events-none absolute grid size-5 place-items-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground"
+                : "pointer-events-none absolute grid size-6 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground"
             }
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
           >

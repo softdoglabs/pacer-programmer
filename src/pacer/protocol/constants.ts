@@ -246,6 +246,9 @@ export function presetIndexToPresetSelectTarget(idx: number): number {
 
 export const STEPS_PER_CONTROL = 6;
 
+/** A preset name is 5 characters, the width of the hardware's display. */
+export const PRESET_NAME_LENGTH = 5;
+
 /** MIDI channels a step or preset message can be set to: 0 follows the configuration's own. */
 export const MIDI_CHANNEL_CHOICES = [
   { id: "0", label: "Global" },

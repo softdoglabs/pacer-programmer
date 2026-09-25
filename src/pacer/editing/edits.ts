@@ -1,5 +1,6 @@
 import {
   ExpressionMessageType,
+  PRESET_NAME_LENGTH,
   PRESET_MIDI_SETTINGS,
   PresetMidiMessageType,
   STEPS_PER_CONTROL,
@@ -16,8 +17,8 @@ import type { LedConfig, PacerConfig, Preset, PresetMidiSetting, Step, SwitchCon
 
 export type ControlKind = "switch" | "expressionPedal";
 
-/** A preset name: up to 5 printable ASCII characters (the display's width), stored padded to 5 like the dumps. */
-export const PRESET_NAME_LENGTH = 5;
+/** Re-exported: a name's length is a protocol fact, and the compiler needs it too. */
+export { PRESET_NAME_LENGTH };
 
 /**
  * Characters every name in the factory dump and the owner's device uses. The display is a

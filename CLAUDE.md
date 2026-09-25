@@ -287,6 +287,43 @@ the whole device. The compiler has to price a design before writing
 anything and refuse one that doesn't fit, rather than compiling half of
 it.
 
+### The compiler (`analysis/machine.ts`, `analysis/recover.ts`)
+
+A machine is states with a body (controls, minus navigation) and
+transitions. A transition leads to a named state, or **returns** — back to
+whatever entered this state, the action the hardware doesn't have, and the
+reason a state ever needs duplicating.
+
+`compileMachine` expands it into presets, one per (state, continuation):
+- **Only states that return multiply.** A tuner reached from everywhere is
+  one preset, because its behaviour doesn't depend on where you came from.
+  A looper that returns needs one copy per distinct continuation, and a
+  state entered *from* such a copy multiplies in turn — which is how three
+  states on a diagram can cost more than 24 presets.
+- It refuses rather than half-compiling: a design over budget, a returning
+  state nothing enters, a body containing a navigation step (that would be
+  a transition the model doesn't know it has).
+- Slots are allocated deterministically, so compiling twice puts
+  everything in the same place.
+
+`recoverMachine` reads one back. A group of look-alike presets is a state;
+a transition is a **return** when every copy leads back to whatever entered
+it, and a fixed jump when every copy leads to the same state. Anything it
+can't express becomes a `note` rather than a wrong answer.
+
+**A state's name is its identity.** Ids exist only in memory; a dump has
+nowhere to keep one, so the recovery has nothing but the preset name to
+tell two states apart. The compiler therefore requires every state to be
+named, within the display's 5 characters, and distinct — the first real
+authoring restriction the invariant imposes, and it caught a collision in
+its own test fixture on the day it was written.
+
+**A known degeneracy:** a return from a state with one copy is
+indistinguishable from a plain jump, because with one origin the two do
+the same thing and the presets record no difference. It recovers as the
+jump it literally is. That's a property of the compiled artefact, not of
+the modelling, and it stops mattering the moment a second origin exists.
+
 **Layering** (enforced by ESLint `no-restricted-imports`; nothing under
 `src/pacer` may import React, Zustand, or UI code):
 `protocol` → `hardware` → `simulator` → `device` → `panel` → `store` / `ui`,

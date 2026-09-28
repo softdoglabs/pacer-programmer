@@ -2,7 +2,12 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { compileMachine, recoverMachine, type MachineState, type StateMachine } from "../../../pacer/analysis";
-import { ControlId, SwitchMessageType, presetSelectTargetToIndex } from "../../../pacer/protocol/constants";
+import {
+  ControlId,
+  SwitchMessageType,
+  presetSelectTargetToIndex,
+  userPresetIndex,
+} from "../../../pacer/protocol/constants";
 import type { Preset } from "../../../pacer/protocol/types";
 import { usePacerStore } from "../../../store/pacerStore";
 import { RouteDialog } from "../RouteDialog";
@@ -87,18 +92,37 @@ describe("editing a route from the map", () => {
     expect(store().editHistory.past.length).toBe(1); // one edit, undoable as one
   });
 
-  it("says what a route would cost instead of writing it", () => {
+  it("asks for a preset when the route needs a copy, and makes it there", () => {
+    /*
+     * LOOPR comes back to wherever it entered from, so a third way in is a third copy of it —
+     * a preset, which the device has none spare of until something is cleared. The dialog says so
+     * and asks which slot it takes.
+     */
     const machine = load(3);
-    const before = store().board.config;
+    const onClose = vi.fn();
     render(
       <RouteDialog
         intent={{ kind: "add", fromStateId: machine.id("MAIN2"), toStateId: machine.id("LOOPR") }}
-        onClose={vi.fn()}
+        onClose={onClose}
       />,
     );
+    expect(screen.getByText(/needs another preset/)).toBeTruthy();
+    expect(screen.getByLabelText("Copy of LOOPR goes in")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Add route" }));
-    expect(screen.getByText(/one more preset/)).toBeTruthy();
-    expect(store().board.config).toBe(before); // nothing written
+    expect(onClose).toHaveBeenCalled();
+
+    const config = store().board.config;
+    // The compiled machine used A1-A5, so the first empty preset is A6.
+    const copy = userPresetIndex(0, 6);
+    const home = machine.members("MAIN2")[0]!;
+    expect(config.presets[copy]?.name?.trim()).toBe("LOOPR");
+    expect(presetSelectTargetToIndex(config.presets[copy]!.controls[ControlId.StompswitchA]!.steps[1]!.data[0])).toBe(
+      home,
+    );
+    const after = recoverMachine(config);
+    const loop = after.states.find((s) => s.name === "LOOPR")!;
+    expect(after.members[loop.id]).toHaveLength(3);
+    expect(loop.transitions.some((t) => t.to.kind === "return")).toBe(true);
   });
 });

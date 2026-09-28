@@ -1,14 +1,24 @@
 import {
+  CURRENT_PRESET_INDEX,
   ControlMode,
   STEPS_PER_CONTROL,
   SWITCH_CONTROL_IDS,
   SwitchMessageType,
+  isUserPresetIndex,
   presetIndexToLabel,
   presetIndexToPresetSelectTarget,
+  presetSelectTargetToIndex,
 } from "../protocol/constants";
+
 import type { PacerConfig } from "../protocol/types";
-import { presetTransitions, recoverMachine, type RecoveredMachine } from "../analysis";
-import { setStepType, updateStep } from "../editing";
+import {
+  isPlainStepping,
+  presetTransitions,
+  recoverMachine,
+  type MachineState,
+  type RecoveredMachine,
+} from "../analysis";
+import { copyPreset, setStepType, updateStep } from "../editing";
 
 /*
  * Editing the machine, not the presets.
@@ -30,6 +40,12 @@ export interface RouteChange {
   stepNumber: number;
   /** The state the switch should lead to, or undefined to take the route away. */
   toStateId?: string;
+  /**
+   * The state being entered comes back to wherever it was entered from, rather than always to the
+   * one place that enters it today. Only asked when that's still an open question — see
+   * `RoutePlan.choice` — and it's what makes the route cost a preset.
+   */
+  asReturn?: boolean;
 }
 
 export type RouteResult = { ok: true; config: PacerConfig } | { ok: false; error: string };
@@ -144,38 +160,230 @@ function returnsByPreset(machine: RecoveredMachine): Set<string> {
 }
 
 /**
+ * A copy of a state the hardware doesn't have yet: one preset each.
+ *
+ * A state that comes back can't be shared — it has to be one preset per place it can be entered
+ * from, because the return address is all that tells those presets apart. So entering it from
+ * somewhere new isn't an edit to a switch, it's a new preset.
+ *
+ * One level deep, which is as far as a configuration can say anything. A state that comes back
+ * *and* leads on to another state that comes back would need copies of that one too, and the
+ * compiler refuses to write that shape in the first place: with the copies of the outer state
+ * leading to different copies of the inner one, nothing in the presets says which of the two
+ * switches is the way back (`analysis/verify.ts`).
+ */
+export interface NeededCopy {
+  stateId: string;
+  name?: string;
+  /** An existing preset of the same state, whose contents this one takes. */
+  template: number;
+  /** The preset that will enter this copy, and that it comes back to. */
+  entryFrom: number;
+  /** The switches that carry its way back. */
+  returns: { controlId: number; stepNumber: number }[];
+  /**
+   * A route already on the device that has to be pointed at this copy instead: the switch on a
+   * preset that enters the state today and would otherwise keep sharing the old copy. Absent for
+   * the route being written, which the edit points itself.
+   */
+  repoint?: { controlId: number; stepNumber: number };
+}
+
+export type RoutePlan =
+  /**
+   * What the route costs. `copies` is empty when it costs nothing; otherwise one preset each, and
+   * the first ones — as many as the state being left has presets — are the copies that state's
+   * switches will lead to, in that order.
+   *
+   * `choice` is the question only a second way in can settle: while a state is entered from one
+   * place, a switch that goes back there and a switch that comes back to wherever it was entered
+   * from are the same preset, and nothing in the dump says which was meant. Entering it from
+   * somewhere else is exactly the moment that has an answer, so it's asked rather than assumed —
+   * see `change.asReturn`.
+   */
+  | {
+      ok: true;
+      copies: NeededCopy[];
+      choice?: { backTo: number; via: { controlId: number; stepNumber: number }[]; sharedBy: number[] };
+    }
+  | { ok: false; error: string };
+
+/** Where one of a preset's switches leads, as a preset index. */
+function targetOfRoute(
+  config: PacerConfig,
+  presetIndex: number,
+  at: { controlId: number; stepNumber: number },
+): number | undefined {
+  const step = config.presets[presetIndex]?.controls[at.controlId]?.steps[at.stepNumber];
+  if (!step?.active || step.msgType !== SwitchMessageType.PresetSelect) return undefined;
+  return presetSelectTargetToIndex(step.data[0]);
+}
+
+/** Slots a route may not take: the presets it's being written to or from. */
+function involved(machine: RecoveredMachine, ids: (string | undefined)[]): Set<number> {
+  const used = new Set<number>();
+  for (const id of ids) for (const member of id === undefined ? [] : (machine.members[id] ?? [])) used.add(member);
+  return used;
+}
+
+/**
+ * What a route would take, without writing anything: nothing at all, a preset per copy, or a
+ * reason it can't be done. The dialog asks this first, so the cost is something to agree to rather
+ * than an error after the fact.
+ */
+export function planRoute(config: PacerConfig, change: RouteChange): RoutePlan {
+  const machine = recoverMachine(config);
+  const graph = presetTransitions(config);
+  const from = machine.states.find((s) => s.id === change.fromStateId);
+  const members = machine.members[change.fromStateId] ?? [];
+  if (!from || members.length === 0) return { ok: false, error: `There's no state "${change.fromStateId}" here.` };
+  if (change.toStateId === undefined) return { ok: true, copies: [] };
+
+  const to = machine.states.find((s) => s.id === change.toStateId);
+  const toMembers = machine.members[change.toStateId] ?? [];
+  if (!to || toMembers.length === 0) return { ok: false, error: `There's no state "${change.toStateId}" here.` };
+
+  /**
+   * The presets that lead to `member` by name. The neighbour walk doesn't count as entering, and
+   * neither does the Current slot, which is the device's working copy of the loaded preset rather
+   * than a preset of its own (see `recoverMachine`).
+   */
+  const entrantsOf = (member: number): number[] => [
+    ...new Set(
+      (graph.into[member] ?? [])
+        .filter((e) => e.from !== member && e.from !== CURRENT_PRESET_INDEX && !isPlainStepping(config, e))
+        .map((e) => e.from),
+    ),
+  ];
+
+  /*
+   * A state's way back, whether or not the presets can say so outright. With copies it's the
+   * return the recovery found; with one copy it's a switch that leads to a preset that enters it,
+   * which is the same preset either way (see `analysis/verify.ts`).
+   */
+  const wayBack = (state: MachineState): { controlId: number; stepNumber: number }[] => {
+    const stateMembers = machine.members[state.id] ?? [];
+    if (stateMembers.length !== 1) {
+      return state.transitions
+        .filter((t) => t.to.kind === "return")
+        .map((t) => ({ controlId: t.controlId, stepNumber: t.stepNumber }));
+    }
+    const entrants = entrantsOf(stateMembers[0]!);
+    return state.transitions
+      .filter((t) => t.to.kind === "state" && (machine.members[t.to.id] ?? []).some((m) => entrants.includes(m)))
+      .map((t) => ({ controlId: t.controlId, stepNumber: t.stepNumber }));
+  };
+
+  const targetWayBack = wayBack(to);
+  const settled = (machine.members[to.id] ?? []).length > 1;
+  if (targetWayBack.length === 0) {
+    if (toMembers.length > 1) {
+      const where = toMembers.map(presetIndexToLabel).join(", ");
+      return {
+        ok: false,
+        error: `Can't route to "${to.name?.trim() || to.id}": it's on the device ${toMembers.length} times (${where}), and nothing says which of them this switch should go to.`,
+      };
+    }
+    return { ok: true, copies: [] };
+  }
+
+  /*
+   * One copy, and nothing settles what its way back means: a switch that goes to A1 and a switch
+   * that comes back to whoever entered it are the same preset while A1 is the only way in. The
+   * answer is left to the caller, and until it says otherwise the route just joins what's there.
+   */
+  const sharedBy = settled ? [] : entrantsOf(toMembers[0]!);
+  const choice = settled ? undefined : { backTo: sharedBy[0]!, via: targetWayBack, sharedBy };
+  if (choice && change.asReturn !== true) return { ok: true, copies: [], choice };
+
+  /*
+   * A copy per place the state is entered from, because the way back is all that tells the copies
+   * apart. When it's already settled, the copies that exist keep their origins and only this route
+   * needs one. When it isn't, saying "it comes back" means every origin needs its own: the one
+   * copy there is keeps whichever origin it already leads to, and the rest — the presets that have
+   * been sharing it — are pointed at copies of their own.
+   */
+  const keeps = settled ? undefined : targetOfRoute(config, toMembers[0]!, targetWayBack[0]!); // the origin the one copy goes back to
+  const alsoNeeding = settled ? [] : sharedBy.filter((origin) => origin !== keeps);
+
+  const copies: NeededCopy[] = [
+    ...members.map((member) => ({
+      stateId: to.id,
+      ...(to.name !== undefined ? { name: to.name } : {}),
+      template: toMembers[0]!,
+      entryFrom: member,
+      returns: targetWayBack,
+    })),
+    ...alsoNeeding.flatMap((origin) => {
+      // The switch that origin uses to get there today, which has to lead to its own copy instead.
+      const edge = (graph.from[origin] ?? []).find(
+        (e) => e.target.kind === "preset" && toMembers.includes(e.target.index),
+      );
+      return edge
+        ? [
+            {
+              stateId: to.id,
+              ...(to.name !== undefined ? { name: to.name } : {}),
+              template: toMembers[0]!,
+              entryFrom: origin,
+              returns: targetWayBack,
+              repoint: { controlId: edge.controlId, stepNumber: edge.stepNumber },
+            },
+          ]
+        : [];
+    }),
+  ];
+
+  return { ok: true, copies, ...(choice ? { choice } : {}) };
+}
+
+/**
  * Points a state's switch at another state, on every copy at once — or takes the route away.
  *
- * A target that returns is refused rather than guessed at: entering it from somewhere new means
- * another copy of it, with its own way back, and that's a slot the device may not have to spare.
+ * `into` says which presets the copies in `planRoute`'s answer may take, in its order. A route
+ * that needs none takes none.
  */
-export function editRoute(config: PacerConfig, change: RouteChange): RouteResult {
+export function editRoute(config: PacerConfig, change: RouteChange, into: readonly number[] = []): RouteResult {
   const before = recoverMachine(config);
   const from = before.states.find((s) => s.id === change.fromStateId);
   const members = before.members[change.fromStateId] ?? [];
   if (!from || members.length === 0) return { ok: false, error: `There's no state "${change.fromStateId}" here.` };
 
-  let target: number | undefined;
-  if (change.toStateId !== undefined) {
-    const to = before.states.find((s) => s.id === change.toStateId);
-    const toMembers = before.members[change.toStateId] ?? [];
-    if (!to || toMembers.length === 0) return { ok: false, error: `There's no state "${change.toStateId}" here.` };
-    if (toMembers.length > 1) {
-      const where = toMembers.map(presetIndexToLabel).join(", ");
-      const because = to.transitions.some((t) => t.to.kind === "return")
-        ? `it comes back to wherever it was entered from, so each place that enters it needs its own copy (${where}). Entering it from "${from.name?.trim() || from.id}" as well means one more preset.`
-        : `it's on the device ${toMembers.length} times (${where}), and nothing says which of them this switch should go to.`;
-      return { ok: false, error: `Can't route to "${to.name?.trim() || to.id}": ${because}` };
-    }
-    target = toMembers[0];
+  const plan = planRoute(config, change);
+  if (!plan.ok) return plan;
+
+  if (plan.copies.length !== into.length) {
+    const name = before.states.find((s) => s.id === change.toStateId)?.name?.trim() || change.toStateId;
+    return {
+      ok: false,
+      error:
+        plan.copies.length === 0
+          ? "That route needs no presets of its own."
+          : `"${name}" comes back to wherever it was entered from, so entering it from here needs ${plan.copies.length} more preset${plan.copies.length === 1 ? "" : "s"}. Say which.`,
+    };
   }
+
+  // Nothing a copy could take: the presets this route runs between, and the ones whose own routes
+  // are being pointed at copies.
+  const reserved = involved(before, [change.fromStateId, change.toStateId]);
+  for (const copy of plan.copies) reserved.add(copy.entryFrom);
+  for (const slot of into) {
+    if (!isUserPresetIndex(slot)) return { ok: false, error: `${slot} isn't one of the Pacer's 24 presets.` };
+    if (reserved.has(slot)) {
+      return {
+        ok: false,
+        error: `${presetIndexToLabel(slot)} is one of the presets this route runs between, so a copy can't take it.`,
+      };
+    }
+  }
+  if (new Set(into).size !== into.length) return { ok: false, error: "Two copies can't go in the same preset." };
 
   /*
    * A press in the default mode fires every step but takes only the first jump it finds (the
    * engine warns about the rest). A route written after one would sit there and never happen —
    * most often behind the Track selector the factory set puts on switch A.
    */
-  if (target !== undefined) {
+  if (change.toStateId !== undefined) {
     for (const member of members) {
       const jump = firstJump(config, member, change.controlId);
       if (jump !== undefined && jump < change.stepNumber) {
@@ -188,8 +396,29 @@ export function editRoute(config: PacerConfig, change: RouteChange): RouteResult
   }
 
   let edited = config;
-  for (const member of members) {
-    if (target === undefined) {
+
+  /*
+   * The copies first, so the route has somewhere to lead. Each is the state as it already exists,
+   * with its way back pointed at whatever enters this one — which is the only thing that tells the
+   * copies of a returning state apart.
+   */
+  plan.copies.forEach((copy, at) => {
+    const slot = into[at]!;
+    edited = copyPreset(edited, copy.template, slot);
+    for (const { controlId, stepNumber } of copy.returns) {
+      edited = writeJump(edited, slot, controlId, stepNumber, copy.entryFrom);
+    }
+    // A preset that was sharing the old copy now has one of its own, so its own switch follows.
+    if (copy.repoint) {
+      edited = writeJump(edited, copy.entryFrom, copy.repoint.controlId, copy.repoint.stepNumber, slot);
+    }
+  });
+
+  // Then the route itself: each preset the state is gets the same switch, leading to its own copy
+  // when copies were made, or to the one preset the target state is when it needed none.
+  const single = change.toStateId === undefined ? undefined : (before.members[change.toStateId] ?? [])[0];
+  members.forEach((member, i) => {
+    if (change.toStateId === undefined) {
       /*
        * Off and inactive, not merely inactive: an inactive step still counts towards what a preset
        * is, so a leftover Preset Select would keep two otherwise identical copies apart.
@@ -197,21 +426,16 @@ export function editRoute(config: PacerConfig, change: RouteChange): RouteResult
       edited = setStepType(edited, member, change.controlId, change.stepNumber, "switch", SwitchMessageType.Off);
       if (change.stepNumber > 1)
         edited = updateStep(edited, member, change.controlId, change.stepNumber, { active: false });
-    } else {
-      edited = setStepType(
-        edited,
-        member,
-        change.controlId,
-        change.stepNumber,
-        "switch",
-        SwitchMessageType.PresetSelect,
-      );
-      edited = updateStep(edited, member, change.controlId, change.stepNumber, {
-        data: [presetIndexToPresetSelectTarget(target), 0, 0],
-        active: true,
-      });
+      return;
     }
-  }
+    edited = writeJump(
+      edited,
+      member,
+      change.controlId,
+      change.stepNumber,
+      plan.copies.length > 0 ? into[i]! : single!,
+    );
+  });
 
   const after = recoverMachine(edited);
 
@@ -219,12 +443,16 @@ export function editRoute(config: PacerConfig, change: RouteChange): RouteResult
    * Returns are the thing to guard. They aren't stored anywhere — a copy returns because it's the
    * only preset that leads back to its one entrant — so a route added into that copy, or taken
    * away from in front of it, quietly turns it into an ordinary jump, and nothing on the hardware
-   * would show it.
+   * would show it. A preset a copy has taken over is left out: whatever it used to come back to
+   * was written over knowingly.
    */
   const had = returnsByPreset(before);
   const has = returnsByPreset(after);
   const edit = new Set(members.map((m) => `${m}:${change.controlId}:${change.stepNumber}`));
-  const lost = [...had].find((key) => !has.has(key) && !edit.has(key));
+  const taken = new Set(into);
+  const lost = [...had].find(
+    (key) => !has.has(key) && !edit.has(key) && !taken.has(Number(key.slice(0, key.indexOf(":")))),
+  );
   if (lost) {
     const [presetIndex] = lost.split(":");
     return {
@@ -240,8 +468,8 @@ export function editRoute(config: PacerConfig, change: RouteChange): RouteResult
   if (newNote) return { ok: false, error: `That would leave something unreadable: ${newNote.message}` };
 
   /*
-   * And the route itself reads back as the one asked for. Belt and braces: the two checks above
-   * cover what's known to go wrong, while this one holds whatever isn't thought of yet.
+   * And the route itself reads back as the one asked for. Belt and braces: the checks above cover
+   * what's known to go wrong, while this one holds whatever isn't thought of yet.
    */
   const nowFrom = after.states.find((s) => (after.members[s.id] ?? []).includes(members[0]!));
   const route = nowFrom?.transitions.find(
@@ -250,11 +478,27 @@ export function editRoute(config: PacerConfig, change: RouteChange): RouteResult
   if (change.toStateId === undefined) {
     if (route) return { ok: false, error: "That switch still leads somewhere afterwards." };
   } else {
+    const landed = plan.copies.length > 0 ? into[0]! : single!;
     const lands = route?.to.kind === "state" ? (after.members[route.to.id] ?? []) : [];
-    if (!lands.includes(target!)) {
-      return { ok: false, error: `That route doesn't read back as going to ${presetIndexToLabel(target!)}.` };
+    if (!lands.includes(landed)) {
+      return { ok: false, error: `That route doesn't read back as going to ${presetIndexToLabel(landed)}.` };
     }
   }
 
   return { ok: true, config: edited };
+}
+
+/** One switch step, made into a jump to a preset. */
+function writeJump(
+  config: PacerConfig,
+  presetIndex: number,
+  controlId: number,
+  stepNumber: number,
+  target: number,
+): PacerConfig {
+  const typed = setStepType(config, presetIndex, controlId, stepNumber, "switch", SwitchMessageType.PresetSelect);
+  return updateStep(typed, presetIndex, controlId, stepNumber, {
+    data: [presetIndexToPresetSelectTarget(target), 0, 0],
+    active: true,
+  });
 }

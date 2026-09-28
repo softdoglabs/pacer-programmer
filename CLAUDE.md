@@ -372,6 +372,22 @@ counting it would mean no state on a real device could ever be seen to
 return — dropping a looper into the factory set would be refused. It's the
 same distinction the map's "hide default stepping" filter draws.
 
+**Neither is the Current slot** (idx 0). It's the device's working copy of
+whichever preset is loaded, so its switches are a second copy of that
+preset's, and every dump from real hardware has one. Counting it gave
+everything the loaded preset leads to a phantom second way in, which is
+precisely what stops a return being recognised — on the owner's device it
+hid the return of the one hand-built looper there is. Found by running the
+map on that dump, not by reading the code.
+
+**Copies step to their own neighbours, and that isn't a disagreement.**
+Two presets of the same state sit in different slots, so C and D lead to
+different places from each — B6 from one, D4 from another. That's where a
+copy happens to live rather than something the state does, so the slot is
+left undrawn and unremarked. Calling it "copies that lead to different
+states" made every multi-copy state on a real device unreadable the moment
+it was created.
+
 
 ### Editing the machine (`src/pacer/authoring/`)
 
@@ -384,8 +400,28 @@ actually fire.
 
 Refusals are checked, not guessed:
 - **Entering a state that returns needs another copy of it**, with its own
-  way back, and that's a preset the device may not have spare. Refused
-  outright, saying so.
+  way back — a preset. That's priced rather than refused: `planRoute` says
+  what a route would cost without writing anything, and `editRoute` takes
+  the slots to put the copies in (`into`). A slot already in use can be
+  chosen, and the presets the route itself runs between can't.
+- **Whether a state comes back is a question only a second way in can
+  settle.** While it's entered from one place, "comes back to wherever it
+  was entered from" and "always goes to A1" are the same preset, and the
+  dump doesn't record which was meant (the equivalence the verifier allows,
+  above). So `RoutePlan.choice` reports the question and `RouteChange.
+  asReturn` answers it: no is free and shares the preset, yes costs one.
+  The answer starts at no, because it's the one that takes nothing.
+- **Saying yes gives every origin its own copy.** A state shared by two
+  presets can only lead back to one of them, so making it come back means a
+  copy per origin: the preset that's there keeps the origin it already
+  leads to, and the ones that have been sharing it get copies and have
+  their own switches repointed (`NeededCopy.repoint`). That's the hand work
+  this project exists to remove, and it's what turns a jump into a state.
+- **One level deep.** A state that comes back *and* leads on to another
+  state that comes back would need copies of that one too. The compiler
+  refuses to write that shape at all — with the outer copies leading to
+  different copies of the inner state, nothing says which of the two
+  switches is the way back — so there's nothing to plan for.
 - **Everything else is judged by recovering the machine before and after.**
   A return that no longer reads as a return refuses, and so does anything
   the recovery couldn't read afterwards that it could read before. Returns
@@ -401,6 +437,32 @@ Refusals are checked, not guessed:
   as "free".
 
 
+
+### Spare slots (`src/pacer/editing/presetSlots.ts`)
+
+The Pacer has 24 presets and no notion of a free one: every slot holds
+whatever it was last given. A state that comes back needs a preset per
+place it's entered from, so a design grows by taking slots, and something
+has to say which may be taken.
+
+- **What makes a preset spare is that nothing in it does anything**, not
+  what it's called. A name is five characters on a 14-segment display:
+  useful for spotting a slot you've freed, on the device as well as in the
+  app, and no basis at all for overwriting somebody's work. `clearPreset`
+  names one `EMPTY` as a label; `isSparePreset` judges the contents.
+- A preset left with only its next/previous stepping counts as spare —
+  that's what the hardware leaves when a preset is emptied from the front
+  panel, and it holds nothing of yours.
+- **Clearing sets what's there to Off rather than removing it.** A dump
+  holds all six steps of every control and all sixteen preset messages,
+  with the unused ones already Off (verified: the factory dump's steps 2-6
+  are `0x61` and inactive). The device keeps whatever a message doesn't
+  address, so emptying a preset by deleting fields would send nothing for
+  them and leave the hardware exactly as it was. Writing Off over what's
+  present sends the same number of messages the preset already had, which
+  is what it takes to leave nothing behind.
+- `copyPreset` copies a whole preset into another slot, keeping that
+  slot's own index. It's how a new copy of a state is made.
 
 **Layering** (enforced by ESLint `no-restricted-imports`; nothing under
 `src/pacer` may import React, Zustand, or UI code):
@@ -892,6 +954,16 @@ no hover-only UI, for tablets.
     what it already does ("free", "sends 2 messages", "selects the Track
     preset", "comes back to where it was entered from") and shows
     `editRoute`'s refusals rather than writing something that won't survive.
+  - **A route that costs a preset says so and asks which.** When the state
+    being entered comes back, the dialog names the cost and gives a picker
+    per copy, listing the empty presets first and the rest as "in use —
+    would be overwritten". When it's still an open question whether that
+    state comes back (one preset, see the authoring notes), a toggle asks —
+    "Comes back here" against "Always goes to A1" — starting on the free
+    answer. Presets already sharing it are named, since they get copies too.
+  - **Clearing a preset** is in Program mode, on the preset's own panel:
+    it's how the device gets a slot to spare, and the confirm says what it
+    empties.
   - **The map carries the editing controls** (`ui/editor/EditingBar`, which
     Program mode uses too): the same undo stack, unsaved badge, Save and
     Send. It reroutes presets, so it can't be the one surface with no way

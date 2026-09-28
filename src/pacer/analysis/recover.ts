@@ -84,10 +84,17 @@ export function recoverMachine(config: PacerConfig): RecoveredMachine {
    * places and no return could ever be recognised. That's not a corner case — it's every real
    * device, where C and D step on almost every preset. What enters a state is a switch that names
    * it.
+   *
+   * Neither does the Current slot, for the same reason it isn't a state: it's the device's working
+   * copy of whichever preset is loaded, so its switches are a second copy of that preset's. Every
+   * dump from a real Pacer has one, and counting it gave everything the loaded preset leads to a
+   * phantom second way in — which is exactly what stops a return being recognised.
    */
   const soleEntrant = (member: number): number | undefined => {
     const entrants = new Set(
-      (graph.into[member] ?? []).filter((e) => e.from !== member && !isPlainStepping(config, e)).map((e) => e.from),
+      (graph.into[member] ?? [])
+        .filter((e) => e.from !== member && e.from !== CURRENT_PRESET_INDEX && !isPlainStepping(config, e))
+        .map((e) => e.from),
     );
     return entrants.size === 1 ? [...entrants][0] : undefined;
   };
@@ -152,6 +159,13 @@ export function recoverMachine(config: PacerConfig): RecoveredMachine {
         }
         continue;
       }
+      /*
+       * Copies of a state sit in different slots, so their neighbour walks lead to different
+       * presets — B6 from one, D4 from another. That's where a copy happens to live, not something
+       * the state does, so there's nothing to draw and nothing wrong. Saying otherwise made every
+       * multi-copy state on a real device unreadable, since C and D step on nearly all of them.
+       */
+      if (stepping) continue;
       notes.push({
         presetIndex: group.members[0]!,
         message: `The copies of "${id}" lead to different states from the same switch, which no single state can mean.`,

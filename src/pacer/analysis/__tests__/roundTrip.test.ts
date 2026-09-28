@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ControlId, SwitchMessageType } from "../../protocol/constants";
+import { CURRENT_PRESET_INDEX, ControlId, FIRST_USER_PRESET_INDEX, SwitchMessageType } from "../../protocol/constants";
 import type { Preset } from "../../protocol/types";
 import { compileMachine, type MachineState, type StateMachine } from "../machine";
 import { recoverMachine } from "../recover";
@@ -215,3 +215,47 @@ describe("the invariant, enforced rather than assumed", () => {
     expect(shape(recoverMachine(compiled.config))).toEqual(shape(machine));
   });
 });
+
+describe("the device's working copy", () => {
+  it("doesn't count as a way in, so returns still read as returns", () => {
+    /*
+     * Every dump from a real Pacer carries idx 0, the working copy of whichever preset is loaded.
+     * Its switches are a second copy of that preset's, so whatever that preset leads to looked
+     * entered from two places — and a return is only recognisable while each copy has one. On the
+     * owner's device that hid the return of the one hand-built looper there is.
+     */
+    const machine: StateMachine = {
+      states: [
+        ...[0, 1].map((i) => ({
+          id: `m${i}`,
+          name: `MAIN${i}`,
+          body: body(ControlId.Stompswitch1, SwitchMessageType.Note, [60 + i, 127, 0] as [number, number, number]),
+          transitions: [{ controlId: ControlId.StompswitchA, stepNumber: 1, to: { kind: "state" as const, id: "loop" } }],
+        })),
+        {
+          id: "loop",
+          name: "LOOPR",
+          body: body(ControlId.Stompswitch1, SwitchMessageType.Note, [99, 127, 0]),
+          transitions: [{ controlId: ControlId.StompswitchA, stepNumber: 1, to: { kind: "return" as const } }],
+        },
+      ],
+    };
+    const compiled = compileMachine(machine);
+    if (!compiled.ok) throw new Error(compiled.error);
+
+    const loaded = compiled.config.presets[FIRST_USER_PRESET_INDEX]!;
+    const withCurrent: typeof compiled.config = {
+      ...compiled.config,
+      presets: {
+        ...compiled.config.presets,
+        [CURRENT_PRESET_INDEX]: { ...structuredClone(loaded), index: CURRENT_PRESET_INDEX },
+      },
+    };
+
+    const recovered = recoverMachine(withCurrent);
+    const loop = recovered.states.find((s) => s.name === "LOOPR")!;
+    expect(loop.transitions[0]?.to).toEqual({ kind: "return" });
+    expect(recovered.notes).toHaveLength(0);
+  });
+});
+

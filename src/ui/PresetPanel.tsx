@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { nextFreePresetMidi, setPresetMidiType } from "../pacer/editing";
+import { ModalDialog } from "@/components/ui/dialog";
+import { clearPreset, isSparePreset, nextFreePresetMidi, setPresetMidiType, SPARE_PRESET_NAME } from "../pacer/editing";
 import { PRESET_MIDI_SETTINGS, PresetMidiMessageType, presetIndexToLabel } from "../pacer/protocol/constants";
 import type { Preset } from "../pacer/protocol/types";
 import { usePacerStore } from "../store/pacerStore";
@@ -25,6 +27,7 @@ export function PresetPanel() {
   const index = usePacerStore((s) => s.board.activePresetIndex);
   const preset = usePacerStore((s) => s.board.config.presets[index]);
   const applyEdit = usePacerStore((s) => s.applyEdit);
+  const [clearing, setClearing] = useState(false);
   if (!preset) return null;
 
   const used = loadMessages(preset);
@@ -68,6 +71,56 @@ export function PresetPanel() {
           Sent whenever this preset is recalled, by the hardware and by the simulator.
         </span>
       </div>
+
+      {/*
+       * Emptying a preset is how the device gets a slot to spare. It has none of its own: all 24
+       * hold whatever they were last given, so a state that comes back — which needs a preset per
+       * place it's entered from — has nowhere to put its next copy until something is cleared.
+       */}
+      <div className="flex flex-wrap items-center gap-3 border-t pt-2">
+        <Button
+          size="sm"
+          variant="outline"
+          isDisabled={isSparePreset(preset)}
+          title={
+            isSparePreset(preset)
+              ? "There's nothing in this preset already"
+              : "Empty this preset: every switch, and the MIDI it sends when it loads"
+          }
+          onPress={() => setClearing(true)}
+        >
+          Clear preset…
+        </Button>
+        <span className="text-xs text-muted-foreground">
+          {isSparePreset(preset)
+            ? "Empty, so a state that comes back can take this slot for a copy."
+            : `Empties it and names it ${SPARE_PRESET_NAME}, freeing the slot for a copy of a state that comes back.`}
+        </span>
+      </div>
+
+      <ModalDialog isOpen={clearing} onOpenChange={setClearing} title={`Clear ${presetIndexToLabel(index)}?`}>
+        <p className="text-sm">
+          Every switch on {presetIndexToLabel(index)} “{preset.name?.trim() || "unnamed"}” stops doing anything, and so
+          does the MIDI it sends when it loads. It's named {SPARE_PRESET_NAME} so the slot reads as free, here and on
+          the Pacer's own display.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Nothing reaches the Pacer until you send it, and this is undoable until then.
+        </p>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onPress={() => setClearing(false)}>
+            Cancel
+          </Button>
+          <Button
+            onPress={() => {
+              applyEdit((c) => clearPreset(c, index));
+              setClearing(false);
+            }}
+          >
+            Clear it
+          </Button>
+        </div>
+      </ModalDialog>
     </section>
   );
 }

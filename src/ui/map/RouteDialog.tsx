@@ -2,10 +2,12 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ModalDialog } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
+import { ToggleGroup } from "@/components/ui/toggle-group";
 import { recoverMachine } from "@/pacer/analysis";
-import { editRoute, switchUses, type SwitchUse } from "@/pacer/authoring";
+import { editRoute, planRoute, switchUses, type SwitchUse } from "@/pacer/authoring";
+import { isSparePreset } from "@/pacer/editing";
 import { switchSpecForControl } from "@/pacer/hardware";
-import { presetIndexToLabel } from "@/pacer/protocol/constants";
+import { FIRST_USER_PRESET_INDEX, LAST_USER_PRESET_INDEX, presetIndexToLabel } from "@/pacer/protocol/constants";
 import { controlLabel } from "@/pacer/simulator";
 import { usePacerStore } from "../../store/pacerStore";
 
@@ -83,15 +85,72 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
   const members = machine.members[intent.fromStateId] ?? [];
   const stepNumber = intent.kind === "existing" ? intent.stepNumber : (use?.route?.stepNumber ?? use?.freeStep);
 
+  /*
+   * Whether the state being entered comes back to whoever entered it. While it's entered from one
+   * place that's a question the presets can't answer (see `RoutePlan.choice`), and it's what
+   * decides whether the route costs a preset — so it's asked, starting at the answer that costs
+   * nothing. A state whose copies already exist has no such question: it comes back, and the
+   * copies are what the route needs.
+   */
+  const [asReturn, setAsReturn] = useState(false);
+  const change = {
+    fromStateId: intent.fromStateId,
+    controlId: controlId ?? -1,
+    stepNumber: stepNumber ?? 1,
+    ...(toStateId !== undefined ? { toStateId } : {}),
+    asReturn,
+  };
+  // Cheap enough to do on every render (a pass over 24 presets) and awkward to memoize on an
+  // object that changes with every field: this is a modal with four controls in it.
+  const plan = planRoute(config, change);
+  const needs = plan.ok ? plan.copies : [];
+  const spare = useMemo(() => {
+    const free: number[] = [];
+    for (let i = FIRST_USER_PRESET_INDEX; i <= LAST_USER_PRESET_INDEX; i++) {
+      if (isSparePreset(config.presets[i])) free.push(i);
+    }
+    return free;
+  }, [config]);
+
+  // One preset per copy, defaulting to the empty ones in order. A slot already in use can be
+  // chosen, and says so.
+  const [into, setInto] = useState<(number | undefined)[]>([]);
+  const slots = needs.map((_, i) => into[i] ?? spare[i]);
+
   const commit = (target?: string) => {
     if (controlId === undefined || stepNumber === undefined) return;
-    const result = editRoute(config, { fromStateId: intent.fromStateId, controlId, stepNumber, toStateId: target });
+    const chosen = target === undefined ? [] : slots.filter((s): s is number => s !== undefined);
+    const result = editRoute(
+      config,
+      {
+        fromStateId: intent.fromStateId,
+        controlId,
+        stepNumber,
+        ...(target !== undefined ? { toStateId: target } : {}),
+        asReturn,
+      },
+      chosen,
+    );
     if (!result.ok) {
       setError(result.error);
       return;
     }
     applyEdit(() => result.config);
     onClose();
+  };
+
+  const presetOptions = () => {
+    const empty: { id: string; label: string }[] = [];
+    const inUse: { id: string; label: string }[] = [];
+    for (let i = FIRST_USER_PRESET_INDEX; i <= LAST_USER_PRESET_INDEX; i++) {
+      const name = config.presets[i]?.name?.trim();
+      const option = { id: String(i), label: `${presetIndexToLabel(i)}${name ? ` ${name}` : ""}` };
+      (isSparePreset(config.presets[i]) ? empty : inUse).push(option);
+    }
+    return [
+      { title: "Empty", options: empty.length > 0 ? empty : [{ id: "none", label: "— none —" }] },
+      { title: "In use — would be overwritten", options: inUse },
+    ];
   };
 
   return (
@@ -141,6 +200,81 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
           }))}
       />
 
+      {plan.ok && plan.choice && toStateId !== undefined && (
+        <div className="space-y-2 rounded-md border px-3 py-2">
+          <p className="text-xs text-muted-foreground">
+            {nameOf(toStateId)} is one preset, entered from {plan.choice.sharedBy.map(presetIndexToLabel).join(" and ")}
+            , and it leads to {presetIndexToLabel(plan.choice.backTo)}. Nothing in the presets says whether that means
+            “back where I came from” or “always {presetIndexToLabel(plan.choice.backTo)}” — one preset can't do both, so
+            this is the moment that settles it.
+          </p>
+          <ToggleGroup<"return" | "fixed">
+            label="Leaving it"
+            labelVisible
+            options={[
+              { id: "return", label: "Comes back here", title: "It needs a preset of its own for this way in" },
+              {
+                id: "fixed",
+                label: `Always goes to ${presetIndexToLabel(plan.choice.backTo)}`,
+                title: "It stays one preset, shared by both ways in",
+              },
+            ]}
+            value={asReturn ? "return" : "fixed"}
+            onChange={(v) => {
+              setAsReturn(v === "return");
+              setError(undefined);
+            }}
+          />
+        </div>
+      )}
+
+      {needs.length > 0 && (
+        <div className="space-y-2 rounded-md border px-3 py-2">
+          <p className="text-xs text-muted-foreground">
+            A state that comes back is a preset per place it's entered from, so this needs{" "}
+            {needs.length === 1 ? "another preset" : `${needs.length} more presets`}. The Pacer has 24 and no spare ones
+            of its own — clearing a preset in Program mode is what frees a slot.
+          </p>
+          {needs.some((copy) => copy.repoint) && (
+            <p className="text-xs text-muted-foreground">
+              {needs
+                .filter((copy) => copy.repoint)
+                .map((copy) => presetIndexToLabel(copy.entryFrom))
+                .join(", ")}{" "}
+              has been sharing it, so it gets a copy too and its own switch follows.
+            </p>
+          )}
+          {needs.map((copy, i) => (
+            <Select
+              key={i}
+              label={`Copy of ${copy.name?.trim() || copy.stateId} goes in`}
+              value={slots[i] === undefined ? undefined : String(slots[i])}
+              onChange={(id) => {
+                setInto((prev) => {
+                  const next = [...prev];
+                  next[i] = id === undefined || id === "none" ? undefined : Number(id);
+                  return next;
+                });
+                setError(undefined);
+              }}
+              options={presetOptions()}
+            />
+          ))}
+          {slots.some((slot) => slot !== undefined && !isSparePreset(config.presets[slot])) && (
+            <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+              That preset has something in it. Everything it does would be replaced by this copy.
+            </p>
+          )}
+          {slots.some((slot) => slot === undefined) && (
+            <p className="text-xs text-destructive">
+              No empty presets left. Clear one in Program mode, or choose one to overwrite.
+            </p>
+          )}
+        </div>
+      )}
+
+      {!plan.ok && <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">{plan.error}</p>}
+
       {use?.route?.isReturn && (
         <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
           This is how {nameOf(intent.fromStateId)} comes back to wherever it was entered from. Pointing it at one state
@@ -166,7 +300,14 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
           </Button>
         )}
         <Button
-          isDisabled={controlId === undefined || stepNumber === undefined || toStateId === undefined || !from}
+          isDisabled={
+            controlId === undefined ||
+            stepNumber === undefined ||
+            toStateId === undefined ||
+            !from ||
+            !plan.ok ||
+            slots.some((slot) => slot === undefined)
+          }
           onPress={() => commit(toStateId)}
         >
           {intent.kind === "add" ? "Add route" : "Change route"}

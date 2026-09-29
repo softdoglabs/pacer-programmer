@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { compileMachine, recoverMachine } from "../../pacer/analysis";
 import { renamePreset, setStepType } from "../../pacer/editing";
 import { loadFactoryDefaults } from "../../pacer/factoryDefaults";
 import { ControlId, SwitchMessageType, userPresetIndex } from "../../pacer/protocol/constants";
@@ -87,5 +88,80 @@ describe("editing", () => {
     store().release(ControlId.Stompswitch2); // PC 1
     rename("LIVE");
     expect(store().board.midi.programs[0]).toMatchObject({ program: 1 });
+  });
+
+  it("changes every preset a state is, as one undoable step", () => {
+    /*
+     * The map draws presets that behave alike as one state, so the editor changes them together —
+     * keeping copies in step by hand is the work this project exists to remove. Narrowing the
+     * scope to one preset is the deliberate way to make it differ.
+     */
+    const compiled = compileMachine({
+      states: [
+        ...[0, 1].map((i) => ({
+          id: `m${i}`,
+          name: `MAIN${i}`,
+          body: {
+            [ControlId.Stompswitch1]: {
+              steps: {
+                1: {
+                  channel: 0,
+                  msgType: SwitchMessageType.Note,
+                  data: [60 + i, 127, 0] as [number, number, number],
+                  active: true,
+                },
+              },
+              led: {},
+            },
+          },
+          transitions: [
+            { controlId: ControlId.StompswitchA, stepNumber: 1, to: { kind: "state" as const, id: "loop" } },
+          ],
+        })),
+        {
+          id: "loop",
+          name: "LOOPR",
+          body: {
+            [ControlId.Stompswitch1]: {
+              steps: {
+                1: {
+                  channel: 0,
+                  msgType: SwitchMessageType.Note,
+                  data: [99, 127, 0] as [number, number, number],
+                  active: true,
+                },
+              },
+              led: {},
+            },
+          },
+          transitions: [{ controlId: ControlId.StompswitchA, stepNumber: 1, to: { kind: "return" as const } }],
+        },
+      ],
+    });
+    if (!compiled.ok) throw new Error(compiled.error);
+    store().loadConfig(compiled.config, "Looper");
+
+    const machine = recoverMachine(store().board.config);
+    const copies = machine.members[machine.states.find((s) => s.name === "LOOPR")!.id]!;
+    expect(copies).toHaveLength(2);
+    store().jumpToPreset(copies[0]!);
+
+    const typeOf = (preset: number) =>
+      store().board.config.presets[preset]?.controls[ControlId.Stompswitch1]?.steps[1]?.msgType;
+    store().applyPresetEdit((c, i) =>
+      setStepType(c, i, ControlId.Stompswitch1, 1, "switch", SwitchMessageType.CcToggle),
+    );
+    for (const copy of copies) expect(typeOf(copy)).toBe(SwitchMessageType.CcToggle);
+    expect(store().editHistory.past).toHaveLength(1); // one change to one thing
+
+    store().undo();
+    for (const copy of copies) expect(typeOf(copy)).toBe(SwitchMessageType.Note);
+
+    store().setEditScope("preset");
+    store().applyPresetEdit((c, i) =>
+      setStepType(c, i, ControlId.Stompswitch1, 1, "switch", SwitchMessageType.CcToggle),
+    );
+    expect(typeOf(copies[0]!)).toBe(SwitchMessageType.CcToggle);
+    expect(typeOf(copies[1]!)).toBe(SwitchMessageType.Note); // left behind, on purpose
   });
 });

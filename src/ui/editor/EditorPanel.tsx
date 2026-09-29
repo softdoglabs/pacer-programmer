@@ -6,6 +6,7 @@ import { ControlMode, STEPS_PER_CONTROL } from "../../pacer/protocol/constants";
 import { showingStep } from "../../pacer/panel";
 import { controlKindOf } from "../../pacer/simulator";
 import { usePacerStore } from "../../store/pacerStore";
+import { useEditTargets } from "./useEditTargets";
 import { StepCard } from "./StepCard";
 
 const MODE_OPTIONS = [
@@ -28,8 +29,11 @@ const MODE_OPTIONS = [
 
 function ControlEditor({ controlId }: { controlId: number }) {
   const presetIndex = usePacerStore((s) => s.board.activePresetIndex);
+  // How many presets this edit reaches: every preset the state is, unless it's been narrowed to
+  // this one (see `editTargets`).
+  const copies = useEditTargets().length;
   const control = usePacerStore((s) => s.board.config.presets[s.board.activePresetIndex]?.controls[controlId]);
-  const applyEdit = usePacerStore((s) => s.applyEdit);
+  const applyPresetEdit = usePacerStore((s) => s.applyPresetEdit);
   const kind = controlKindOf(controlId) ?? "switch";
   const spec = switchSpecForControl(controlId);
   const mode = control?.controlMode ?? ControlMode.AllStepsAtOnce;
@@ -50,7 +54,7 @@ function ControlEditor({ controlId }: { controlId: number }) {
           label="Control mode"
           options={MODE_OPTIONS}
           value={String(mode) as (typeof MODE_OPTIONS)[number]["id"]}
-          onChange={(v) => applyEdit((c) => setControlMode(c, presetIndex, controlId, Number(v) as ControlMode))}
+          onChange={(v) => applyPresetEdit((c, i) => setControlMode(c, i, controlId, Number(v) as ControlMode))}
         />
       </div>
       {mode === ControlMode.Sequence && (
@@ -75,6 +79,7 @@ function ControlEditor({ controlId }: { controlId: number }) {
             led={control?.led[n]}
             drivesLight={n === litStep}
             mode={mode}
+            copies={copies}
           />
         ))}
       </div>
@@ -89,7 +94,7 @@ function ControlEditor({ controlId }: { controlId: number }) {
         }
         onPress={() =>
           nextFreeStep !== undefined &&
-          applyEdit((c) => updateStep(c, presetIndex, controlId, nextFreeStep, { active: true }))
+          applyPresetEdit((c, i) => updateStep(c, i, controlId, nextFreeStep, { active: true }))
         }
       >
         + Add step{nextFreeStep === undefined ? ` (all ${STEPS_PER_CONTROL} in use)` : ""}

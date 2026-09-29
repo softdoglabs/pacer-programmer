@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ModalDialog } from "@/components/ui/dialog";
 import { hasUnsavedEdits } from "../../store/editingSlice";
 import { usePacerStore } from "../../store/pacerStore";
+import { EditScopeControl } from "./EditScopeControl";
 import { SendToPacer } from "./SendToPacer";
 
 function isTextInput(target: EventTarget | null): boolean {
@@ -115,6 +116,7 @@ export function EditingBar() {
       >
         <Redo2 className="size-4" aria-hidden />
       </Button>
+      <EditScopeControl />
       {unsaved && <Badge variant="outline">● unsaved</Badge>}
       <Button
         size="sm"

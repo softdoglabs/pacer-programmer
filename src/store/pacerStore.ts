@@ -32,7 +32,7 @@ import {
   type ConfigurationsSlice,
   type PullView,
 } from "./configurationsSlice";
-import { createEditingSlice, type EditHistory, type EditingSlice } from "./editingSlice";
+import { createEditingSlice, type EditHistory, type EditScope, type EditingSlice } from "./editingSlice";
 import { createSendSlice, type SendSlice, type SendView } from "./sendSlice";
 
 export interface LogEntry {
@@ -139,6 +139,8 @@ function freshSession(config: PacerConfig, initialPresetIndex: number) {
     log: [] as LogEntry[],
     swallowedReleases: [] as number[],
     selectedControlId: undefined as number | undefined,
+    // Back to changing a state as a whole: narrowing to one preset was about the last one.
+    editScope: "state" as EditScope,
     // Part of the session, so loading a configuration closes the panel that loaded it.
     deviceDrawerOpen: false,
     /*

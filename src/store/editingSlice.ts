@@ -1,3 +1,4 @@
+import { recoverMachine } from "../pacer/analysis";
 import type { PacerConfig } from "../pacer/protocol/types";
 import type { PacerStore } from "./pacerStore";
 
@@ -19,12 +20,39 @@ export interface EditHistory {
   future: PacerConfig[];
 }
 
+/**
+ * What an edit made in the editor applies to.
+ *
+ * A state can be several presets — one per place it comes back to — and the map draws them as one
+ * thing. Opening one from there and changing it alone is how a state quietly comes apart, so
+ * "state" is the default: the same change goes to every preset the state is, which is the sync
+ * work this project exists to remove. "preset" is the deliberate way to make one copy differ.
+ */
+export type EditScope = "state" | "preset";
+
+/** The presets an edit applies to: every preset the current one behaves like, or just it. */
+export function editTargets(config: PacerConfig, presetIndex: number, scope: EditScope): number[] {
+  if (scope === "preset") return [presetIndex];
+  const machine = recoverMachine(config);
+  const state = machine.states.find((s) => (machine.members[s.id] ?? []).includes(presetIndex));
+  const members = state ? (machine.members[state.id] ?? []) : [];
+  return members.length > 0 ? members : [presetIndex];
+}
+
 export interface EditingSlice {
   /** Simulate: pressing a switch runs it. Program: pressing a switch selects it for editing, and nothing fires. */
   uiMode: UiMode;
   setUiMode: (mode: UiMode) => void;
   /** Applies one edit to the working config (undoable). A no-op edit (same config back) records nothing. */
   applyEdit: (edit: (config: PacerConfig) => PacerConfig) => void;
+  /**
+   * Applies one edit to each preset in scope — every preset the current one behaves like, or just
+   * the current one — as a single undoable step. Everything the editor changes about a preset goes
+   * through here, so the copies of a state can't drift apart by accident.
+   */
+  applyPresetEdit: (edit: (config: PacerConfig, presetIndex: number) => PacerConfig) => void;
+  editScope: EditScope;
+  setEditScope: (scope: EditScope) => void;
   undo: () => void;
   redo: () => void;
 }
@@ -59,6 +87,16 @@ export function createEditingSlice(set: Set, get: Get): EditingSlice {
       const next = edit(board.config);
       if (next === board.config) return;
       replaceConfig(next, { past: [...editHistory.past, board.config].slice(-MAX_UNDO), future: [] });
+    },
+
+    editScope: "state",
+    setEditScope: (editScope) => set({ editScope }),
+
+    applyPresetEdit: (edit) => {
+      const { board, editScope, applyEdit } = get();
+      const targets = editTargets(board.config, board.activePresetIndex, editScope);
+      // One undo step, however many presets it touched: it was one change to one thing.
+      applyEdit((config) => targets.reduce((acc, presetIndex) => edit(acc, presetIndex), config));
     },
 
     undo: () => {

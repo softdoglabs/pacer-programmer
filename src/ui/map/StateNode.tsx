@@ -42,7 +42,7 @@ export function StateNode({ data, isConnectable }: NodeProps & { data: StateNode
   return (
     <div
       className={cn(
-        "min-w-28 rounded-lg border-2 bg-card px-2 py-1 text-left",
+        "relative min-w-28 rounded-lg border-2 bg-card px-2 py-1 text-left",
         data.here ? "border-primary bg-primary/15" : "border-border",
       )}
     >
@@ -55,20 +55,13 @@ export function StateNode({ data, isConnectable }: NodeProps & { data: StateNode
           <Handle type="source" position={side.position} id={`s-${side.id}`} isConnectable={isConnectable} />
         </div>
       ))}
-      <div className="truncate pr-4 text-sm font-semibold">{data.name}</div>
+      <div className="truncate text-sm font-semibold">{data.name}</div>
       <div className="truncate text-[11px] opacity-70" title={data.presetsTitle}>
         {data.presets}
       </div>
       {data.returnsVia && <div className="mt-0.5 truncate text-[11px] text-primary">↩ {data.returnsVia} returns</div>}
       {/* The same pencil the faceplate puts on anything programmable, so the habit carries over. */}
-      {data.onEdit && (
-        <EditBadge
-          size="small"
-          className="top-1 right-1 bottom-auto"
-          label={`Program ${data.name}`}
-          onPress={data.onEdit}
-        />
-      )}
+      {data.onEdit && <EditBadge size="small" label={`Program ${data.name}`} onPress={data.onEdit} />}
     </div>
   );
 }

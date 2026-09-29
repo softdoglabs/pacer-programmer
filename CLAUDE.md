@@ -847,6 +847,28 @@ no hover-only UI, for tablets.
   - Not built yet: preset load-time MIDI settings,
     expression pedal ranges beyond step data, and copy/paste of
     steps/switches.
+- **The editor changes a state, not a preset** (`store/editingSlice.ts`,
+  `ui/editor/useEditTargets.ts`). A state can be several presets, the map
+  draws them as one thing, and opening one from there to change it alone is
+  how a state quietly comes apart — so everything the editor does goes
+  through `applyPresetEdit`, which applies the change to every preset the
+  current one behaves like, as **one undo step**. Keeping copies in step by
+  hand is the work this project exists to remove; doing it here means the
+  editor never has to know it's editing a state.
+  - **Except where a jump goes.** A step's destination is the one thing the
+    presets of a state are allowed to differ on — it's the return address,
+    and the only thing that tells the copies apart (`analysis/states.ts`) —
+    so `data` on a Preset Select or Inc/Dec step is written to the preset in
+    front of you, and the step card says so. Everything else about that
+    step (its type, channel, whether it's active, its LED) is shared, which
+    is what stops an edit splitting the state by accident.
+  - `editScope` narrows it to the one preset, which is the deliberate way
+    to make a copy differ. The control appears in Program mode's context
+    bar only while the current preset has siblings (`EditScopeControl`),
+    and not on the map, where a route belongs to the state whatever this
+    says. It resets with the session.
+  - The preset panel says which it is: "D5 is one of 2 presets that behave
+    alike — LOOPR on the map (C1, D5). Changes here go to all of them…".
 - **Sessions:** loading a configuration (opening a snapshot, importing,
   pulling) starts a fresh simulator session.
   - `freshSession` in the store rebuilds all per-session state, and the
@@ -975,16 +997,11 @@ no hover-only UI, for tablets.
   - **Clearing a preset** is in Program mode, on the preset's own panel:
     it's how the device gets a slot to spare, and the confirm says what it
     empties.
-  - **Every node carries the faceplate's pencil**, which opens that preset
-    in Program mode (double-clicking the node does the same). The map is
-    where a preset is easiest to find; Program is where it's changed. For a
-    state of several presets it opens the one the simulator is on, or the
-    first.
-    - Program mode then says so: "D5 is one of 2 presets that behave alike
-      — LOOPR on the map (C1, D5). Changing it here changes this preset
-      only, and they stop being one state." Editing one copy is how a state
-      comes apart, and arriving from a map that draws them as one thing is
-      exactly when that needs saying.
+  - **Every node carries the faceplate's pencil**, on the bottom-right
+    corner like every other programmable thing, and it opens that preset in
+    Program mode (double-clicking the node does the same). The map is where
+    a preset is easiest to find; Program is where it's changed. For a state
+    of several presets it opens the one the simulator is on, or the first.
   - **A state of several presets says that instead of listing slots**:
     "2 presets · one state", with the slots in the node's tooltip. Which
     slots the copies landed in is the app's bookkeeping — a twelve-origin

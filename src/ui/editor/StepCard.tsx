@@ -13,6 +13,7 @@ import {
   LED_MIDI_FEEDBACK_ON,
   PresetSelectTarget,
   SwitchMessageType,
+  presetIndexToLabel,
 } from "../../pacer/protocol/constants";
 import { LED_COLOR_DEFAULT } from "../../pacer/protocol/ledColors";
 import type { LedConfig, Step } from "../../pacer/protocol/types";
@@ -263,6 +264,7 @@ export function StepCard({
   led,
   drivesLight,
   mode,
+  copies,
 }: {
   presetIndex: number;
   controlId: number;
@@ -274,9 +276,28 @@ export function StepCard({
   /** Whether this is the step whose LED config the switch is showing (see `showingStep`). */
   drivesLight: boolean;
   mode: ControlMode;
+  /** How many presets the state being edited is, so a jump can say why it isn't shared. */
+  copies: number;
 }) {
+  const applyPresetEdit = usePacerStore((s) => s.applyPresetEdit);
   const applyEdit = usePacerStore((s) => s.applyEdit);
   const hasLights = kind === "switch" && spec !== undefined && spec.indicators.some((i) => i.addressable);
+
+  /*
+   * Where a jump goes is the one thing the presets of a state are allowed to differ on — it's the
+   * return address, and the only thing that tells the copies apart (see `analysis/states.ts`). So
+   * it's written to the preset in front of you, while everything else about the step goes to all
+   * of them. Fanning this out would point every copy at the same place, which is how a state stops
+   * coming back.
+   */
+  const navigates =
+    kind === "switch" &&
+    step !== undefined &&
+    (step.msgType === SwitchMessageType.PresetSelect || step.msgType === SwitchMessageType.PresetIncDec);
+  const editData = (data: Step["data"]) =>
+    navigates
+      ? applyEdit((c) => updateStep(c, presetIndex, controlId, n, { data }))
+      : applyPresetEdit((c, i) => updateStep(c, i, controlId, n, { data }));
 
   return (
     <section aria-label={`Step ${n}`} className="space-y-3 rounded-md border bg-card p-3">
@@ -290,7 +311,7 @@ export function StepCard({
           options={typeOptions(kind)}
           value={step ? String(step.msgType) : undefined}
           placeholder="Choose…"
-          onChange={(v) => v && applyEdit((c) => setStepType(c, presetIndex, controlId, n, kind, Number(v)))}
+          onChange={(v) => v && applyPresetEdit((c, i) => setStepType(c, i, controlId, n, kind, Number(v)))}
         />
         {step && !(kind === "switch" && NO_CHANNEL.includes(step.msgType)) && (
           <Select
@@ -298,7 +319,7 @@ export function StepCard({
             title="MIDI channel this step transmits on. Global follows the configuration's own channel."
             options={MIDI_CHANNEL_CHOICES}
             value={String(step.channel)}
-            onChange={(v) => v && applyEdit((c) => updateStep(c, presetIndex, controlId, n, { channel: Number(v) }))}
+            onChange={(v) => v && applyPresetEdit((c, i) => updateStep(c, i, controlId, n, { channel: Number(v) }))}
           />
         )}
         {n > 1 && (
@@ -308,7 +329,7 @@ export function StepCard({
             className="ml-auto"
             aria-label={`Remove step ${n}`}
             title={`Turn off step ${n}`}
-            onPress={() => applyEdit((c) => updateStep(c, presetIndex, controlId, n, { active: false }))}
+            onPress={() => applyPresetEdit((c, i) => updateStep(c, i, controlId, n, { active: false }))}
           >
             ✕
           </Button>
@@ -316,11 +337,13 @@ export function StepCard({
       </div>
       {step && (
         <>
-          <DataFields
-            kind={kind}
-            step={step}
-            onData={(data) => applyEdit((c) => updateStep(c, presetIndex, controlId, n, { data }))}
-          />
+          {navigates && copies > 1 && (
+            <p className="text-xs text-muted-foreground">
+              Where this goes is what tells the {copies} presets of this state apart, so it changes on{" "}
+              {presetIndexToLabel(presetIndex)} alone. The map changes them together.
+            </p>
+          )}
+          <DataFields kind={kind} step={step} onData={editData} />
           {hasLights && (
             <>
               {!drivesLight && (
@@ -335,7 +358,7 @@ export function StepCard({
                 kind={kind}
                 step={step}
                 led={led}
-                onLed={(patch) => applyEdit((c) => updateStepLed(c, presetIndex, controlId, n, patch))}
+                onLed={(patch) => applyPresetEdit((c, i) => updateStepLed(c, i, controlId, n, patch))}
               />
             </>
           )}

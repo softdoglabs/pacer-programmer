@@ -29,6 +29,8 @@ export function PresetPanel() {
   const config = usePacerStore((s) => s.board.config);
   const preset = config.presets[index];
   const applyEdit = usePacerStore((s) => s.applyEdit);
+  const applyPresetEdit = usePacerStore((s) => s.applyPresetEdit);
+  const scope = usePacerStore((s) => s.editScope);
   const [clearing, setClearing] = useState(false);
   /*
    * The presets this one behaves like. Editing one of them here changes that preset alone, which
@@ -54,11 +56,13 @@ export function PresetPanel() {
         </span>
       </h2>
       {alike.members.length > 1 && (
-        <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+        <p className="rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-xs">
           {presetIndexToLabel(index)} is one of {alike.members.length} presets that behave alike —{" "}
           {alike.name ? `“${alike.name}”` : "one state"} on the map ({alike.members.map(presetIndexToLabel).join(", ")}
-          ). Changing it here changes this preset only, and they stop being one state. Rerouting on the map changes them
-          together.
+          ).{" "}
+          {scope === "state"
+            ? "Changes here go to all of them, so they stay one state. Where each one jumps is its own, and the map edits that."
+            : "Changes here go to this preset alone, so it stops behaving like the others. The bar above switches back."}
         </p>
       )}
       {used.length === 0 ? (
@@ -66,7 +70,7 @@ export function PresetPanel() {
       ) : (
         <ul className="space-y-2">
           {used.map((n) => (
-            <PresetMidiRow key={n} presetIndex={index} n={n} setting={preset.midiSettings[n]!} />
+            <PresetMidiRow key={n} n={n} setting={preset.midiSettings[n]!} />
           ))}
         </ul>
       )}
@@ -82,7 +86,7 @@ export function PresetPanel() {
           }
           onPress={() =>
             nextFree !== undefined &&
-            applyEdit((c) => setPresetMidiType(c, index, nextFree, PresetMidiMessageType.ProgramAndBank))
+            applyPresetEdit((c, i) => setPresetMidiType(c, i, nextFree, PresetMidiMessageType.ProgramAndBank))
           }
         >
           + Add message{nextFree === undefined ? ` (all ${PRESET_MIDI_SETTINGS} in use)` : ""}

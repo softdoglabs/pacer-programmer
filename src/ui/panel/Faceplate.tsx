@@ -172,7 +172,7 @@ function Encoder() {
 function DisplayNameField({ editable }: { editable: boolean }) {
   const presetIndex = usePacerStore((s) => s.board.activePresetIndex);
   const name = usePacerStore((s) => s.board.config.presets[s.board.activePresetIndex]?.name ?? "");
-  const applyEdit = usePacerStore((s) => s.applyEdit);
+  const applyPresetEdit = usePacerStore((s) => s.applyPresetEdit);
   const [draft, setDraft] = useState<string>();
   const field = useRef<HTMLInputElement>(null);
   const check = draft === undefined ? undefined : checkPresetName(draft);
@@ -193,7 +193,7 @@ function DisplayNameField({ editable }: { editable: boolean }) {
     try {
       const checked = checkPresetName(draft);
       if (checked.error) return; // keep editing until it's something the Pacer can store
-      if (checked.name.trimEnd() !== name.trimEnd()) applyEdit((c) => renamePreset(c, presetIndex, draft));
+      if (checked.name.trimEnd() !== name.trimEnd()) applyPresetEdit((c, i) => renamePreset(c, i, draft));
       setDraft(undefined);
       // Closing the field hides it from assistive tech again, so focus must not stay on it.
       field.current?.blur();

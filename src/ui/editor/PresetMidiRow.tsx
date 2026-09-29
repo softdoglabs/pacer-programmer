@@ -33,21 +33,13 @@ const TYPE_OPTIONS: SelectGroup[] = TYPE_GROUPS.map((g) => ({
   options: g.types.map((t) => ({ id: String(t), label: presetMidiTypeName(t) })),
 }));
 
-export function PresetMidiRow({
-  presetIndex,
-  n,
-  setting,
-}: {
-  presetIndex: number;
-  n: number;
-  setting: PresetMidiSetting;
-}) {
-  const applyEdit = usePacerStore((s) => s.applyEdit);
+export function PresetMidiRow({ n, setting }: { n: number; setting: PresetMidiSetting }) {
+  const applyPresetEdit = usePacerStore((s) => s.applyPresetEdit);
   const { dataFields, hasChannel } = presetMidiTypeInfo(setting.msgType);
   const set = (i: number, v: number) => {
     const data = [...setting.data] as PresetMidiSetting["data"];
     data[i] = v;
-    applyEdit((c) => updatePresetMidi(c, presetIndex, n, { data }));
+    applyPresetEdit((c, i) => updatePresetMidi(c, i, n, { data }));
   };
 
   return (
@@ -59,7 +51,7 @@ export function PresetMidiRow({
         title={`What message ${n} sends when this preset loads`}
         options={TYPE_OPTIONS}
         value={String(setting.msgType)}
-        onChange={(v) => v && applyEdit((c) => setPresetMidiType(c, presetIndex, n, Number(v)))}
+        onChange={(v) => v && applyPresetEdit((c, i) => setPresetMidiType(c, i, n, Number(v)))}
       />
       {hasChannel && (
         <Select
@@ -67,7 +59,7 @@ export function PresetMidiRow({
           title="MIDI channel this message is sent on. Global follows the configuration's own channel."
           options={MIDI_CHANNEL_CHOICES}
           value={String(setting.channel)}
-          onChange={(v) => v && applyEdit((c) => updatePresetMidi(c, presetIndex, n, { channel: Number(v) }))}
+          onChange={(v) => v && applyPresetEdit((c, i) => updatePresetMidi(c, i, n, { channel: Number(v) }))}
         />
       )}
       {dataFields.map((field, i) =>
@@ -81,7 +73,7 @@ export function PresetMidiRow({
         className="ml-auto self-center"
         aria-label={`Remove message ${n}`}
         title={`Stop sending message ${n} when this preset loads`}
-        onPress={() => applyEdit((c) => setPresetMidiType(c, presetIndex, n, PresetMidiMessageType.Off))}
+        onPress={() => applyPresetEdit((c, i) => setPresetMidiType(c, i, n, PresetMidiMessageType.Off))}
       >
         ✕
       </Button>

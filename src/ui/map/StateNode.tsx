@@ -1,5 +1,6 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { cn } from "@/lib/utils";
+import { EditBadge } from "../panel/EditBadge";
 
 /*
  * A state on the map, with somewhere for a route to meet it on every side.
@@ -14,12 +15,20 @@ import { cn } from "@/lib/utils";
 
 export interface StateNodeData extends Record<string, unknown> {
   name: string;
-  /** The presets this state is, already worded: "A1" or "2 presets · A1 C1". */
+  /**
+   * The presets this state is, already worded. A state of one is its slot, since that's how you
+   * find it on the hardware; a state of several says so instead of listing slots, because which
+   * slots the copies landed in is the hardware's problem rather than the design's (`presetsTitle`
+   * has them).
+   */
   presets: string;
+  presetsTitle?: string;
   /** Switch markings that come back to whatever entered the state, if any. */
   returnsVia?: string;
   /** The simulator is on one of its presets. */
   here?: boolean;
+  /** Open this state's preset for programming. */
+  onEdit?: () => void;
 }
 
 const SIDES = [
@@ -46,9 +55,20 @@ export function StateNode({ data, isConnectable }: NodeProps & { data: StateNode
           <Handle type="source" position={side.position} id={`s-${side.id}`} isConnectable={isConnectable} />
         </div>
       ))}
-      <div className="truncate text-sm font-semibold">{data.name}</div>
-      <div className="truncate text-[11px] opacity-70">{data.presets}</div>
+      <div className="truncate pr-4 text-sm font-semibold">{data.name}</div>
+      <div className="truncate text-[11px] opacity-70" title={data.presetsTitle}>
+        {data.presets}
+      </div>
       {data.returnsVia && <div className="mt-0.5 truncate text-[11px] text-primary">↩ {data.returnsVia} returns</div>}
+      {/* The same pencil the faceplate puts on anything programmable, so the habit carries over. */}
+      {data.onEdit && (
+        <EditBadge
+          size="small"
+          className="top-1 right-1 bottom-auto"
+          label={`Program ${data.name}`}
+          onPress={data.onEdit}
+        />
+      )}
     </div>
   );
 }

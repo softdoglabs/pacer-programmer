@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ModalDialog } from "@/components/ui/dialog";
+import { recoverMachine } from "../pacer/analysis";
 import { clearPreset, isSparePreset, nextFreePresetMidi, setPresetMidiType, SPARE_PRESET_NAME } from "../pacer/editing";
 import { PRESET_MIDI_SETTINGS, PresetMidiMessageType, presetIndexToLabel } from "../pacer/protocol/constants";
 import type { Preset } from "../pacer/protocol/types";
@@ -25,9 +26,20 @@ function loadMessages(preset: Preset): number[] {
 
 export function PresetPanel() {
   const index = usePacerStore((s) => s.board.activePresetIndex);
-  const preset = usePacerStore((s) => s.board.config.presets[index]);
+  const config = usePacerStore((s) => s.board.config);
+  const preset = config.presets[index];
   const applyEdit = usePacerStore((s) => s.applyEdit);
   const [clearing, setClearing] = useState(false);
+  /*
+   * The presets this one behaves like. Editing one of them here changes that preset alone, which
+   * is how a state stops being one — worth saying, since the map presents them as a single thing
+   * and this is where you arrive from it.
+   */
+  const alike = useMemo(() => {
+    const machine = recoverMachine(config);
+    const state = machine.states.find((s) => (machine.members[s.id] ?? []).includes(index));
+    return { name: state?.name?.trim() || state?.id, members: state ? (machine.members[state.id] ?? []) : [] };
+  }, [config, index]);
   if (!preset) return null;
 
   const used = loadMessages(preset);
@@ -41,6 +53,14 @@ export function PresetPanel() {
           {preset.name ?? "(unnamed)"}
         </span>
       </h2>
+      {alike.members.length > 1 && (
+        <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+          {presetIndexToLabel(index)} is one of {alike.members.length} presets that behave alike —{" "}
+          {alike.name ? `“${alike.name}”` : "one state"} on the map ({alike.members.map(presetIndexToLabel).join(", ")}
+          ). Changing it here changes this preset only, and they stop being one state. Rerouting on the map changes them
+          together.
+        </p>
+      )}
       {used.length === 0 ? (
         <p className="text-xs text-muted-foreground">This preset sends nothing when it loads.</p>
       ) : (

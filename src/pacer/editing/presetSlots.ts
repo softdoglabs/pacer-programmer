@@ -4,7 +4,7 @@ import {
   PresetMidiMessageType,
   SwitchMessageType,
 } from "../protocol/constants";
-import type { PacerConfig, Preset } from "../protocol/types";
+import type { PacerConfig, Preset, SwitchControl } from "../protocol/types";
 
 /*
  * Whole presets: emptying one, and copying one into another slot.
@@ -52,6 +52,41 @@ export function isSparePreset(preset: Preset | undefined): boolean {
   return Object.values(preset.midiSettings).every((m) => !m || m.msgType === PresetMidiMessageType.Off);
 }
 
+/** The same control with every step it holds set to Off. */
+function emptied(controlId: number, control: SwitchControl): SwitchControl {
+  const off = isSwitch(controlId) ? SwitchMessageType.Off : ExpressionMessageType.Off;
+  const steps: SwitchControl["steps"] = {};
+  for (const [n, step] of Object.entries(control.steps)) {
+    if (!step) continue;
+    // Step 1 keeps its active flag: the User Guide has every control using at least one step,
+    // and the hardware's own menu won't turn it off. Off does nothing anyway.
+    steps[Number(n)] = { ...step, msgType: off, data: [0, 0, 0], active: Number(n) === 1 && step.active };
+  }
+  return { ...control, steps };
+}
+
+/**
+ * Empties one switch: every step it holds set to Off, the LED colors left alone.
+ *
+ * What it's for is making room. A switch with all six steps spoken for, or whose first step
+ * already jumps somewhere, has nowhere a route could go — and on a real device that's most of
+ * them, since the factory set puts Track on A and Transport on B of every preset. Clearing it
+ * says "this switch does this now instead", which is a thing to be asked for rather than done
+ * quietly (see `pacer/authoring`).
+ */
+export function clearControl(config: PacerConfig, presetIndex: number, controlId: number): PacerConfig {
+  const control = config.presets[presetIndex]?.controls[controlId];
+  if (!control) return config;
+  const preset = config.presets[presetIndex]!;
+  return {
+    ...config,
+    presets: {
+      ...config.presets,
+      [presetIndex]: { ...preset, controls: { ...preset.controls, [controlId]: emptied(controlId, control) } },
+    },
+  };
+}
+
 /** Empties a preset: every step and preset message it holds set to Off, and named as spare. */
 export function clearPreset(config: PacerConfig, presetIndex: number, name = SPARE_PRESET_NAME): PacerConfig {
   const preset = config.presets[presetIndex];
@@ -59,17 +94,7 @@ export function clearPreset(config: PacerConfig, presetIndex: number, name = SPA
 
   const controls: Preset["controls"] = {};
   for (const [id, control] of Object.entries(preset.controls)) {
-    if (!control) continue;
-    const controlId = Number(id);
-    const off = isSwitch(controlId) ? SwitchMessageType.Off : ExpressionMessageType.Off;
-    const steps: typeof control.steps = {};
-    for (const [n, step] of Object.entries(control.steps)) {
-      if (!step) continue;
-      // Step 1 keeps its active flag: the User Guide has every control using at least one step,
-      // and the hardware's own menu won't turn it off. Off does nothing anyway.
-      steps[Number(n)] = { ...step, msgType: off, data: [0, 0, 0], active: Number(n) === 1 && step.active };
-    }
-    controls[controlId] = { ...control, steps };
+    if (control) controls[Number(id)] = emptied(Number(id), control);
   }
 
   const midiSettings: Preset["midiSettings"] = {};

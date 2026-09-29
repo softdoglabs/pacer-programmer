@@ -435,6 +435,11 @@ Refusals are checked, not guessed:
   configuration and so doesn't show on the map at all — hence
   `SwitchUse.firmwareTarget`, which is why "nothing on it" isn't the same
   as "free".
+- **`RouteChange.replace` empties the switch first**, so the route is all it
+  does, on every preset the state is. Without it most switches have nowhere
+  a route could go. It replaces the whole switch rather than one step: a
+  route that shares a press with what was there needs a free step, which is
+  the case that doesn't need this.
 
 
 
@@ -461,6 +466,8 @@ has to say which may be taken.
   them and leave the hardware exactly as it was. Writing Off over what's
   present sends the same number of messages the preset already had, which
   is what it takes to leave nothing behind.
+- `clearControl` empties one switch the same way, which is how a route gets
+  onto a switch that's already busy — on a real device that's most of them.
 - `copyPreset` copies a whole preset into another slot, keeping that
   slot's own index. It's how a new copy of a state is made.
 
@@ -961,9 +968,28 @@ no hover-only UI, for tablets.
     state comes back (one preset, see the authoring notes), a toggle asks —
     "Comes back here" against "Always goes to A1" — starting on the free
     answer. Presets already sharing it are named, since they get copies too.
+  - **Replacing what a switch does** is a tick-box in the same dialog, since
+    on a real device nearly every switch is busy. It says what it would
+    clear ("Replace what A does (selects the Track preset)") and applies to
+    every preset the state is.
   - **Clearing a preset** is in Program mode, on the preset's own panel:
     it's how the device gets a slot to spare, and the confirm says what it
     empties.
+  - **Every node carries the faceplate's pencil**, which opens that preset
+    in Program mode (double-clicking the node does the same). The map is
+    where a preset is easiest to find; Program is where it's changed. For a
+    state of several presets it opens the one the simulator is on, or the
+    first.
+    - Program mode then says so: "D5 is one of 2 presets that behave alike
+      — LOOPR on the map (C1, D5). Changing it here changes this preset
+      only, and they stop being one state." Editing one copy is how a state
+      comes apart, and arriving from a map that draws them as one thing is
+      exactly when that needs saying.
+  - **A state of several presets says that instead of listing slots**:
+    "2 presets · one state", with the slots in the node's tooltip. Which
+    slots the copies landed in is the app's bookkeeping — a twelve-origin
+    looper is twelve numbers nobody chose — and the same wording is used
+    wherever states are listed (the route dialog's target picker).
   - **The map carries the editing controls** (`ui/editor/EditingBar`, which
     Program mode uses too): the same undo stack, unsaved badge, Save and
     Send. It reroutes presets, so it can't be the one surface with no way

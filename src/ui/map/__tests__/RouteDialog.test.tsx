@@ -76,7 +76,7 @@ describe("editing a route from the map", () => {
       />,
     );
     // Two presets, so the dialog says so before anything is written.
-    expect(screen.getByText(/all 2 copies of it/)).toBeTruthy();
+    expect(screen.getByText(/all 2 presets it is/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Add route" }));
     expect(onClose).toHaveBeenCalled();
@@ -124,5 +124,37 @@ describe("editing a route from the map", () => {
     const loop = after.states.find((s) => s.name === "LOOPR")!;
     expect(after.members[loop.id]).toHaveLength(3);
     expect(loop.transitions.some((t) => t.to.kind === "return")).toBe(true);
+  });
+
+  it("offers to clear a switch that's already busy, and does it on every copy", () => {
+    /*
+     * The usual case on a real device: every switch already does something, so a route has
+     * nowhere to go until one of them gives way. That's offered, not done quietly.
+     */
+    const machine = load(2);
+    const onClose = vi.fn();
+    render(
+      <RouteDialog
+        intent={{ kind: "add", fromStateId: machine.id("LOOPR"), toStateId: machine.id("MAIN1") }}
+        onClose={onClose}
+      />,
+    );
+    // Stomp 1 sends the state's note; the route would otherwise share the press with it.
+    fireEvent.click(screen.getByRole("button", { name: /On switch/i }));
+    fireEvent.click(screen.getByRole("option", { name: /^1 —/ }));
+    expect(screen.getByText(/Replace what 1 does/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Add route" }));
+    expect(onClose).toHaveBeenCalled();
+
+    const home = machine.members("MAIN1")[0];
+    for (const copy of machine.members("LOOPR")) {
+      const steps = store().board.config.presets[copy]?.controls[ControlId.Stompswitch1]?.steps;
+      expect(steps?.[1]?.msgType).toBe(SwitchMessageType.PresetSelect);
+      expect(presetSelectTargetToIndex(steps![1]!.data[0])).toBe(home);
+      // The note that was on it is gone, not pushed to another step.
+      expect(Object.values(steps!).filter((s) => s?.active && s.msgType === SwitchMessageType.Note)).toHaveLength(0);
+    }
   });
 });

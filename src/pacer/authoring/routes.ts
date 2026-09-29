@@ -18,7 +18,7 @@ import {
   type MachineState,
   type RecoveredMachine,
 } from "../analysis";
-import { copyPreset, setStepType, updateStep } from "../editing";
+import { clearControl, copyPreset, setStepType, updateStep } from "../editing";
 
 /*
  * Editing the machine, not the presets.
@@ -46,6 +46,13 @@ export interface RouteChange {
    * `RoutePlan.choice` — and it's what makes the route cost a preset.
    */
   asReturn?: boolean;
+  /**
+   * Empty the switch first, so the route is all it does. Most switches on a real device are busy:
+   * the factory set gives A and B to the firmware's DAW presets and 1-6 to sending MIDI, so
+   * without this there's often nowhere a route could go — and a route written behind an earlier
+   * jump would never fire (see `SwitchUse.freeStep`).
+   */
+  replace?: boolean;
 }
 
 export type RouteResult = { ok: true; config: PacerConfig } | { ok: false; error: string };
@@ -383,7 +390,7 @@ export function editRoute(config: PacerConfig, change: RouteChange, into: readon
    * engine warns about the rest). A route written after one would sit there and never happen —
    * most often behind the Track selector the factory set puts on switch A.
    */
-  if (change.toStateId !== undefined) {
+  if (change.toStateId !== undefined && change.replace !== true) {
     for (const member of members) {
       const jump = firstJump(config, member, change.controlId);
       if (jump !== undefined && jump < change.stepNumber) {
@@ -396,6 +403,12 @@ export function editRoute(config: PacerConfig, change: RouteChange, into: readon
   }
 
   let edited = config;
+
+  // Asked for: the switch stops doing whatever it did, on every preset the state is, and the
+  // route is all that's left on it.
+  if (change.replace === true) {
+    for (const member of members) edited = clearControl(edited, member, change.controlId);
+  }
 
   /*
    * The copies first, so the route has somewhere to lead. Each is the state as it already exists,

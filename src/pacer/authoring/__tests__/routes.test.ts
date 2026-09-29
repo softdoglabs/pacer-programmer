@@ -308,6 +308,38 @@ describe("routing between states", () => {
     expect(result.error).toMatch(/only takes the first jump/);
   });
 
+  it("empties a switch when asked, so a route can take one that's already busy", () => {
+    /*
+     * The usual case on a real device: switch A already selects the firmware's Track preset, so
+     * nothing could be routed onto it. Saying "replace what's on it" clears the switch on every
+     * preset the state is, and the route becomes all it does.
+     */
+    const design = looper(2);
+    // The looper's A also sends a note, so there's something on the switch besides the way back.
+    design.states.find((s) => s.id === "loop")!.body[ControlId.StompswitchA] = {
+      steps: { 2: { channel: 0, msgType: SwitchMessageType.Note, data: [40, 127, 0], active: true } },
+      led: {},
+    };
+    const config = compiled(design);
+    const machine = recoverMachine(config);
+    const loop = machine.states.find((s) => s.name === "LOOPR")!;
+    const main = machine.states.find((s) => s.name === "MAIN0")!;
+    const busy = { fromStateId: loop.id, controlId: ControlId.StompswitchA, stepNumber: 2, toStateId: main.id };
+
+    expect(editRoute(config, busy).ok).toBe(false); // step 1 already jumps: a route on 2 never fires
+
+    const result = editRoute(config, { ...busy, stepNumber: 1, replace: true });
+    if (!result.ok) throw new Error(result.error);
+    const home = machine.members[main.id]![0]!;
+    for (const copy of machine.members[loop.id]!) {
+      expect(jumpTarget(result.config, copy, ControlId.StompswitchA, 1)).toBe(home);
+      // What used to be there is gone, not left behind on a later step.
+      expect(result.config.presets[copy]?.controls[ControlId.StompswitchA]?.steps[2]?.msgType).toBe(
+        SwitchMessageType.Off,
+      );
+    }
+  });
+
   it("says what each switch already carries, so a route can be put somewhere free", () => {
     const config = compiled(looper(2));
     const machine = recoverMachine(config);

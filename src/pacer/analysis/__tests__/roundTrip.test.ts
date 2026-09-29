@@ -230,7 +230,9 @@ describe("the device's working copy", () => {
           id: `m${i}`,
           name: `MAIN${i}`,
           body: body(ControlId.Stompswitch1, SwitchMessageType.Note, [60 + i, 127, 0] as [number, number, number]),
-          transitions: [{ controlId: ControlId.StompswitchA, stepNumber: 1, to: { kind: "state" as const, id: "loop" } }],
+          transitions: [
+            { controlId: ControlId.StompswitchA, stepNumber: 1, to: { kind: "state" as const, id: "loop" } },
+          ],
         })),
         {
           id: "loop",
@@ -258,4 +260,3 @@ describe("the device's working copy", () => {
     expect(recovered.notes).toHaveLength(0);
   });
 });
-

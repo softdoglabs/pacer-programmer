@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ModalDialog } from "@/components/ui/dialog";
+import { Checkbox } from "react-aria-components";
 import { Select } from "@/components/ui/select";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { recoverMachine } from "@/pacer/analysis";
@@ -28,6 +29,10 @@ export type RouteIntent =
   | { kind: "existing"; fromStateId: string; controlId: number; stepNumber: number };
 
 const marking = (controlId: number) => switchSpecForControl(controlId)?.name ?? controlLabel(controlId);
+
+/** A state's presets, worded as the map words them: the slot when it's one, a count when it's many. */
+const statePresets = (members: number[]) =>
+  members.length === 1 ? presetIndexToLabel(members[0]!) : `${members.length} presets`;
 
 const FIRMWARE_TARGET = {
   track: "selects the Track preset",
@@ -93,12 +98,24 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
    * copies are what the route needs.
    */
   const [asReturn, setAsReturn] = useState(false);
+
+  /*
+   * Most switches on a real device are busy — the factory set gives A and B to the firmware's DAW
+   * presets and 1-6 to sending MIDI — so a route often has nowhere to go unless the switch stops
+   * doing what it did. That's offered rather than done quietly, and it replaces the whole switch:
+   * a route sharing a press with what was there would need a free step, which is the case that
+   * doesn't need this.
+   */
+  const [replace, setReplace] = useState(false);
+  const hasRoom = use?.freeStep !== undefined || use?.route !== undefined;
+  const replacing = replace && intent.kind === "add";
   const change = {
     fromStateId: intent.fromStateId,
     controlId: controlId ?? -1,
-    stepNumber: stepNumber ?? 1,
+    stepNumber: replacing ? 1 : (stepNumber ?? 1),
     ...(toStateId !== undefined ? { toStateId } : {}),
     asReturn,
+    replace: replacing,
   };
   // Cheap enough to do on every render (a pass over 24 presets) and awkward to memoize on an
   // object that changes with every field: this is a modal with four controls in it.
@@ -118,16 +135,17 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
   const slots = needs.map((_, i) => into[i] ?? spare[i]);
 
   const commit = (target?: string) => {
-    if (controlId === undefined || stepNumber === undefined) return;
+    if (controlId === undefined || (stepNumber === undefined && !replacing)) return;
     const chosen = target === undefined ? [] : slots.filter((s): s is number => s !== undefined);
     const result = editRoute(
       config,
       {
         fromStateId: intent.fromStateId,
         controlId,
-        stepNumber,
+        stepNumber: replacing ? 1 : stepNumber!,
         ...(target !== undefined ? { toStateId: target } : {}),
         asReturn,
+        replace: replacing,
       },
       chosen,
     );
@@ -159,7 +177,8 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
         From <span className="font-semibold text-foreground">{nameOf(intent.fromStateId)}</span>
         {members.length > 1 && (
           <>
-            , written to all {members.length} copies of it ({members.map(presetIndexToLabel).join(", ")})
+            , written to all {members.length} presets it is{" "}
+            <span title={members.map(presetIndexToLabel).join(", ")}>(one state)</span>
           </>
         )}
         .
@@ -196,7 +215,7 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
           .filter((s) => s.id !== intent.fromStateId)
           .map((s) => ({
             id: s.id,
-            label: `${s.name?.trim() || s.id} · ${(machine.members[s.id] ?? []).map(presetIndexToLabel).join(" ")}`,
+            label: `${s.name?.trim() || s.id} · ${statePresets(machine.members[s.id] ?? [])}`,
           }))}
       />
 
@@ -281,12 +300,35 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
           makes every copy go to the same place, and the copies stop being told apart.
         </p>
       )}
-      {stepNumber === undefined && (
-        <p className="text-xs text-destructive">
-          {use?.firmwareTarget
-            ? `${marking(controlId!)} already ${FIRMWARE_TARGET[use.firmwareTarget]}, and a press only takes the first jump, so a route on it would never fire.`
-            : `Every step on ${controlId === undefined ? "that switch" : marking(controlId)} is in use, so there's nowhere to put a route.`}
-        </p>
+      {intent.kind === "add" && use && (
+        <div className="space-y-1">
+          {!hasRoom && !replacing && (
+            <p className="text-xs text-destructive">
+              {use.firmwareTarget
+                ? `${marking(use.controlId)} already ${FIRMWARE_TARGET[use.firmwareTarget]}, and a press only takes the first jump, so a route on it would never fire.`
+                : `Every step on ${marking(use.controlId)} is in use, so there's nowhere to put a route.`}
+            </p>
+          )}
+          <Checkbox
+            isSelected={replacing}
+            onChange={(on) => {
+              setReplace(on);
+              setError(undefined);
+            }}
+            className="group flex items-start gap-2 text-xs"
+          >
+            <span
+              aria-hidden
+              className="flex size-5 shrink-0 items-center justify-center rounded border bg-card group-data-[selected]:bg-primary group-data-[selected]:text-primary-foreground"
+            >
+              {replacing ? "✓" : ""}
+            </span>
+            <span className="text-muted-foreground">
+              Replace what {marking(use.controlId)} does ({describe(use, nameOf)}) — the route becomes all it does, on{" "}
+              {members.length > 1 ? `all ${members.length} presets` : "it"}.
+            </span>
+          </Checkbox>
+        </div>
       )}
       {error && <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">{error}</p>}
 
@@ -302,7 +344,7 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
         <Button
           isDisabled={
             controlId === undefined ||
-            stepNumber === undefined ||
+            (stepNumber === undefined && !replacing) ||
             toStateId === undefined ||
             !from ||
             !plan.ok ||

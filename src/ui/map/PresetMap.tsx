@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Background, ReactFlow, type Edge, type Node } from "@xyflow/react";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { FlowEdge, type FlowEdgeData } from "./FlowEdge";
@@ -25,6 +25,16 @@ import { layoutStates } from "./layout";
 const EDGE_TYPES = { flow: FlowEdge };
 const NODE_TYPES = { state: StateNode };
 
+/**
+ * What a state's presets are called. One preset is its slot, which is how you find it on the
+ * hardware; several is a count, because a state of twelve copies is twelve slots the app chose and
+ * the design has no opinion about — the list stays in the node's tooltip.
+ */
+function collapsedLabel(members: number[]): string {
+  if (members.length === 0) return "";
+  return members.length === 1 ? presetIndexToLabel(members[0]!) : `${members.length} presets · one state`;
+}
+
 /** The marking printed on the hardware: "C", "1", "FS1". */
 const marking = (controlId: number) => switchSpecForControl(controlId)?.name ?? controlLabel(controlId);
 
@@ -41,6 +51,16 @@ export function PresetMap() {
   const config = usePacerStore((s) => s.board.config);
   const activeIndex = usePacerStore((s) => s.board.activePresetIndex);
   const jumpToPreset = usePacerStore((s) => s.jumpToPreset);
+  const setUiMode = usePacerStore((s) => s.setUiMode);
+
+  /** Open a preset for programming: the map is where you find it, Program is where you change it. */
+  const programPreset = useCallback(
+    (presetIndex: number) => {
+      jumpToPreset(presetIndex);
+      setUiMode("program");
+    },
+    [jumpToPreset, setUiMode],
+  );
 
   const { nodes, edges, notes } = useMemo(() => {
     const machine = recoverMachine(config);
@@ -67,19 +87,21 @@ export function PresetMap() {
     const nodes: Node[] = machine.states.map((state) => {
       const members = machine.members[state.id] ?? [];
       const via = returnsVia(state);
+      // Whichever copy you're on, or the first: the copies behave alike, so any of them is the
+      // state — it's only the way back that tells them apart.
+      const open = members.includes(activeIndex) ? activeIndex : members[0];
       return {
         id: state.id,
         type: "state",
         position: positions.get(state.id) ?? { x: 0, y: 0 },
         data: {
           name: state.name?.trim() || state.id,
-          presets:
-            members.length > 1
-              ? `${members.length} presets · ${members.map(presetIndexToLabel).join(" ")}`
-              : presetIndexToLabel(members[0] ?? 0),
+          presets: collapsedLabel(members),
+          presetsTitle: members.map(presetIndexToLabel).join(", "),
           ...(via !== undefined ? { returnsVia: via } : {}),
           // The preset the simulator is on, wherever among the copies it happens to be.
           here: members.includes(activeIndex),
+          ...(open !== undefined ? { onEdit: () => programPreset(open) } : {}),
         } satisfies StateNodeData,
       };
     });
@@ -137,7 +159,7 @@ export function PresetMap() {
     });
 
     return { nodes, edges, notes: machine.notes };
-  }, [config, activeIndex, showing]);
+  }, [config, activeIndex, showing, programPreset]);
 
   return (
     <section aria-label="Preset map" className="flex min-h-0 flex-1 flex-col gap-2">
@@ -224,6 +246,12 @@ export function PresetMap() {
           onNodeClick={(_, node) => {
             const members = recoverMachine(config).members[node.id] ?? [];
             if (members[0] !== undefined) jumpToPreset(members[0]);
+          }}
+          // The shortcut for the pencil, for anyone who tries it.
+          onNodeDoubleClick={(_, node) => {
+            const members = recoverMachine(config).members[node.id] ?? [];
+            const open = members.includes(activeIndex) ? activeIndex : members[0];
+            if (open !== undefined) programPreset(open);
           }}
         >
           <Background />

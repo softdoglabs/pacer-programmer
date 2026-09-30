@@ -9,6 +9,7 @@ import { Titled } from "@/components/ui/titled";
 import { cn } from "@/lib/utils";
 import { PresetChooser } from "../PresetChooser";
 import { usePacerStore } from "@/store/pacerStore";
+import { useStateOfPreset } from "../editor/useEditTargets";
 import { useControlPress } from "../useControlPress";
 import { EditBadge, PresetBadge } from "./EditBadge";
 import { HOUSING_H, HOUSING_W, SwitchView } from "./SwitchView";
@@ -115,21 +116,37 @@ function Marking({ spec }: { spec: SwitchSpec }) {
 /** The LED display and the encoder below it, in the back row's last cell. */
 function Display({ display, nameLine }: { display: DisplayState; nameLine: React.ReactNode }) {
   const presetIndex = usePacerStore((s) => s.board.activePresetIndex);
+  const uiMode = usePacerStore((s) => s.uiMode);
+  const scope = usePacerStore((s) => s.editScope);
+  const { members } = useStateOfPreset();
+
+  /*
+   * While an edit goes to every preset of a state, the number line would be a lie: it names one
+   * slot when the change reaches all of them. The hardware would never show this — it's the app
+   * saying what it's about to change, in the place you'd look to find out.
+   */
+  const editingState = uiMode === "program" && scope === "state" && members.length > 1;
+  const line2 = editingState ? `x${members.length}` : display.line2;
+  const readout = editingState
+    ? `${display.line1.trim()} — ${members.length} presets: ${members.map(presetIndexToLabel).join(", ")}`
+    : `${display.line1.trim()} ${display.line2}`;
+
   return (
     <div className="flex w-full flex-col items-center gap-[1cqw]">
       <div
         className="@container relative flex w-full flex-col justify-center rounded-[4%] border-[0.25cqw] border-black bg-[#060606] px-[3%] py-[4%]"
         style={{ aspectRatio: `${SCREEN_ASPECT}` }}
         aria-live="polite"
+        title={editingState ? readout : undefined}
       >
-        <span className="sr-only">{`${display.line1.trim()} ${display.line2}`}</span>
+        <span className="sr-only">{readout}</span>
         {nameLine}
         <span
           aria-hidden
           className={cn("display-line display-line--number", display.line2Blinking && "pacer-blink")}
           data-testid="display-line2"
         >
-          {display.line2}
+          {line2}
         </span>
         {/*
          * The preset number is where the preset lives on the hardware, so it's where you change it

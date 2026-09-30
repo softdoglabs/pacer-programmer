@@ -862,6 +862,11 @@ no hover-only UI, for tablets.
     front of you, and the step card says so. Everything else about that
     step (its type, channel, whether it's active, its LED) is shared, which
     is what stops an edit splitting the state by accident.
+  - **The display says so too**: while an edit reaches every preset of a
+    state, the number line reads `x2` rather than naming one slot, since
+    naming one would be a lie about what's about to change. The hardware
+    would never show this — it's the app saying what it's about to do, in
+    the place you'd look to find out.
   - `editScope` narrows it to the one preset, which is the deliberate way
     to make a copy differ. The control appears in Program mode's context
     bar only while the current preset has siblings (`EditScopeControl`),
@@ -909,6 +914,11 @@ no hover-only UI, for tablets.
     leads with the same chooser as a breadcrumb: `A1 PRGM1 › Stomp 1`.
     That also fills a gap — the editor never used to say which preset the
     switch it's editing belongs to.
+  - **Two arrangements**: *by bank* is where the presets live, the order
+    printed on the Pacer; *by state* groups the ones that behave alike, the
+    way the map draws them, with the rest under "one preset each". Neither
+    is a view of the other, so both are offered. In bank order a preset
+    that shares a state carries a `×2` badge naming its siblings.
   - The popover marks which presets you've edited since opening the
     configuration (a filled dot) and which the Pacer hasn't been given yet
     (a hollow one) — both from `changedPresets` against `savedConfig` and
@@ -973,11 +983,11 @@ no hover-only UI, for tablets.
   its author meant: presets that behave alike are one node however many
   copies the hardware needed, and a route that leads each copy back where
   it came from is drawn as a return on the node it leaves.
-  - **Two toggles, not modes**: *Show* (designed routes / everything) hides
-    the plain next/previous stepping most presets carry, and *Clicking*
-    (loads a preset / edits routes) decides what the map is for at that
-    moment. Editing shows the handles, takes a drag from one state to
-    another, and opens a clicked route.
+  - **One toggle**: *Show* (designed routes / everything) hides the plain
+    next/previous stepping most presets carry. Routes are always editable —
+    drag between states, click a route to change it — because the pencil
+    already says which gesture opens a preset, and a mode for it was a
+    switch nobody needed.
   - **`RouteDialog`** is the one form for both: which switch carries the
     route, where it goes, and taking it away. It describes each switch in
     what it already does ("free", "sends 2 messages", "selects the Track
@@ -994,6 +1004,11 @@ no hover-only UI, for tablets.
     on a real device nearly every switch is busy. It says what it would
     clear ("Replace what A does (selects the Track preset)") and applies to
     every preset the state is.
+  - **Which switch carries a route is part of the route**, so the picker is
+    there for an existing one too: choose another and it moves, giving up
+    the one it was on in the same edit (`RouteChange.moveFrom`). A move to
+    the same destination costs nothing — it's the same way in, and the copy
+    it leads to is the one this route made.
   - **Clearing a preset** is in Program mode, on the preset's own panel:
     it's how the device gets a slot to spare, and the confirm says what it
     empties.
@@ -1007,6 +1022,16 @@ no hover-only UI, for tablets.
     slots the copies landed in is the app's bookkeeping — a twelve-origin
     looper is twelve numbers nobody chose — and the same wording is used
     wherever states are listed (the route dialog's target picker).
+  - **`StateDetails`** is where those slots are on show: clicking a state
+    lists its presets under the map, each with the presets that enter it,
+    and buttons to load it, program it, or **move it to an empty slot**.
+    Moving takes the routes with it (`movePreset`), which is the part that
+    can't be done by hand without missing one.
+  - Edge labels are the marking alone — "C", "1", "3". The rear-jack
+    switches lose the "FS": a badge has room for a character, and a number
+    on its own reads as a switch.
+  - **Opening a route loads the preset it leaves from**, so the faceplate
+    beside you is the one the route is on, and the panel below follows it.
   - **The map carries the editing controls** (`ui/editor/EditingBar`, which
     Program mode uses too): the same undo stack, unsaved badge, Save and
     Send. It reroutes presets, so it can't be the one surface with no way

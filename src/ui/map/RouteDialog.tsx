@@ -88,7 +88,6 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
 
   const from = machine.states.find((s) => s.id === intent.fromStateId);
   const members = machine.members[intent.fromStateId] ?? [];
-  const stepNumber = intent.kind === "existing" ? intent.stepNumber : (use?.route?.stepNumber ?? use?.freeStep);
 
   /*
    * Whether the state being entered comes back to whoever entered it. While it's entered from one
@@ -106,14 +105,25 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
    * a route sharing a press with what was there would need a free step, which is the case that
    * doesn't need this.
    */
+  /*
+   * Which switch a route is on is part of the route, so it can be changed like anything else: pick
+   * another and it moves, giving up the one it was on in the same edit. Staying put keeps the step
+   * it already occupies rather than being rewritten onto a free one.
+   */
+  const staying = intent.kind === "existing" && controlId === intent.controlId;
+  const moveFrom =
+    intent.kind === "existing" && !staying ? { controlId: intent.controlId, stepNumber: intent.stepNumber } : undefined;
+
   const [replace, setReplace] = useState(false);
   const hasRoom = use?.freeStep !== undefined || use?.route !== undefined;
-  const replacing = replace && intent.kind === "add";
+  const replacing = replace && !staying;
+  const stepNumber = staying ? intent.stepNumber : replacing ? 1 : (use?.route?.stepNumber ?? use?.freeStep);
   const change = {
     fromStateId: intent.fromStateId,
     controlId: controlId ?? -1,
-    stepNumber: replacing ? 1 : (stepNumber ?? 1),
+    stepNumber: stepNumber ?? 1,
     ...(toStateId !== undefined ? { toStateId } : {}),
+    ...(moveFrom ? { moveFrom } : {}),
     asReturn,
     replace: replacing,
   };
@@ -142,8 +152,9 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
       {
         fromStateId: intent.fromStateId,
         controlId,
-        stepNumber: replacing ? 1 : stepNumber!,
+        stepNumber: stepNumber!,
         ...(target !== undefined ? { toStateId: target } : {}),
+        ...(moveFrom ? { moveFrom } : {}),
         asReturn,
         replace: replacing,
       },
@@ -184,7 +195,7 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
         .
       </p>
 
-      {intent.kind === "add" ? (
+      {
         <Select
           label="On switch"
           value={controlId === undefined ? undefined : String(controlId)}
@@ -197,10 +208,10 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
             label: `${marking(u.controlId)} — ${describe(u, nameOf)}`,
           }))}
         />
-      ) : (
-        <p>
-          On switch <span className="font-semibold">{marking(intent.controlId)}</span>, step {intent.stepNumber} —{" "}
-          {use ? describe(use, nameOf) : "not on this state any more"}.
+      }
+      {moveFrom && (
+        <p className="text-xs text-muted-foreground">
+          Moved off {marking(moveFrom.controlId)}, which goes back to doing nothing.
         </p>
       )}
 
@@ -300,7 +311,7 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
           makes every copy go to the same place, and the copies stop being told apart.
         </p>
       )}
-      {intent.kind === "add" && use && (
+      {!staying && use && (
         <div className="space-y-1">
           {!hasRoom && !replacing && (
             <p className="text-xs text-destructive">

@@ -18,7 +18,7 @@ import {
   type MachineState,
   type RecoveredMachine,
 } from "../analysis";
-import { clearControl, copyPreset, setStepType, updateStep } from "../editing";
+import { clearControl, clearPreset, copyPreset, isSparePreset, setStepType, updateStep } from "../editing";
 
 /*
  * Editing the machine, not the presets.
@@ -46,6 +46,11 @@ export interface RouteChange {
    * `RoutePlan.choice` — and it's what makes the route cost a preset.
    */
   asReturn?: boolean;
+  /**
+   * The switch this route is on now, when it's being moved to another one. Cleared as part of the
+   * same edit, so the route is never on two switches and never on none.
+   */
+  moveFrom?: { controlId: number; stepNumber: number };
   /**
    * Empty the switch first, so the route is all it does. Most switches on a real device are busy:
    * the factory set gives A and B to the firmware's DAW presets and 1-6 to sending MIDI, so
@@ -215,6 +220,24 @@ export type RoutePlan =
     }
   | { ok: false; error: string };
 
+/**
+ * The presets that lead to `presetIndex` by name.
+ *
+ * The neighbour walk doesn't count as entering — next/previous names a direction, not a preset —
+ * and neither does the Current slot, which is the device's working copy of whatever is loaded
+ * rather than a preset of its own (see `recoverMachine`).
+ */
+export function presetEntrants(config: PacerConfig, presetIndex: number): number[] {
+  const graph = presetTransitions(config);
+  return [
+    ...new Set(
+      (graph.into[presetIndex] ?? [])
+        .filter((e) => e.from !== presetIndex && e.from !== CURRENT_PRESET_INDEX && !isPlainStepping(config, e))
+        .map((e) => e.from),
+    ),
+  ];
+}
+
 /** Where one of a preset's switches leads, as a preset index. */
 function targetOfRoute(
   config: PacerConfig,
@@ -250,18 +273,7 @@ export function planRoute(config: PacerConfig, change: RouteChange): RoutePlan {
   const toMembers = machine.members[change.toStateId] ?? [];
   if (!to || toMembers.length === 0) return { ok: false, error: `There's no state "${change.toStateId}" here.` };
 
-  /**
-   * The presets that lead to `member` by name. The neighbour walk doesn't count as entering, and
-   * neither does the Current slot, which is the device's working copy of the loaded preset rather
-   * than a preset of its own (see `recoverMachine`).
-   */
-  const entrantsOf = (member: number): number[] => [
-    ...new Set(
-      (graph.into[member] ?? [])
-        .filter((e) => e.from !== member && e.from !== CURRENT_PRESET_INDEX && !isPlainStepping(config, e))
-        .map((e) => e.from),
-    ),
-  ];
+  const entrantsOf = (member: number): number[] => presetEntrants(config, member);
 
   /*
    * A state's way back, whether or not the presets can say so outright. With copies it's the
@@ -280,6 +292,20 @@ export function planRoute(config: PacerConfig, change: RouteChange): RoutePlan {
       .filter((t) => t.to.kind === "state" && (machine.members[t.to.id] ?? []).some((m) => entrants.includes(m)))
       .map((t) => ({ controlId: t.controlId, stepNumber: t.stepNumber }));
   };
+
+  /*
+   * A route being moved to another switch is the same way in, so it costs nothing — the copy it
+   * leads to already exists because this route is what made it. Only a new destination is a new
+   * way in, and that gets priced below like any other.
+   */
+  if (change.moveFrom) {
+    const current = (graph.from[members[0]!] ?? []).find(
+      (e) => e.controlId === change.moveFrom!.controlId && e.stepNumber === change.moveFrom!.stepNumber,
+    );
+    if (current?.target.kind === "preset" && toMembers.includes(current.target.index)) {
+      return { ok: true, copies: [] };
+    }
+  }
 
   const targetWayBack = wayBack(to);
   const settled = (machine.members[to.id] ?? []).length > 1;
@@ -450,6 +476,17 @@ export function editRoute(config: PacerConfig, change: RouteChange, into: readon
     );
   });
 
+  // Moved, not copied: the switch it used to be on gives it up in the same edit.
+  const moveFrom = change.moveFrom;
+  if (moveFrom && (moveFrom.controlId !== change.controlId || moveFrom.stepNumber !== change.stepNumber)) {
+    for (const member of members) {
+      edited = setStepType(edited, member, moveFrom.controlId, moveFrom.stepNumber, "switch", SwitchMessageType.Off);
+      if (moveFrom.stepNumber > 1) {
+        edited = updateStep(edited, member, moveFrom.controlId, moveFrom.stepNumber, { active: false });
+      }
+    }
+  }
+
   const after = recoverMachine(edited);
 
   /*
@@ -461,7 +498,12 @@ export function editRoute(config: PacerConfig, change: RouteChange, into: readon
    */
   const had = returnsByPreset(before);
   const has = returnsByPreset(after);
-  const edit = new Set(members.map((m) => `${m}:${change.controlId}:${change.stepNumber}`));
+  const edit = new Set(
+    members.flatMap((m) => [
+      `${m}:${change.controlId}:${change.stepNumber}`,
+      ...(moveFrom ? [`${m}:${moveFrom.controlId}:${moveFrom.stepNumber}`] : []),
+    ]),
+  );
   const taken = new Set(into);
   const lost = [...had].find(
     (key) => !has.has(key) && !edit.has(key) && !taken.has(Number(key.slice(0, key.indexOf(":")))),
@@ -514,4 +556,69 @@ function writeJump(
     data: [presetIndexToPresetSelectTarget(target), 0, 0],
     active: true,
   });
+}
+
+/**
+ * Moves a preset into another slot, with everything that led to it following.
+ *
+ * A state's copies land wherever the app found room, which is rarely where you'd have put them —
+ * the looper's three copies scattered through banks B and D rather than sitting together. Moving
+ * one is a copy, a clear, and then the part that can't be done by hand without missing something:
+ * every Preset Select anywhere in the configuration that named the old slot now names the new one.
+ *
+ * Relative stepping is deliberately left alone. Next/previous names a direction, not a preset, so
+ * there's nothing in it to repoint — the preset that steps to its neighbour now steps to whatever
+ * its new neighbour is, which is what stepping means.
+ */
+export function movePreset(config: PacerConfig, from: number, to: number): RouteResult {
+  if (!isUserPresetIndex(from) || !isUserPresetIndex(to)) {
+    return { ok: false, error: "Presets move between the Pacer's own 24 slots." };
+  }
+  if (from === to) return { ok: true, config };
+  if (!isSparePreset(config.presets[to])) {
+    return { ok: false, error: `${presetIndexToLabel(to)} has something in it. Clear it first, or pick an empty one.` };
+  }
+
+  let moved = clearPreset(copyPreset(config, from, to), from);
+  const graph = presetTransitions(config);
+  for (const edge of graph.edges) {
+    if (edge.target.kind !== "preset" || edge.target.index !== from) continue;
+    if (isPlainStepping(config, edge)) continue;
+    moved = writeJump(moved, edge.from, edge.controlId, edge.stepNumber, to);
+  }
+
+  /*
+   * The same round trip every other edit here is held to: the machine recovered afterwards has to
+   * be the one recovered before, give or take which slots it sits in.
+   */
+  const before = machineShape(config, recoverMachine(config), { [from]: to });
+  const after = machineShape(moved, recoverMachine(moved), {});
+  if (before !== after) {
+    return { ok: false, error: `Moving ${presetIndexToLabel(from)} would change what the configuration does.` };
+  }
+  return { ok: true, config: moved };
+}
+
+/**
+ * A machine as something comparable: each state by the presets it is and where each of its routes
+ * leads, with `rename` applied so a move can be checked against the design it started as. Names
+ * are left out — they're labels, and a state's identity is what it does.
+ */
+function machineShape(config: PacerConfig, machine: RecoveredMachine, rename: Partial<Record<number, number>>): string {
+  const slot = (index: number) => rename[index] ?? index;
+  // Empty presets aren't part of the shape: the slot a move leaves behind is one of them, and a
+  // configuration with a spare slot more or less is the same configuration.
+  const states = machine.states
+    .filter((state) => !(machine.members[state.id] ?? []).every((m) => isSparePreset(config.presets[m])))
+    .map((state) => ({
+      members: (machine.members[state.id] ?? []).map(slot).sort((a, b) => a - b),
+      routes: state.transitions
+        .map((t) => ({
+          c: t.controlId,
+          n: t.stepNumber,
+          to: t.to.kind === "return" ? "return" : (machine.members[t.to.id] ?? []).map(slot).sort((a, b) => a - b),
+        }))
+        .sort((a, b) => a.c - b.c || a.n - b.n),
+    }));
+  return JSON.stringify(states.sort((a, b) => a.members[0]! - b.members[0]!));
 }

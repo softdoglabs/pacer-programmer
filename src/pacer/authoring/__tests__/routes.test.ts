@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { compileMachine, recoverMachine, type MachineState, type StateMachine } from "../../analysis";
 import { ControlId, SwitchMessageType, presetSelectTargetToIndex, userPresetIndex } from "../../protocol/constants";
 import type { PacerConfig, Preset } from "../../protocol/types";
-import { editRoute, planRoute, switchUses } from "../routes";
+import { isSparePreset } from "../../editing";
+import { editRoute, movePreset, planRoute, switchUses } from "../routes";
 
 const body = (note: number): Preset["controls"] => ({
   [ControlId.Stompswitch1]: {
@@ -357,5 +358,71 @@ describe("routing between states", () => {
     expect(one.route).toBeUndefined();
     expect(one.sends).toBe(1); // the state's body: a note on stomp 1
     expect(one.freeStep).toBe(2);
+  });
+
+  it("moves a route from one switch to another in one edit", () => {
+    const config = compiled(looper(2));
+    const machine = recoverMachine(config);
+    const main = machine.states.find((s) => s.name === "MAIN0")!;
+    const loop = machine.states.find((s) => s.name === "LOOPR")!;
+    const home = machine.members[main.id]![0]!;
+
+    // A carries the route today; B takes it over, and A is left doing nothing.
+    const result = editRoute(config, {
+      fromStateId: main.id,
+      controlId: ControlId.StompswitchB,
+      stepNumber: 1,
+      toStateId: loop.id,
+      moveFrom: { controlId: ControlId.StompswitchA, stepNumber: 1 },
+    });
+    if (!result.ok) throw new Error(result.error);
+
+    expect(jumpTarget(result.config, home, ControlId.StompswitchB, 1)).toBe(machine.members[loop.id]![0]);
+    expect(result.config.presets[home]?.controls[ControlId.StompswitchA]?.steps[1]?.msgType).toBe(
+      SwitchMessageType.Off,
+    );
+    // Still one route to the looper, on the switch it was moved to.
+    const after = recoverMachine(result.config);
+    const moved = after.states.find((s) => (after.members[s.id] ?? []).includes(home))!;
+    expect(moved.transitions.map((t) => t.controlId)).toEqual([ControlId.StompswitchB]);
+  });
+
+  it("moves a preset to another slot, and everything that led to it follows", () => {
+    /*
+     * A state's copies land wherever there was room, which is rarely where you'd have put them.
+     * Moving one has to take its entrants with it, or the route that entered it lands on an empty
+     * preset and the design is quietly broken.
+     */
+    const config = compiled(looper(2));
+    const before = recoverMachine(config);
+    const loop = before.states.find((s) => s.name === "LOOPR")!;
+    const copy = before.members[loop.id]![0]!;
+    const entrant = before.members[before.states.find((s) => s.name === "MAIN0")!.id]![0]!;
+    const free = userPresetIndex(3, 6); // D6, untouched by the compiled machine
+
+    const result = movePreset(config, copy, free);
+    if (!result.ok) throw new Error(result.error);
+
+    expect(result.config.presets[free]?.name?.trim()).toBe("LOOPR");
+    expect(isSparePreset(result.config.presets[copy])).toBe(true);
+    expect(jumpTarget(result.config, entrant, ControlId.StompswitchA, 1)).toBe(free); // its way in followed
+    expect(jumpTarget(result.config, free, ControlId.StompswitchA, 1)).toBe(entrant); // and its way back
+
+    const after = recoverMachine(result.config);
+    const moved = after.states.find((s) => s.name === "LOOPR")!;
+    expect(after.members[moved.id]).toHaveLength(2);
+    expect(moved.transitions.some((t) => t.to.kind === "return")).toBe(true);
+  });
+
+  it("won't move a preset onto one that has something in it", () => {
+    const config = compiled(looper(2));
+    const machine = recoverMachine(config);
+    const loop = machine.states.find((s) => s.name === "LOOPR")!;
+    const occupied = machine.members[machine.states.find((s) => s.name === "MAIN1")!.id]![0]!;
+
+    const result = movePreset(config, machine.members[loop.id]![0]!, occupied);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/Clear it first/);
   });
 });

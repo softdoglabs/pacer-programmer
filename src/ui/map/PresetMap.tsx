@@ -3,6 +3,7 @@ import { Background, ReactFlow, type Edge, type Node } from "@xyflow/react";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { FlowEdge, type FlowEdgeData } from "./FlowEdge";
 import { RouteDialog, type RouteIntent } from "./RouteDialog";
+import { StateDetails } from "./StateDetails";
 import { StateNode, type StateNodeData } from "./StateNode";
 import { MAP_ARROW, MapDefs } from "./MapDefs";
 import "@xyflow/react/dist/style.css";
@@ -35,23 +36,42 @@ function collapsedLabel(members: number[]): string {
   return members.length === 1 ? presetIndexToLabel(members[0]!) : `${members.length} presets · one state`;
 }
 
-/** The marking printed on the hardware: "C", "1", "FS1". */
-const marking = (controlId: number) => switchSpecForControl(controlId)?.name ?? controlLabel(controlId);
+/**
+ * The marking printed on the hardware: "C", "1", "3". The rear-jack switches keep their number and
+ * lose the "FS" — an edge badge has room for a character, and a number on its own reads as a switch.
+ */
+const marking = (controlId: number) =>
+  (switchSpecForControl(controlId)?.name ?? controlLabel(controlId)).replace(/^FS/, "");
 
 /** How far apart to bow the two halves of a reciprocal pair, in flow units. */
 const SEPARATION = 26;
 
 type Showing = "designed" | "all";
-type Doing = "navigate" | "design";
 
 export function PresetMap() {
   const [showing, setShowing] = useState<Showing>("designed");
-  const [doing, setDoing] = useState<Doing>("navigate");
   const [intent, setIntent] = useState<RouteIntent | null>(null);
+  // The state whose presets are being looked at, below the map.
+  const [inspecting, setInspecting] = useState<string | null>(null);
   const config = usePacerStore((s) => s.board.config);
   const activeIndex = usePacerStore((s) => s.board.activePresetIndex);
   const jumpToPreset = usePacerStore((s) => s.jumpToPreset);
   const setUiMode = usePacerStore((s) => s.setUiMode);
+
+  /*
+   * Opening a route loads the preset it leaves from, so the faceplate beside you is the one the
+   * route is on — and pressing its switches runs what you're about to change.
+   */
+  const openRoute = useCallback(
+    (intent: RouteIntent, members: number[]) => {
+      const load = members.includes(activeIndex) ? activeIndex : members[0];
+      if (load !== undefined) jumpToPreset(load);
+      setIntent(intent);
+      // The panel below follows the route, so it's the state you're editing that's spelled out.
+      setInspecting(intent.fromStateId);
+    },
+    [jumpToPreset, activeIndex],
+  );
 
   /** Open a preset for programming: the map is where you find it, Program is where you change it. */
   const programPreset = useCallback(
@@ -179,20 +199,6 @@ export function PresetMap() {
           value={showing}
           onChange={setShowing}
         />
-        <ToggleGroup<Doing>
-          label="Clicking"
-          labelVisible
-          options={[
-            { id: "navigate", label: "Loads a preset", title: "Clicking a state loads one of its presets" },
-            {
-              id: "design",
-              label: "Edits routes",
-              title: "Drag from one state to another to add a route; click a route to change it",
-            },
-          ]}
-          value={doing}
-          onChange={setDoing}
-        />
         <span className="text-xs text-muted-foreground">
           {showing === "designed"
             ? edges.length === 0
@@ -208,12 +214,11 @@ export function PresetMap() {
           as they are: {notes[0]!.message}
         </p>
       )}
-      {doing === "design" && (
-        <p className="rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-xs">
-          Drag from one state to another to add a route, or click a route to change it. A route belongs to the state, so
-          it's written to every preset that state is — which is the part that can't be done a preset at a time.
-        </p>
-      )}
+      <p className="rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-xs">
+        Drag from one state to another to add a route, or click a route to change it. A route belongs to the state, so
+        it's written to every preset that state is — which is the part that can't be done a preset at a time. The pencil
+        opens a state for programming; clicking it loads its preset in the simulator.
+      </p>
       {/* A definite height: React Flow is height:100%, which resolves to nothing against min-height. */}
       <div className="h-[70vh] min-h-96 overflow-hidden rounded-lg border bg-card">
         <ReactFlow
@@ -228,24 +233,25 @@ export function PresetMap() {
           colorMode="dark"
           proOptions={{ hideAttribution: true }}
           nodesDraggable={false}
-          nodesConnectable={doing === "design"}
           onConnect={(connection) => {
             if (connection.source === connection.target) return;
-            setIntent({ kind: "add", fromStateId: connection.source, toStateId: connection.target });
+            const members = recoverMachine(config).members[connection.source] ?? [];
+            openRoute({ kind: "add", fromStateId: connection.source, toStateId: connection.target }, members);
           }}
           onEdgeClick={(_, edge) => {
             const data = edge.data as FlowEdgeData | undefined;
-            if (doing !== "design" || data?.controlId === undefined || data.stepNumber === undefined) return;
-            setIntent({
-              kind: "existing",
-              fromStateId: edge.source,
-              controlId: data.controlId,
-              stepNumber: data.stepNumber,
-            });
+            if (data?.controlId === undefined || data.stepNumber === undefined) return;
+            openRoute(
+              { kind: "existing", fromStateId: edge.source, controlId: data.controlId, stepNumber: data.stepNumber },
+              recoverMachine(config).members[edge.source] ?? [],
+            );
           }}
           onNodeClick={(_, node) => {
             const members = recoverMachine(config).members[node.id] ?? [];
             if (members[0] !== undefined) jumpToPreset(members[0]);
+            // And show what it's made of: one node can be several presets, which is the thing a
+            // map of states hides by design.
+            setInspecting(node.id);
           }}
           // The shortcut for the pencil, for anyone who tries it.
           onNodeDoubleClick={(_, node) => {
@@ -257,6 +263,7 @@ export function PresetMap() {
           <Background />
         </ReactFlow>
       </div>
+      {inspecting !== null && <StateDetails stateId={inspecting} onClose={() => setInspecting(null)} />}
       <RouteDialog intent={intent} onClose={() => setIntent(null)} />
     </section>
   );

@@ -74,4 +74,28 @@ describe("choosing a preset", () => {
     fireEvent.click(screen.getByRole("option", { name: /^A4 LOOPR/ }));
     expect(store().board.activePresetIndex).toBe(userPresetIndex(0, 4));
   });
+
+  it("names the presets behind a count, wherever one is shown", () => {
+    /*
+     * A count says how many; the slots say which, and they're what you need to find them on the
+     * hardware. They don't fit on the display's number line or an edge badge, so each place that
+     * shows a count carries them as a tooltip.
+     */
+    render(<App />);
+    act(() => {
+      store().jumpToPreset(userPresetIndex(0, 3)); // one of the looper's two presets
+      store().setUiMode("program");
+    });
+
+    // The display reads x2, and the thing you can point at over it names them.
+    expect((screen.getByTestId("display-line2") as HTMLElement).textContent).toBe("x2");
+    // Both the display and the overlay that covers its lower half: the overlay is the one a
+    // pointer can reach, and the display keeps it for where the overlay isn't.
+    expect(screen.getAllByTitle(/LOOPR — 2 presets: A3, A4/).length).toBeGreaterThan(0);
+
+    // So does the badge in the chooser, next to the preset it belongs to.
+    fireEvent.click(screen.getByRole("button", { name: /^LOOPR — 2 presets/ }));
+    // One per copy — A3 and A4 each say which presets they share a state with.
+    expect(screen.getAllByTitle("One of 2 presets of LOOPR: A3, A4")).toHaveLength(2);
+  });
 });

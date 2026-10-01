@@ -127,9 +127,16 @@ function Display({ display, nameLine }: { display: DisplayState; nameLine: React
    */
   const editingState = uiMode === "program" && scope === "state" && members.length > 1;
   const line2 = editingState ? `x${members.length}` : display.line2;
-  const readout = editingState
+  /*
+   * "x2" is a count, and a count is no use without the slots behind it — they're where the presets
+   * are on the hardware. They don't fit on a 14-segment line, so they're the tooltip, which has to
+   * sit on the chooser overlay: it covers the lower half of the display, which is exactly where the
+   * number is, so a tooltip anywhere behind it would never be the one that shows.
+   */
+  const presets = editingState
     ? `${display.line1.trim()} — ${members.length} presets: ${members.map(presetIndexToLabel).join(", ")}`
-    : `${display.line1.trim()} ${display.line2}`;
+    : undefined;
+  const readout = presets ?? `${display.line1.trim()} ${display.line2}`;
 
   return (
     <div className="flex w-full flex-col items-center gap-[1cqw]">
@@ -137,7 +144,7 @@ function Display({ display, nameLine }: { display: DisplayState; nameLine: React
         className="@container relative flex w-full flex-col justify-center rounded-[4%] border-[0.25cqw] border-black bg-[#060606] px-[3%] py-[4%]"
         style={{ aspectRatio: `${SCREEN_ASPECT}` }}
         aria-live="polite"
-        title={editingState ? readout : undefined}
+        title={presets}
       >
         <span className="sr-only">{readout}</span>
         {nameLine}
@@ -155,9 +162,11 @@ function Display({ display, nameLine }: { display: DisplayState; nameLine: React
          */}
         <PresetChooser
           trigger={
-            <Titled title="Choose a preset">
+            <Titled title={presets ? `${presets}. Choose another` : "Choose a preset"}>
               <Button
-                aria-label={`Preset ${presetIndexToLabel(presetIndex)} — choose another`}
+                aria-label={
+                  presets ? `${presets} — choose another` : `Preset ${presetIndexToLabel(presetIndex)} — choose another`
+                }
                 className="ring-focus absolute inset-x-0 top-1/2 bottom-0 cursor-pointer rounded-[4%] outline-none"
               >
                 <PresetBadge />

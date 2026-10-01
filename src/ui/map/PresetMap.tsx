@@ -117,7 +117,11 @@ export function PresetMap() {
         data: {
           name: state.name?.trim() || state.id,
           presets: collapsedLabel(members),
-          presetsTitle: members.map(presetIndexToLabel).join(", "),
+          // The count on the node, the slots behind it here: a bare list reads as a riddle.
+          presetsTitle:
+            members.length > 1
+              ? `${members.length} presets, one state: ${members.map(presetIndexToLabel).join(", ")}`
+              : undefined,
           ...(via !== undefined ? { returnsVia: via } : {}),
           // The preset the simulator is on, wherever among the copies it happens to be.
           here: members.includes(activeIndex),

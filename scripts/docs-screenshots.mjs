@@ -755,6 +755,23 @@ const scenes = {
     await p.key("Escape");
   },
 
+  /** The front page's picture: the looper being played, its MIDI going out to a Quad Cortex. */
+  async simulator(p) {
+    await p.resize(1230);
+    await p.stageMidi();
+    await p.loadLooperTutorial(1);
+    await p.app(`
+      const s = d.store.getState();
+      const C = d.constants.ControlId;
+      const tap = (id) => { s.press(id); s.release(id); };
+      tap(C.StompswitchA); // A1 -> LOOPR
+      tap(C.Stompswitch1);
+      s.press(C.Stompswitch3); // held, so it shows bright
+    `);
+    await p.shot("simulator");
+    await p.app(`d.store.getState().release(d.constants.ControlId.Stompswitch3)`);
+  },
+
   /** Tutorial 1: a looper preset in C1, programmed by hand, and the way in from A1. */
   async "tutorial-1"(p) {
     await p.resize(1500);

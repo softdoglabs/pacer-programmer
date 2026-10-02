@@ -268,6 +268,18 @@ export function planRoute(config: PacerConfig, change: RouteChange): RoutePlan {
   const members = machine.members[change.fromStateId] ?? [];
   if (!from || members.length === 0) return { ok: false, error: `There's no state "${change.fromStateId}" here.` };
   if (change.toStateId === undefined) return { ok: true, copies: [] };
+  /*
+   * Here rather than only in the dialog's target list: this is the function that writes, and a
+   * caller that forgot to filter would otherwise get a preset that jumps to itself on every copy.
+   * On the hardware that's a reload, which already has its own spelling.
+   */
+  if (change.toStateId === change.fromStateId) {
+    return {
+      ok: false,
+      error:
+        "A route can't lead to the state it leaves from. To reload the preset, give the step Preset Select → Current.",
+    };
+  }
 
   const to = machine.states.find((s) => s.id === change.toStateId);
   const toMembers = machine.members[change.toStateId] ?? [];

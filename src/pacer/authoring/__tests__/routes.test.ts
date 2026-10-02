@@ -245,6 +245,22 @@ describe("routing between states", () => {
     expect(result.error).toMatch(/presets this route runs between/);
   });
 
+  it("refuses a route from a state to itself", () => {
+    const config = compiled(looper(2));
+    const machine = recoverMachine(config);
+    const main = machine.states.find((s) => s.name === "MAIN0")!;
+
+    const result = editRoute(config, {
+      fromStateId: main.id,
+      controlId: ControlId.StompswitchB,
+      stepNumber: 1,
+      toStateId: main.id,
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/Preset Select → Current/);
+  });
+
   it("refuses to take away the route a copy comes back along", () => {
     /*
      * Nothing stores the fact that LOOPR returns: a copy returns because one preset leads to it

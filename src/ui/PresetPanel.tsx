@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ModalDialog } from "@/components/ui/dialog";
 import { recoverMachine } from "../pacer/analysis";
+import { presetEntrants } from "../pacer/authoring";
 import { clearPreset, isSparePreset, nextFreePresetMidi, setPresetMidiType, SPARE_PRESET_NAME } from "../pacer/editing";
 import { PRESET_MIDI_SETTINGS, PresetMidiMessageType, presetIndexToLabel } from "../pacer/protocol/constants";
 import type { Preset } from "../pacer/protocol/types";
@@ -42,6 +43,10 @@ export function PresetPanel() {
     const state = machine.states.find((s) => (machine.members[s.id] ?? []).includes(index));
     return { name: state?.name?.trim() || state?.id, members: state ? (machine.members[state.id] ?? []) : [] };
   }, [config, index]);
+  // Only worked out while the confirm is open: it's a question about this one preset.
+  const entrants = clearing ? presetEntrants(config, index) : [];
+  const presetLabel = (slot: number) =>
+    `${presetIndexToLabel(slot)}${config.presets[slot]?.name?.trim() ? ` ${config.presets[slot]!.name!.trim()}` : ""}`;
   if (!preset) return null;
 
   const used = loadMessages(preset);
@@ -128,6 +133,17 @@ export function PresetPanel() {
           does the MIDI it sends when it loads. It's named {SPARE_PRESET_NAME} so the slot reads as free, here and on
           the Pacer's own display.
         </p>
+        {/*
+         * Warned, not refused: emptying a slot before rerouting what led to it is a perfectly good
+         * order to do things in. But a switch that jumps here would afterwards land on a preset
+         * that does nothing, and the only way to find that out on the hardware is to press it.
+         */}
+        {clearing && entrants.length > 0 && (
+          <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+            {entrants.map(presetLabel).join(", ")} {entrants.length === 1 ? "jumps" : "jump"} here, and would land on an
+            empty preset. Reroute {entrants.length === 1 ? "it" : "them"} on the map, before or after.
+          </p>
+        )}
         <p className="text-xs text-muted-foreground">
           Nothing reaches the Pacer until you send it, and this is undoable until then.
         </p>

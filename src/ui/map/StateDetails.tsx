@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { presetEntrants } from "@/pacer/authoring";
+import { presetEntrants } from "@/pacer/analysis";
 import { isSparePreset } from "@/pacer/editing";
 import { FIRST_USER_PRESET_INDEX, LAST_USER_PRESET_INDEX, presetIndexToLabel } from "@/pacer/protocol/constants";
 import { usePacerStore } from "../../store/pacerStore";

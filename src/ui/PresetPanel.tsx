@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ModalDialog } from "@/components/ui/dialog";
-import { presetEntrants } from "../pacer/authoring";
+import { presetEntrants } from "../pacer/analysis";
 import { clearPreset, isSparePreset, nextFreePresetMidi, setPresetMidiType, SPARE_PRESET_NAME } from "../pacer/editing";
 import { PRESET_MIDI_SETTINGS, PresetMidiMessageType, presetIndexToLabel } from "../pacer/protocol/constants";
 import type { Preset } from "../pacer/protocol/types";

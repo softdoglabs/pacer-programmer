@@ -2,6 +2,7 @@ import { CURRENT_PRESET_INDEX, SwitchMessageType, presetIndexToLabel } from "../
 import type { PacerConfig, Preset } from "../protocol/types";
 import type { MachineState, MachineTransition, StateMachine } from "./machine";
 import { presetStates } from "./states";
+import { readsAsReturn } from "./returns";
 import { isPlainStepping, presetTransitions, type TransitionEdge } from "./transitions";
 
 /*
@@ -85,30 +86,6 @@ export function recoverMachine(config: PacerConfig): RecoveredMachine {
     return id;
   });
 
-  /**
-   * The single preset that enters `member`, if exactly one does — a return needs somewhere to go
-   * back to.
-   *
-   * Plain stepping doesn't count as entering. Next/previous names a direction, not a preset: every
-   * slot has neighbours, so a preset surrounded by anything that steps would look entered from two
-   * places and no return could ever be recognised. That's not a corner case — it's every real
-   * device, where C and D step on almost every preset. What enters a state is a switch that names
-   * it.
-   *
-   * Neither does the Current slot, for the same reason it isn't a state: it's the device's working
-   * copy of whichever preset is loaded, so its switches are a second copy of that preset's. Every
-   * dump from a real Pacer has one, and counting it gave everything the loaded preset leads to a
-   * phantom second way in — which is exactly what stops a return being recognised.
-   */
-  const soleEntrant = (member: number): number | undefined => {
-    const entrants = new Set(
-      (graph.into[member] ?? [])
-        .filter((e) => e.from !== member && e.from !== CURRENT_PRESET_INDEX && !isPlainStepping(config, e))
-        .map((e) => e.from),
-    );
-    return entrants.size === 1 ? [...entrants][0] : undefined;
-  };
-
   const states: MachineState[] = groups.map((group, i) => {
     const id = ids[i]!;
     const first = config.presets[group.members[0]!]!;
@@ -147,8 +124,7 @@ export function recoverMachine(config: PacerConfig): RecoveredMachine {
       // Every copy going back to whatever entered it is a return; every copy going to the same
       // state is a fixed transition. With one copy the two are indistinguishable — the presets
       // simply don't record which was meant — so it reads as the jump it literally is.
-      const isReturn = group.members.length > 1 && perMember.every((p, n) => targets[n] === soleEntrant(p.member));
-      if (isReturn) {
+      if (readsAsReturn(config, group.members, targets, graph)) {
         transitions.push({ controlId, stepNumber, to: { kind: "return" } });
         continue;
       }

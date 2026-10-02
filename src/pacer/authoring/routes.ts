@@ -1,5 +1,4 @@
 import {
-  CURRENT_PRESET_INDEX,
   ControlMode,
   STEPS_PER_CONTROL,
   SWITCH_CONTROL_IDS,
@@ -11,7 +10,14 @@ import {
 } from "../protocol/constants";
 
 import type { PacerConfig } from "../protocol/types";
-import { isPlainStepping, presetTransitions, machineOf, type MachineState, type RecoveredMachine } from "../analysis";
+import {
+  isPlainStepping,
+  machineOf,
+  presetEntrants,
+  presetTransitions,
+  wayBack,
+  type RecoveredMachine,
+} from "../analysis";
 import { clearControl, clearPreset, copyPreset, isSparePreset, setStepType, updateStep } from "../editing";
 
 /*
@@ -224,24 +230,6 @@ export type RoutePlan =
     }
   | { ok: false; error: string };
 
-/**
- * The presets that lead to `presetIndex` by name.
- *
- * The neighbour walk doesn't count as entering — next/previous names a direction, not a preset —
- * and neither does the Current slot, which is the device's working copy of whatever is loaded
- * rather than a preset of its own (see `recoverMachine`).
- */
-export function presetEntrants(config: PacerConfig, presetIndex: number): number[] {
-  const graph = presetTransitions(config);
-  return [
-    ...new Set(
-      (graph.into[presetIndex] ?? [])
-        .filter((e) => e.from !== presetIndex && e.from !== CURRENT_PRESET_INDEX && !isPlainStepping(config, e))
-        .map((e) => e.from),
-    ),
-  ];
-}
-
 /** Where one of a preset's switches leads, as a preset index. */
 function targetOfRoute(
   config: PacerConfig,
@@ -289,26 +277,6 @@ export function planRoute(config: PacerConfig, change: RouteChange): RoutePlan {
   const toMembers = machine.members[change.toStateId] ?? [];
   if (!to || toMembers.length === 0) return { ok: false, error: `There's no state "${change.toStateId}" here.` };
 
-  const entrantsOf = (member: number): number[] => presetEntrants(config, member);
-
-  /*
-   * A state's way back, whether or not the presets can say so outright. With copies it's the
-   * return the recovery found; with one copy it's a switch that leads to a preset that enters it,
-   * which is the same preset either way (see `analysis/verify.ts`).
-   */
-  const wayBack = (state: MachineState): { controlId: number; stepNumber: number }[] => {
-    const stateMembers = machine.members[state.id] ?? [];
-    if (stateMembers.length !== 1) {
-      return state.transitions
-        .filter((t) => t.to.kind === "return")
-        .map((t) => ({ controlId: t.controlId, stepNumber: t.stepNumber }));
-    }
-    const entrants = entrantsOf(stateMembers[0]!);
-    return state.transitions
-      .filter((t) => t.to.kind === "state" && (machine.members[t.to.id] ?? []).some((m) => entrants.includes(m)))
-      .map((t) => ({ controlId: t.controlId, stepNumber: t.stepNumber }));
-  };
-
   /*
    * A route being moved to another switch is the same way in, so it costs nothing — the copy it
    * leads to already exists because this route is what made it. Only a new destination is a new
@@ -323,7 +291,7 @@ export function planRoute(config: PacerConfig, change: RouteChange): RoutePlan {
     }
   }
 
-  const targetWayBack = wayBack(to);
+  const targetWayBack = wayBack(config, machine, to.id);
   const settled = (machine.members[to.id] ?? []).length > 1;
   if (targetWayBack.length === 0) {
     if (toMembers.length > 1) {
@@ -341,7 +309,7 @@ export function planRoute(config: PacerConfig, change: RouteChange): RoutePlan {
    * that comes back to whoever entered it are the same preset while A1 is the only way in. The
    * answer is left to the caller, and until it says otherwise the route just joins what's there.
    */
-  const sharedBy = settled ? [] : entrantsOf(toMembers[0]!);
+  const sharedBy = settled ? [] : presetEntrants(config, toMembers[0]!, graph);
   const choice = settled ? undefined : { backTo: sharedBy[0]!, via: targetWayBack, sharedBy };
   if (choice && change.asReturn !== true) return { ok: true, copies: [], choice };
 

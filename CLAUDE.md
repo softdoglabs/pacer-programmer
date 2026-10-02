@@ -389,6 +389,24 @@ states" made every multi-copy state on a real device unreadable the moment
 it was created.
 
 
+### The rules a machine is read by (`analysis/returns.ts`)
+
+What enters a preset and what it means for a state to come back, written
+once and used by recovery and authoring alike. They used to be written out
+where each was needed, and two of the bugs found on the owner's device were
+a fix reaching one copy and not the other.
+
+- `presetEntrants` / `soleEntrant`: the presets that lead to one *by name*
+  — not plain stepping, not the Current slot, not itself.
+- `readsAsReturn`: every copy of a state leading back to the one preset that
+  entered it. Never true of a single copy, deliberately.
+- `wayBack`: the switches that carry a state's way back. **Two readings,
+  named as such:** with copies, the returns the recovery found (settled);
+  with one copy, the switches leading to something that enters it — the
+  answer to "if it does come back, by which switch?", which is what lets a
+  second way in *offer* to make it a return without the recovery claiming
+  to know.
+
 ### One machine per configuration (`analysis/machineOf.ts`, `ui/useMachine.ts`)
 
 Everything that asks what the states are gets them from `machineOf(config)`,

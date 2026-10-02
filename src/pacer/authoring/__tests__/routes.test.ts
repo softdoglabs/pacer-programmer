@@ -6,7 +6,7 @@ import type { PacerConfig, Preset } from "../../protocol/types";
 import { readFileSync } from "node:fs";
 import { clearPreset, isSparePreset } from "../../editing";
 import { decodeSysex } from "../../protocol/decode";
-import { editRoute, movePreset, planRoute, switchUses } from "../routes";
+import { editRoute, movePreset, planRoute, switchUses } from "..";
 
 const body = (note: number): Preset["controls"] => ({
   [ControlId.Stompswitch1]: {

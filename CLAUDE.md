@@ -412,12 +412,22 @@ caller the **same object**. Components use `useMachine()` (and
 
 ### Editing the machine (`src/pacer/authoring/`)
 
-A new layer where `analysis` and `editing` meet, which neither may depend
+The layer where `analysis` and `editing` meet, which neither may depend
 on the other to reach. `editRoute` points a state's switch at another
 state — on **every copy of it at once**, which is the part that can't be
 done a preset at a time without the copies drifting apart. `switchUses`
 says what each switch already carries, so a route lands somewhere it will
 actually fire.
+
+One file per question:
+- `change.ts` — what a route edit asks for (`RouteChange`), and the result
+  every authoring edit gives back.
+- `switches.ts` — what each switch on a state carries, and where a route
+  could go (`switchUses`, `firstJump`).
+- `plan.ts` — what a route would cost before anything's written
+  (`planRoute`: copies needed, the "does it come back?" question).
+- `editRoute.ts` — the write itself, checked with `whatWasLost`.
+- `movePreset.ts` — renumbering a preset, routes following.
 
 Refusals are checked, not guessed:
 - **Entering a state that returns needs another copy of it**, with its own

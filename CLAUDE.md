@@ -921,7 +921,10 @@ no hover-only UI, for tablets.
     that shares a state carries a `×2` badge naming its siblings.
   - The popover marks which presets you've edited since opening the
     configuration (a filled dot) and which the Pacer hasn't been given yet
-    (a hollow one) — both from `changedPresets` against `savedConfig` and
+    (a hollow one). **Each mark says what it means** — a tooltip, and a
+    legend under the grid naming only the marks in play. A glyph is a riddle
+    on its own: being asked what the turquoise circles were is the answer to
+    whether one explains itself — both from `changedPresets` against `savedConfig` and
     `sendBaseline`. The Current slot is listed separately, since it's the
     device's working copy rather than a front-panel preset. This retired a
     tab that showed the same 24 slots and nothing more; the faceplate's

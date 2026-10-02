@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "../../App";
 import { compileMachine, type StateMachine } from "../../pacer/analysis";
+import { renamePreset } from "../../pacer/editing";
 import { ControlId, SwitchMessageType, userPresetIndex } from "../../pacer/protocol/constants";
 import type { Preset } from "../../pacer/protocol/types";
 import { usePacerStore } from "../../store/pacerStore";
@@ -65,6 +66,16 @@ describe("choosing a preset", () => {
     // And every preset is still reachable: the ones on their own keep a section of their own.
     expect(screen.getByText("One preset each")).toBeTruthy();
     expect(screen.getByRole("option", { name: /^A1 MAIN0/ })).toBeTruthy();
+  });
+
+  it("says what its marks mean, rather than leaving them as glyphs", () => {
+    render(<App />);
+    act(() => store().applyEdit((c) => renamePreset(c, userPresetIndex(0, 2), "EDIT")));
+    fireEvent.click(screen.getByRole("button", { name: /^Preset:/ }));
+
+    expect(screen.getByTitle("Edited since this configuration was opened")).toBeTruthy();
+    expect(screen.getByText(/edited since this configuration was opened/)).toBeTruthy();
+    expect(screen.getByText(/one state, several presets/)).toBeTruthy();
   });
 
   it("loads the preset that's picked", () => {

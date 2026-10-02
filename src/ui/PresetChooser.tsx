@@ -46,6 +46,9 @@ function presetName(name: string | undefined): string {
 
 type Arrangement = "banks" | "states";
 
+const EDITED_MARK = "Edited since this configuration was opened";
+const UNSENT_MARK = "Differs from what the Pacer was last given";
+
 export function PresetChooser({ trigger }: { trigger: React.ReactNode }) {
   const index = usePacerStore((s) => s.board.activePresetIndex);
   const presets = usePacerStore((s) => s.board.config.presets);
@@ -111,9 +114,21 @@ export function PresetChooser({ trigger }: { trigger: React.ReactNode }) {
             ×{copies.length}
           </span>
         )}
-        {/* One dot for "you changed it", hollow for "the Pacer hasn't got it yet". */}
-        {edited.has(slot) && <span className="ml-auto text-primary">●</span>}
-        {!edited.has(slot) && unsent.has(slot) && <span className="ml-auto text-muted-foreground">○</span>}
+        {/*
+         * One dot for "you changed it", hollow for "the Pacer hasn't got it yet". A glyph is a
+         * riddle on its own, so each says what it means and the legend below repeats it — asked
+         * what the turquoise circles were, which is the answer to whether a mark explains itself.
+         */}
+        {edited.has(slot) && (
+          <span className="ml-auto text-primary" title={EDITED_MARK}>
+            ●
+          </span>
+        )}
+        {!edited.has(slot) && unsent.has(slot) && (
+          <span className="ml-auto text-muted-foreground" title={UNSENT_MARK}>
+            ○
+          </span>
+        )}
       </ListBoxItem>
     );
   };
@@ -199,6 +214,21 @@ export function PresetChooser({ trigger }: { trigger: React.ReactNode }) {
                   </ListBoxSection>
                 )}
               </ListBox>
+              {(edited.size > 0 || unsent.size > 0 || states.shared.length > 0) && (
+                <p className="flex flex-wrap gap-x-3 gap-y-1 border-t pt-1.5 text-[11px] text-muted-foreground">
+                  {edited.size > 0 && (
+                    <span>
+                      <span className="text-primary">●</span> {EDITED_MARK.toLowerCase()}
+                    </span>
+                  )}
+                  {unsent.size > 0 && <span>○ {UNSENT_MARK.toLowerCase()}</span>}
+                  {states.shared.length > 0 && (
+                    <span>
+                      <span className="text-primary">×n</span> one state, several presets
+                    </span>
+                  )}
+                </p>
+              )}
             </div>
           )}
         </Dialog>

@@ -78,6 +78,9 @@ export function PresetChooser({ trigger }: { trigger: React.ReactNode }) {
   // Edited since the configuration was opened, and differing from what the Pacer was last given.
   const edited = useMemo(() => new Set(changedPresets(savedConfig, config)), [savedConfig, config]);
   const unsent = useMemo(() => new Set(changedPresets(sendBaseline, config)), [sendBaseline, config]);
+  // A preset that's both edited and unsent shows only the filled dot, so the legend explains the
+  // hollow one only when some preset is actually showing it.
+  const unsentOnly = [...unsent].some((slot) => !edited.has(slot));
 
   const label = `${presetIndexToLabel(index)} · ${presetName(presets[index]?.name)}`;
   const pick = (slot: number, close: () => void) => {
@@ -219,14 +222,14 @@ export function PresetChooser({ trigger }: { trigger: React.ReactNode }) {
                   </ListBoxSection>
                 )}
               </ListBox>
-              {(edited.size > 0 || unsent.size > 0 || states.shared.length > 0) && (
+              {(edited.size > 0 || unsentOnly || states.shared.length > 0) && (
                 <p className="flex flex-wrap gap-x-3 gap-y-1 border-t pt-1.5 text-[11px] text-muted-foreground">
                   {edited.size > 0 && (
                     <span>
                       <span className="text-primary">●</span> edited since this configuration was opened
                     </span>
                   )}
-                  {unsent.size > 0 && <span>○ differs from what the Pacer was last given</span>}
+                  {unsentOnly && <span>○ differs from what the Pacer was last given</span>}
                   {states.shared.length > 0 && (
                     <span>
                       <span className="text-primary">×n</span> one state, several presets

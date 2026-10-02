@@ -77,6 +77,9 @@ describe("choosing a preset", () => {
     expect(screen.getByTitle("Edited since this configuration was opened")).toBeTruthy();
     expect(screen.getByText(/edited since this configuration was opened/)).toBeTruthy();
     expect(screen.getByText(/one state, several presets/)).toBeTruthy();
+    // A2 is edited *and* unsent, which shows only the filled dot — so the hollow one isn't
+    // explained, since nothing on screen is wearing it.
+    expect(screen.queryByText(/differs from what the Pacer was last given/)).toBeNull();
   });
 
   it("loads the preset that's picked", () => {

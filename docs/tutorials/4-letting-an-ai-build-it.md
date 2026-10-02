@@ -12,16 +12,16 @@ where you check what it did.
    in [Working with an AI](../guide/working-with-ai.md#example-a-looper-preset-for-the-quad-cortex).
    It points the AI at the format reference.
 3. Import the file it gives you, and check it. Play the looper in the
-   simulator against your Quad Cortex, read through each switch in Program
+   simulator against your gear, read through each switch in Program
    mode, and look at the map. It should look like the end of
    [tutorial 1](1-a-looper-preset.md#on-the-map).
 4. Add the second way in on the map, as in
-   [tutorial 2](2-a-second-way-in.md). I'd do this part here rather than ask
+   [tutorial 2](2-a-second-way-in.md). It's better to do this part here than to ask
    the AI: the map knows which copy each origin needs, works out the slots,
    and refuses anything it couldn't read back.
 5. Save, and send it to the Pacer.
 
-The split I'd suggest is this. The AI does the bulk
+A split that works well is this. The AI does the bulk
 programming, which mostly means reading your gear's manual. The app handles
 the structure, which has to stay consistent. And the simulator is where you
 find out whether either of them got it wrong, before the Pacer does.

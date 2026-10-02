@@ -11,7 +11,7 @@ This app is the other half of the job. You load what the AI made, play it in
 the simulator against your real rig, check on the preset map what's actually
 connected to what, and only send it to the Pacer once it's right.
 
-That's how my own looper preset started, actually. I asked Claude Opus (in the
+That's how the looper in these docs started, actually. I asked Claude Opus (in the
 web app) to build it, and told it to read the source of an older Pacer editor
 to figure out the format. Then came a fair amount of trial and error: load the
 result onto the Pacer, find what was wrong, go back and ask again. With the
@@ -64,7 +64,7 @@ along with the dump.
 ### Example: a looper preset for the Quad Cortex
 
 ```text
-Build a looper preset for my Neural DSP Quad Cortex in slot C1, named LOOPR.
+Build a looper preset for a Neural DSP Quad Cortex in slot C1, named LOOPR.
 Look up the Quad Cortex's MIDI CC chart for its looper (Looper X). Put the
 looper's functions (record/overdub, play/stop, undo/redo and the rest) on
 stompswitches 1-6 and B, one per switch, as momentary CC messages (CC Trigger:
@@ -79,7 +79,7 @@ On A1, make switch A jump to C1. On C1, make switch A jump back to A1.
 That gives you two presets that act as one feature: A1's switch A takes you
 into the looper, and C1's switch A takes you back out. The
 [preset map](../reference/preset-map.md) draws it that way, and the
-[tutorials](../tutorials/) build the same thing by hand and then let several
+[tutorials](../tutorials/README.md) build the same thing by hand and then let several
 presets share it.
 
 ## 3. Load it and try it

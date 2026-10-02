@@ -5,8 +5,9 @@ import { describe, expect, it } from "vitest";
 /*
  * The docs are read on GitHub, which renders relative links and heading anchors but reports
  * neither when they're broken: a link to a renamed page or heading just goes nowhere. Every
- * relative link and image in docs/ has to name a file that exists, and every #anchor a heading
- * in it, slugged the way GitHub slugs them.
+ * relative link and image in docs/ has to name a file that exists (a page, never a folder, which
+ * GitHub shows as a file listing), and every #anchor a heading in it, slugged the way GitHub
+ * slugs them.
  */
 
 const DOCS = "docs";
@@ -66,6 +67,11 @@ describe("links in the docs", () => {
     for (const file of files) {
       for (const { target, line } of links(file)) {
         const [path, anchor] = target.split("#") as [string, string | undefined];
+        // GitHub shows a folder as a file listing above its README, so link the page itself.
+        if (path.endsWith("/")) {
+          broken.push(`${file}:${line} → ${target} (link the .md file, not the folder)`);
+          continue;
+        }
         const to = path === "" ? file : resolve(file, path);
         if (!existsSync(to)) {
           broken.push(`${file}:${line} → ${target} (no such file)`);

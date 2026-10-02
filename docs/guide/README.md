@@ -1,7 +1,7 @@
 # Guide
 
 These are short pages on how to get things done. Each one links to the
-[reference](../reference/) for the details.
+[reference](../reference/README.md) for the details.
 
 Start with [The simulator](the-simulator.md), which plays your configuration on
 screen and can drive your real rig, no Pacer needed. Then
@@ -22,5 +22,5 @@ For programming in more depth:
 And for going further, [Working with an AI](working-with-ai.md) shows how to
 have an assistant make large changes to your `.syx` and then try them here.
 [Why a state machine](../why-a-state-machine.md) and the
-[tutorials](../tutorials/) are about designing how your presets lead to one
+[tutorials](../tutorials/README.md) are about designing how your presets lead to one
 another.

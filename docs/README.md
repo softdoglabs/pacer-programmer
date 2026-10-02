@@ -35,15 +35,15 @@ gear and the Pacer; everything else works without it.
 ## Where to start
 
 If you're new, read [The simulator](guide/the-simulator.md) and then
-[Editing a preset](guide/editing-a-preset.md). The [tutorials](tutorials/)
-build my looper from the factory defaults, one step at a time. When you need to
-look something up, the [reference](reference/) covers every control and every
+[Editing a preset](guide/editing-a-preset.md). The [tutorials](tutorials/README.md)
+build a looper from the factory defaults, one step at a time. When you need to
+look something up, the [reference](reference/README.md) covers every control and every
 message the app shows. And if you'd rather have an assistant do the tedious
 part, see [Working with an AI](guide/working-with-ai.md).
 
 ## Contents
 
-[Guide](guide/): how to get things done
+[Guide](guide/README.md): how to get things done
 
 - [The simulator](guide/the-simulator.md)
 - [Editing a preset](guide/editing-a-preset.md)
@@ -53,14 +53,14 @@ part, see [Working with an AI](guide/working-with-ai.md).
 - [Saving and sending](guide/saving-and-sending.md)
 - [Working with an AI](guide/working-with-ai.md)
 
-[Tutorials](tutorials/): a looper, step by step
+[Tutorials](tutorials/README.md): a looper, step by step
 
 1. [A looper preset](tutorials/1-a-looper-preset.md)
 2. [A second way in](tutorials/2-a-second-way-in.md)
 3. [Changing the looper](tutorials/3-changing-the-looper.md)
 4. [Letting an AI build it](tutorials/4-letting-an-ai-build-it.md)
 
-[Reference](reference/): the manual
+[Reference](reference/README.md): the manual
 
 - [The window](reference/the-window.md)
 - [The faceplate](reference/the-faceplate.md)

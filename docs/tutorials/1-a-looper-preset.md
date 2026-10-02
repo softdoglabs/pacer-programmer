@@ -46,7 +46,7 @@ Now do the rest, using the switch picker at the top to move between them:
 | 6 | 49 | 8A Teal / 8B Dim Teal |
 | B | 52 | 3A Orange / 3B Dim Orange |
 
-These are the CCs my Quad Cortex uses for its looper functions. Check them
+These are the CCs this example uses for the looper's functions. Check them
 against the MIDI chart for your own unit and firmware, and put each function on
 whichever switch you'd want under your foot.
 

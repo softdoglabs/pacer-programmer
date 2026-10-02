@@ -26,8 +26,8 @@ presets you've changed. It lists them and asks you to confirm.
 ![Send to Pacer](../images/send-dialog.png)
 
 Before your first send, pull a copy of the Pacer. Sending overwrites presets,
-and the Pacer has no undo, so that pulled snapshot is your way back. I'd also
-leave **Read back afterwards to verify** turned on, since it checks that the
+and the Pacer has no undo, so that pulled snapshot is your way back. It's also worth
+leaving **Read back afterwards to verify** turned on, since it checks that the
 Pacer really has what you sent.
 
 If the Pacer has one of the presets you're sending loaded right now, the app

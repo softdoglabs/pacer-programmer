@@ -7,8 +7,8 @@ by hand.
 
 ## The looper problem
 
-Here's where I ran into it. I wanted to open my Quad Cortex's looper from any
-of my main presets, use it, and come back to the preset I started on.
+Here's where I ran into it. I wanted to open a looper from any of my main
+presets, use it, and come back to the preset I started on.
 
 The looper's controls need a preset of their own, since it takes six or seven
 switches for record, play, undo and the rest. Getting into it is easy: switch
@@ -72,5 +72,5 @@ toggles, with next and previous to move between them. That's fine. The
 [AI workflow](guide/working-with-ai.md) are just as useful for those, and the
 map just shows each preset on its own.
 
-If you want to build one, the [tutorials](tutorials/) walk through my looper
+If you want to build one, the [tutorials](tutorials/README.md) walk through a looper
 from scratch.

@@ -6,7 +6,7 @@ presets are really two main sounds and one looper, and it's where you change
 how they connect.
 
 If the idea is new to you, read [Why a state machine](../why-a-state-machine.md)
-first. The [tutorials](../tutorials/) build one step by step.
+first. The [tutorials](../tutorials/README.md) build one step by step.
 
 ![The preset map, its parts numbered](../images/preset-map.png)
 

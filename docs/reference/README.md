@@ -2,7 +2,7 @@
 
 This is the manual. It covers every control in the app, what each one does,
 and what its messages mean. If you'd rather learn by doing, try the
-[guide](../guide/) and the [tutorials](../tutorials/).
+[guide](../guide/README.md) and the [tutorials](../tutorials/README.md).
 
 | Page | Covers |
 |---|---|

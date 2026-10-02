@@ -2,7 +2,7 @@
 
 These four tutorials build one real thing: a looper for a Neural DSP Quad
 Cortex that you can reach from your main presets, and that brings you back to
-whichever one you came from. It's my own setup, and it exercises both halves
+whichever one you came from. It exercises both halves
 of the app: you'll try every switch in the simulator as you go, and the map
 takes care of the copies the Pacer needs. If you're wondering why copies come
 into it at all, [Why a state machine](../why-a-state-machine.md) explains.

@@ -407,6 +407,24 @@ a fix reaching one copy and not the other.
   second way in *offer* to make it a return without the recovery claiming
   to know.
 
+### Whether an edit kept the design (`analysis/survives.ts`)
+
+Every edit that changes more than one preset asks `whatWasLost(before,
+after, intended)` before it's written, and is refused with the reason if
+the answer isn't nothing. One check, asked two ways, because edits claim
+two different things:
+
+- **An edit** (`kind: "edit"`) says "these steps changed, and these slots
+  were written over". It's held to losing nothing else: no return that
+  stops reading as a return, nothing unreadable that wasn't before.
+- **A renumbering** (`kind: "renumbering"`) says "the design is exactly
+  what it was, only where it sits changed" — a stronger claim, held to the
+  stronger test: the whole machine, slots renamed, comes back the same. The
+  slots it fills and vacates are named, so no notion of "spare" is needed.
+
+Whether an edit did what it was *asked* (the route reads back as the one
+requested) is a different question and stays with the edit.
+
 ### One machine per configuration (`analysis/machineOf.ts`, `ui/useMachine.ts`)
 
 Everything that asks what the states are gets them from `machineOf(config)`,

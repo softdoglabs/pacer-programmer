@@ -3,6 +3,7 @@ export * from "./states";
 export * from "./machine";
 export * from "./recover";
 export * from "./returns";
+export * from "./survives";
 export * from "./verify";
 export * from "./apply";
 export * from "./machineOf";

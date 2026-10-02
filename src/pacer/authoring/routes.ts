@@ -14,6 +14,7 @@ import {
   isPlainStepping,
   machineOf,
   presetEntrants,
+  whatWasLost,
   presetTransitions,
   wayBack,
   type RecoveredMachine,
@@ -165,20 +166,6 @@ export function switchUses(config: PacerConfig, stateId: string): SwitchUse[] {
 
 function navigates(msgType: number): boolean {
   return msgType === SwitchMessageType.PresetSelect || msgType === SwitchMessageType.PresetIncDec;
-}
-
-/** Returns as `presetIndex:control:step`, which survives states merging or gaining a copy. */
-function returnsByPreset(machine: RecoveredMachine): Set<string> {
-  const found = new Set<string>();
-  for (const state of machine.states) {
-    for (const transition of state.transitions) {
-      if (transition.to.kind !== "return") continue;
-      for (const member of machine.members[state.id] ?? []) {
-        found.add(`${member}:${transition.controlId}:${transition.stepNumber}`);
-      }
-    }
-  }
-  return found;
 }
 
 /**
@@ -473,42 +460,21 @@ export function editRoute(config: PacerConfig, change: RouteChange, into: readon
 
   const after = machineOf(edited);
 
-  /*
-   * Returns are the thing to guard. They aren't stored anywhere — a copy returns because it's the
-   * only preset that leads back to its one entrant — so a route added into that copy, or taken
-   * away from in front of it, quietly turns it into an ordinary jump, and nothing on the hardware
-   * would show it. A preset a copy has taken over is left out: whatever it used to come back to
-   * was written over knowingly.
-   */
-  const had = returnsByPreset(before);
-  const has = returnsByPreset(after);
-  const edit = new Set(
-    members.flatMap((m) => [
-      `${m}:${change.controlId}:${change.stepNumber}`,
-      ...(moveFrom ? [`${m}:${moveFrom.controlId}:${moveFrom.stepNumber}`] : []),
+  // Nothing lost but what this edit set out to change: the step on every copy, the step a moved
+  // route left, and whatever was in the slots the copies took (see `whatWasLost`).
+  const lost = whatWasLost(config, edited, {
+    kind: "edit",
+    steps: members.flatMap((presetIndex) => [
+      { presetIndex, controlId: change.controlId, stepNumber: change.stepNumber },
+      ...(moveFrom ? [{ presetIndex, ...moveFrom }] : []),
     ]),
-  );
-  const taken = new Set(into);
-  const lost = [...had].find(
-    (key) => !has.has(key) && !edit.has(key) && !taken.has(Number(key.slice(0, key.indexOf(":")))),
-  );
-  if (lost) {
-    const [presetIndex] = lost.split(":");
-    return {
-      ok: false,
-      error: `That would stop ${presetIndexToLabel(Number(presetIndex))} coming back to where it was entered from — it would become a plain jump instead.`,
-    };
-  }
-
-  // Anything the recovery can't read that it could read before. The configuration around an edit
-  // may already have its own problems; those aren't this edit's doing.
-  const knownNotes = new Set(before.notes.map((n) => n.message));
-  const newNote = after.notes.find((n) => !knownNotes.has(n.message));
-  if (newNote) return { ok: false, error: `That would leave something unreadable: ${newNote.message}` };
+    taken: into,
+  });
+  if (lost) return { ok: false, error: lost };
 
   /*
-   * And the route itself reads back as the one asked for. Belt and braces: the checks above cover
-   * what's known to go wrong, while this one holds whatever isn't thought of yet.
+   * And the route itself reads back as the one asked for. This isn't a question of what was lost —
+   * it's whether the edit did what it was asked — so it stays here rather than in `whatWasLost`.
    */
   const nowFrom = after.states.find((s) => (after.members[s.id] ?? []).includes(members[0]!));
   const route = nowFrom?.transitions.find(
@@ -571,41 +537,8 @@ export function movePreset(config: PacerConfig, from: number, to: number): Route
     moved = writeJump(moved, edge.from, edge.controlId, edge.stepNumber, to);
   }
 
-  /*
-   * The same round trip every other edit here is held to: the machine recovered afterwards has to
-   * be the one recovered before, give or take which slots it sits in.
-   */
-  const before = machineShape(config, machineOf(config), { [from]: to });
-  const after = machineShape(moved, machineOf(moved), {});
-  if (before !== after) {
-    return { ok: false, error: `Moving ${presetIndexToLabel(from)} would change what the configuration does.` };
-  }
+  // A renumbering, held to the strongest version of the round trip: the same design, slots renamed.
+  const lost = whatWasLost(config, moved, { kind: "renumbering", moved: { [from]: to } });
+  if (lost) return { ok: false, error: lost };
   return { ok: true, config: moved };
-}
-
-/**
- * A machine as something comparable: each state by the presets it is and where each of its routes
- * leads, with `rename` applied so a move can be checked against the design it started as. Names
- * are left out — they're labels, and a state's identity is what it does.
- */
-function machineShape(config: PacerConfig, machine: RecoveredMachine, rename: Partial<Record<number, number>>): string {
-  const slot = (index: number) => rename[index] ?? index;
-  // Empty presets aren't part of the shape: the slot a move leaves behind is one of them, and a
-  // configuration with a spare slot more or less is the same configuration.
-  const states = machine.states
-    .filter((state) => !(machine.members[state.id] ?? []).every((m) => isSparePreset(config.presets[m])))
-    .map((state) => ({
-      members: (machine.members[state.id] ?? []).map(slot).sort((a, b) => a - b),
-      // Plain stepping isn't compared: a move leaves it alone on purpose (next/previous names a
-      // direction, not a preset), so the neighbours of both slots step somewhere new afterwards.
-      routes: state.transitions
-        .filter((t) => !t.viaStepping)
-        .map((t) => ({
-          c: t.controlId,
-          n: t.stepNumber,
-          to: t.to.kind === "return" ? "return" : (machine.members[t.to.id] ?? []).map(slot).sort((a, b) => a - b),
-        }))
-        .sort((a, b) => a.c - b.c || a.n - b.n),
-    }));
-  return JSON.stringify(states.sort((a, b) => a.members[0]! - b.members[0]!));
 }

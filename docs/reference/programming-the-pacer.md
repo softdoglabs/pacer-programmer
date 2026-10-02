@@ -2,8 +2,9 @@
 
 This page describes how a Nektar Pacer is programmed: the bytes of a
 configuration dump (`.syx`) and what each one does on the hardware. It's
-written to be complete enough to read or write a dump with nothing else — by
-a person, or by an AI that's been handed a `.syx` file and asked to change it.
+written to be complete enough that you can read or write a dump with nothing
+else to go on, whether you're a person or an AI that's been handed a `.syx`
+file and asked to change it.
 
 Every fact here was checked against a real Pacer's factory dump and, where
 noted, against the hardware itself. Where something isn't known, it says so.
@@ -65,9 +66,9 @@ Off. This matters when writing: the Pacer keeps whatever a message doesn't
 address, so leaving a field out doesn't clear it (see
 [Writing a dump safely](#writing-a-dump-safely)).
 
-Message order doesn't matter to the Pacer — each message is self-contained —
-but dumps from the device go preset by preset, and keeping that order makes
-files easier to compare.
+Message order doesn't matter to the Pacer, since each message stands on its
+own. Dumps from the device go preset by preset, though, and keeping that order
+makes files easier to compare.
 
 ## Message framing
 
@@ -84,9 +85,9 @@ F0 00 01 77 7F  <cmd> <tgt> <idx> <obj> <field bytes…>  <checksum>  F7
 | `7F` | Device ID (always `7F`) |
 | `cmd` | `01` = Set (what a dump is made of), `02` = Get (a request) |
 | `tgt` | `01` = a preset, `05` = global settings (`7F` = "full backup", only in a Get) |
-| `idx` | Which preset slot (or global slot) — see [Addressing](#addressing-target-slot-object) |
-| `obj` | Which part of it: the name, a control, or the preset MIDI — see below |
-| field bytes | One or more fields — see [Fields](#fields) |
+| `idx` | Which preset slot (or global slot); see [Addressing](#addressing-target-slot-object) |
+| `obj` | Which part of it: the name, a control, or the preset MIDI (see below) |
+| field bytes | One or more fields; see [Fields](#fields) |
 | checksum | See [The checksum](#the-checksum) |
 | `F7` | End of SysEx |
 
@@ -94,8 +95,8 @@ All bytes between `F0` and `F7` are 7-bit (0–127), as MIDI requires.
 
 ## The checksum
 
-The checksum covers **`cmd` through the last field byte** — not the
-manufacturer and device bytes, and not `F0`/`F7`. It's chosen so that
+The checksum covers **`cmd` through the last field byte**. It doesn't cover
+the manufacturer and device bytes, or `F0` and `F7`. It's chosen so that
 
 ```
 (sum of covered bytes + checksum) mod 128 = 0
@@ -135,7 +136,7 @@ that way.
 
 | `idx` | Slot |
 |---|---|
-| `00` | **Current** — the device's working copy of whichever preset is loaded (see [The Current slot](#the-current-slot)) |
+| `00` | **Current**, the device's working copy of whichever preset is loaded (see [The Current slot](#the-current-slot)) |
 | `01`–`06` | A1–A6 |
 | `07`–`0C` | B1–B6 |
 | `0D`–`12` | C1–C6 |
@@ -163,7 +164,7 @@ The [Preset] button itself isn't programmable, and has no object.
 obj 01, elm 01, len 05, then 5 ASCII characters
 ```
 
-Names are 5 characters — the display's width — padded with spaces. Every name
+Names are 5 characters (the width of the display), padded with spaces. Every name
 the Pacer has been seen to use is upper-case letters, digits, space and `-`;
 other printable characters may not show as typed on the 14-segment display.
 
@@ -171,7 +172,7 @@ other printable characters may not show as typed on the 14-segment display.
 
 Each switch or pedal (`obj` `0D`–`1B`, `36`, `37`) has three kinds of message.
 
-### Control mode — element `60`
+### Control mode (element `60`)
 
 ```
 obj <control>, elm 60, len 01, <mode>
@@ -185,7 +186,7 @@ obj <control>, elm 60, len 01, <mode>
 
 See [Control modes](#control-modes-what-a-press-fires) for what happens on a press.
 
-### Steps — elements `01`–`24`
+### Steps (elements `01`–`24`)
 
 Each control has six steps. Step *n* (1–6) occupies six elements starting at
 `base = (n − 1) × 6 + 1`, always sent together in one message:
@@ -208,7 +209,7 @@ So step 1 is elements `01`–`06`, step 2 is `07`–`0C`, and so on to step 6 at
 - **Step 1 is always active** on the hardware: the Pacer's own menu won't turn
   it off. To make a switch do nothing, set step 1's type to Off.
 
-### Lights — elements `40`–`57` (stompswitches only)
+### Lights (elements `40`–`57`, stompswitches only)
 
 Each stompswitch has a light setting per step. Step *n*'s four elements start at
 `base = 0x40 + (n − 1) × 4`, always sent together:
@@ -216,7 +217,7 @@ Each stompswitch has a light setting per step. Step *n*'s four elements start at
 | Element | Field | Values |
 |---|---|---|
 | base + 0 | MIDI feedback | `00` = off, `01` = on (see [Lights](#lights)) |
-| base + 1 | First colour | A colour code — see [Colour codes](#colour-codes) |
+| base + 1 | First colour | A colour code; see [Colour codes](#colour-codes) |
 | base + 2 | Second colour | A colour code |
 | base + 3 | Which light | `00`/`01` = the bar, `02` = the middle light, `03` = the top light |
 
@@ -230,7 +231,7 @@ The message type byte of a switch step (stompswitches and footswitches):
 |---|---|---|---|---|---|
 | `61` | Off | – | – | – | Nothing |
 | `40` | CC Trigger | Controller | Value on press | Value on release | Sends CC = Data 2 on press, CC = Data 3 on release |
-| `47` | CC Toggle | Controller | Value 1 | Value 2 | Sends Value 1, unless that controller already holds Value 1 — then sends Value 2 (see below) |
+| `47` | CC Toggle | Controller | Value 1 | Value 2 | Sends Value 1, unless that controller already holds Value 1, in which case it sends Value 2 (see below) |
 | `48` | CC Step | Controller | Start | End | Each press sends the next value from Start to End, then wraps to Start |
 | `43` | Note | Note | Velocity | – | Note on while held, note off on release |
 | `44` | Note Toggle | Note | Velocity | – | First press note on, next press note off |
@@ -240,7 +241,7 @@ The message type byte of a switch step (stompswitches and footswitches):
 | `58` | NRPN Fine | Value | NRPN LSB | NRPN MSB | Sends CC99 = MSB, CC98 = LSB, CC38 = Value |
 | `55` | MMC | Device ID | Command | – | Sends a MIDI Machine Control command (SysEx) |
 | `59` | Relay | Mode | Relay | – | Operates relay output Relay + 1 (0–3 → relays 1–4) |
-| `62` | Preset Select | Target | – | – | Changes preset — see [below](#changing-preset-preset-select-and-incdec). Sends nothing on MIDI |
+| `62` | Preset Select | Target | – | – | Changes preset (see [below](#changing-preset-preset-select-and-incdec)). Sends nothing on MIDI |
 | `56` | Preset Inc/Dec | Direction | – | – | Next (`00`) or previous (`01`) preset. Sends nothing on MIDI |
 | `63` | Step Select | – | – | – | Chooses the step of a switch in External step select mode (targeting not documented here) |
 | `64` | Step Inc/Dec | – | – | – | Moves that step up or down (targeting not documented here) |
@@ -264,10 +265,10 @@ Notes:
 
 ## Changing preset: Preset Select and Inc/Dec
 
-This is how a switch moves to another preset — and with it, how a set of
-presets becomes a state machine.
+This is how a switch moves to another preset, and so it's also how a set of
+presets ends up being a state machine.
 
-**Preset Select (`62`)** — Data 1 is the target:
+**Preset Select (`62`).** Data 1 is the target:
 
 | Target | Goes to |
 |---|---|
@@ -278,13 +279,13 @@ presets becomes a state machine.
 
 **For a user preset, target = `idx` + 2.** So A1 is `03` and C1 is `0F`.
 
-**Preset Inc/Dec (`56`)** — Data 1 is `00` for next, `01` for previous. It
+**Preset Inc/Dec (`56`).** Data 1 is `00` for next and `01` for previous. It
 wraps around: next from D6 is A1.
 
 Both happen immediately and **send nothing on MIDI**: connected gear never sees
 them. Other steps on the same switch still send their messages, so one press
-can send a Program Change *and* change preset — "turn the looper on and go to
-the looper preset".
+can send a Program Change and change preset, as in "turn the looper on and go
+to the looper preset".
 
 **Only the first jump on a press happens.** In All-at-once mode, if a switch
 has several active steps that change preset, the first one wins and the rest
@@ -295,12 +296,12 @@ Transport, C steps to the previous preset and D to the next.
 
 ## Control modes: what a press fires
 
-- **All at once (`00`)** — a press fires every active step, in step order.
+- **All at once (`00`).** A press fires every active step, in step order.
   Steps with a release action (CC Trigger, Note) act again on release.
-- **Sequence (`01`)** — each press fires the *next* active step, wrapping
+- **Sequence (`01`).** Each press fires the *next* active step, wrapping
   after the last one. Inactive steps are skipped; active steps of type Off
   take their turn and send nothing. Confirmed on hardware.
-- **External step select (`02`)** — the step that fires is chosen by another
+- **External step select (`02`).** The step that fires is chosen by another
   switch's Step Select / Step Inc/Dec step.
 
 ## Lights
@@ -321,8 +322,8 @@ colour shows; `03` does nothing on A–D. Confirmed on hardware.
 ### One light at a time: the step that fires next
 
 **A switch lights one step's colour at a time: the step that will fire
-next.** In All-at-once mode that's always step 1 — even though every step
-fires, a second step's light setting never shows. In Sequence mode it follows
+next.** In All-at-once mode that's always step 1. Every step fires, but a
+second step's light setting never shows. In Sequence mode it follows
 the sequence. Confirmed on hardware.
 
 ### Which of the two colours shows
@@ -337,7 +338,7 @@ The first colour shows while the step is "on", the second otherwise. What
 | Program + Bank | the channel's current program (and bank, if the step sends one) is the step's |
 | Preset Select to a user preset | always |
 | Preset Select to Track / Transport | that DAW preset is active (lit light blue); dark otherwise |
-| Preset Inc/Dec | never — these switches stay dark |
+| Preset Inc/Dec | never; these switches stay dark |
 | Other types | the switch is held |
 
 "Holds" refers to the values the Pacer remembers sending, which survive
@@ -349,8 +350,8 @@ first colour after you come back, if nothing changed the program meanwhile.
 With MIDI feedback on (`01`), the light follows the step's CC **received over
 USB MIDI** instead of what the switch sends: CC = Data 2 shows the first
 colour, anything else the second. The switch's own presses stop moving the
-light. It works for CC steps only, and only over USB — the Pacer's one DIN
-socket is MIDI out. Confirmed on hardware.
+light. It only works for CC steps, and only over USB, because the Pacer's one
+DIN socket is MIDI out. Confirmed on hardware.
 
 ### Colour codes
 
@@ -371,8 +372,9 @@ socket is MIDI out. Confirmed on hardware.
 | `17` | White | | `18` | Dim white |
 
 In general, for hue number *h* (1–12 in the order above), bright is
-`2h − 1` and dim is `2h`. The names are conventions — "amber" looks yellow and
-"yellow" looks lime to some eyes — but the codes are what the device uses.
+`2h − 1` and dim is `2h`. The names are only conventions (to some eyes "amber"
+looks yellow and "yellow" looks lime), but the codes are what the device
+uses.
 
 **Default (`7F`)** means the message type's own colour: the bright version
 when the step is on, the dim version when it's off.
@@ -442,7 +444,7 @@ isn't a preset you can select; it's what the switches are actually running.
 
 - **Writing a preset's own slot doesn't change what's loaded.** If you send
   new contents to A1 while A1 is loaded, nothing changes until A1 is
-  reloaded — or until the same contents are also written to slot `00`.
+  reloaded, or until the same contents are also written to slot `00`.
 - **Writing slot `00` takes effect immediately**, and touches nothing else.
 - Edits made on the Pacer's own front panel go to slot `00` too, and only reach
   a preset's slot through the device's Save.
@@ -480,7 +482,7 @@ Whether you're a person with a hex editor or an AI with a script:
    mod 128) mod 128`.
 2. **Change only what you were asked to change.** Leave other presets, the
    global settings and the Current slot byte-identical.
-3. **Never delete a field to clear it — set it to Off.** The device keeps
+3. **Never delete a field to clear it. Set it to Off instead.** The device keeps
    whatever a message doesn't address. To empty a step, write its message
    with type `61` (and Active `00`, except for step 1). To empty a light, write
    colours `00`.
@@ -488,7 +490,7 @@ Whether you're a person with a hex editor or an AI with a script:
    message's five, each in its own message, in element order, with a `00`
    after every field but the last.
 5. **Use Preset Select to jump to a preset**, with target = `idx` + 2, and put
-   it on the first jumping step of the switch — later ones never fire.
+   it on the first jumping step of the switch, since later ones never fire.
 6. **Keep values 7-bit** (0–127) everywhere between `F0` and `F7`.
 7. **Check your output**: split it into messages, confirm every checksum, and
    confirm the message count still adds up (189 per preset slot). Then list
@@ -504,7 +506,7 @@ expect someone to load should keep every message.
 - **After writing, wait at least a second before asking the Pacer for
   anything.** Requesting a dump within about 200 ms of preset writes makes it
   drop the writes and fill the written preset with another preset's
-  contents — the preset is corrupted. With 300 ms or more, writes land
+  contents, which corrupts the preset. With 300 ms or more, writes land
   reliably. Confirmed on hardware.
 - To make a change to the loaded preset take effect at once, also write it to
   slot `00` (see [The Current slot](#the-current-slot)).
@@ -513,21 +515,21 @@ expect someone to load should keep every message.
 
 All from a factory dump, preset A1 (`idx` `01`).
 
-**The name** — "PRGM1":
+**The name**, "PRGM1":
 
 ```
 F0 00 01 77 7F  01 01 01  01   01 05 50 52 47 4D 31   0F  F7
                 Set Preset A1  Name: elm 01, len 5, "PRGM1"  checksum
 ```
 
-**Stompswitch 1's control mode** — All at once:
+**Stompswitch 1's control mode**, All at once:
 
 ```
 F0 00 01 77 7F  01 01 01 0D   60 01 00   0F  F7
                          Stomp 1  elm 60 (mode), len 1, 00
 ```
 
-**Stompswitch 1, step 1** — Program Change 0 on the global channel, active:
+**Stompswitch 1, step 1**, an active Program Change 0 on the global channel:
 
 ```
 F0 00 01 77 7F  01 01 01 0D
@@ -540,26 +542,26 @@ F0 00 01 77 7F  01 01 01 0D
   0F  F7
 ```
 
-**Stompswitch 1, step 2** — unused: type Off, inactive (elements `07`–`0C`):
+**Stompswitch 1, step 2**, unused, so type Off and inactive (elements `07`–`0C`):
 
 ```
 F0 00 01 77 7F  01 01 01 0D  07 01 00 00  08 01 61 00  09 01 00 00  0A 01 00 00  0B 01 00 00  0C 01 00  50 F7
 ```
 
-**Stompswitch 1, step 1's light** — no MIDI feedback, Default colours, on the
-bar:
+**Stompswitch 1, step 1's light**, with no MIDI feedback and Default colours,
+on the bar:
 
 ```
 F0 00 01 77 7F  01 01 01 0D  40 01 00 00  41 01 7F 00  42 01 7F 00  43 01 00  68 F7
 ```
 
-**Preset MIDI message 1** — unused (type Off):
+**Preset MIDI message 1**, unused (type Off):
 
 ```
 F0 00 01 77 7F  01 01 01 7E  01 01 00 00  02 01 61 00  03 01 00 00  04 01 00 00  05 01 00  0A F7
 ```
 
-**A jump to C1 on stompswitch A, step 1** — Preset Select, target `0F`
+**A jump to C1 on stompswitch A, step 1**: Preset Select, target `0F`
 (C1 is `idx` `0D`, + 2):
 
 ```
@@ -569,8 +571,8 @@ F0 00 01 77 7F  01 01 01 14  01 01 00 00  02 01 62 00  03 01 0F 00  04 01 00 00 
 ## What isn't known
 
 - **Relay modes** beyond the factory set's `03`.
-- **Step Select / Step Inc/Dec targeting** — how they name the switch they
-  drive.
+- **Step Select / Step Inc/Dec targeting**, meaning how they name the switch
+  they drive.
 - **Global settings**, beyond the global channel and which preset is loaded.
 - **The DAW (Track/Transport) presets' command bytes.**
 - **Program Step and CC Step's direction and increment**, which this page

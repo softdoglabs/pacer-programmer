@@ -1,36 +1,49 @@
 # Pacer Programmer
 
-A browser-based editor for the Nektar Pacer MIDI foot controller.
+Pacer Programmer is a browser-based editor for the Nektar Pacer MIDI foot
+controller. It's built around two ideas.
 
-- **A real simulator.** The on-screen Pacer runs your configuration as the
-  hardware would, and can drive your real rig over MIDI while you program —
-  no Pacer needed until you're ready to send.
-- **Plain programming.** Every switch, step, light and preset setting, with
-  undo, snapshots, and sending only what changed.
-- **The preset map.** Your presets drawn as the states and routes you
-  designed, including the "go back to where I came from" routes the Pacer
-  can only fake with copies — and the copies kept in step for you.
-- **Your files, nothing else.** The configuration is the Pacer's own `.syx`
-  dump, fully documented, so you (or an AI) can read and write it too.
+The first is that you should be able to see what a change does before you
+send it. Programming my Pacer used to mean guessing at what a preset would
+do, sending it to the device, stomping on switches to find out, and doing it
+all again. Here you program on screen, press the switches on screen, and your
+real gear responds to real MIDI. The Pacer only gets sent anything once it's
+right.
 
-It runs in Chrome, Edge, Opera or Brave. MIDI is only needed to reach real
-gear and the Pacer.
+![The simulator playing a looper preset, its MIDI going to a Quad Cortex](images/simulator.png)
+
+In the picture it's driving a Quad Cortex's looper. The lights and the display
+are what the Pacer itself would show, since the simulator runs your
+configuration the way the Pacer's firmware does, and the log at the bottom
+lists every message that went out.
+
+The second idea is a little more unusual. The Pacer can't remember anything,
+so if you want a switch that means "go back to wherever I came from," you end
+up building copies of presets by hand and keeping them in sync forever. The
+[preset map](reference/preset-map.md) finds those copies in your configuration,
+shows them as the one thing you actually designed, and keeps them in step when
+you change it. [Why a state machine](why-a-state-machine.md) explains the
+problem in more detail.
+
+There's no project file. The app reads and writes the Pacer's own `.syx` dump,
+and the format is [documented](reference/programming-the-pacer.md) well enough
+that you (or an AI) can read and write it too.
+
+You'll need Chrome, Edge, Opera or Brave. MIDI is only needed to reach real
+gear and the Pacer; everything else works without it.
 
 ## Where to start
 
-- **New here:** [The simulator](guide/the-simulator.md), then
-  [Editing a preset](guide/editing-a-preset.md).
-- **Want to know why the map exists:** [Why a state machine](why-a-state-machine.md).
-- **Building something:** the [tutorials](tutorials/) build a looper that
-  returns to wherever you came from.
-- **Looking something up:** the [reference](reference/) covers every control
-  and every message.
-- **Using an AI:** [Working with an AI](guide/working-with-ai.md) and the
-  format it needs, [Programming the Pacer](reference/programming-the-pacer.md).
+If you're new, read [The simulator](guide/the-simulator.md) and then
+[Editing a preset](guide/editing-a-preset.md). The [tutorials](tutorials/)
+build my looper from the factory defaults, one step at a time. When you need to
+look something up, the [reference](reference/) covers every control and every
+message the app shows. And if you'd rather have an assistant do the tedious
+part, see [Working with an AI](guide/working-with-ai.md).
 
 ## Contents
 
-**[Guide](guide/)** — how to get things done
+[Guide](guide/): how to get things done
 
 - [The simulator](guide/the-simulator.md)
 - [Editing a preset](guide/editing-a-preset.md)
@@ -40,14 +53,14 @@ gear and the Pacer.
 - [Saving and sending](guide/saving-and-sending.md)
 - [Working with an AI](guide/working-with-ai.md)
 
-**[Tutorials](tutorials/)** — a looper, step by step
+[Tutorials](tutorials/): a looper, step by step
 
 1. [A looper preset](tutorials/1-a-looper-preset.md)
 2. [A second way in](tutorials/2-a-second-way-in.md)
 3. [Changing the looper](tutorials/3-changing-the-looper.md)
 4. [Letting an AI build it](tutorials/4-letting-an-ai-build-it.md)
 
-**[Reference](reference/)** — the manual
+[Reference](reference/): the manual
 
 - [The window](reference/the-window.md)
 - [The faceplate](reference/the-faceplate.md)
@@ -59,5 +72,5 @@ gear and the Pacer.
 - [Troubleshooting](reference/troubleshooting.md)
 - [Glossary](reference/glossary.md)
 
-**[Why a state machine](why-a-state-machine.md)** — the problem the preset
-map solves.
+[Why a state machine](why-a-state-machine.md): the problem the preset map
+solves.

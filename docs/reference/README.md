@@ -1,8 +1,8 @@
 # Reference
 
-The manual: every control in the app, what it does, and what its messages
-mean. For learning by doing, see the [guide](../guide/) and the
-[tutorials](../tutorials/).
+This is the manual. It covers every control in the app, what each one does,
+and what its messages mean. If you'd rather learn by doing, try the
+[guide](../guide/) and the [tutorials](../tutorials/).
 
 | Page | Covers |
 |---|---|
@@ -12,6 +12,6 @@ mean. For learning by doing, see the [guide](../guide/) and the
 | [Program mode](program-mode.md) | The switch editor, step types, lights and colours, renaming, load-time MIDI, clearing, editing a state. |
 | [The preset map](preset-map.md) | States and routes, the route dialog, moving presets, slot budget. |
 | [Devices and files](devices-and-files.md) | Pulling, importing, exporting, snapshots, saving, sending to the Pacer. |
-| [Programming the Pacer](programming-the-pacer.md) | The SysEx format byte by byte — for reading a `.syx` file, writing one, or handing the job to an AI. |
+| [Programming the Pacer](programming-the-pacer.md) | The SysEx format, byte by byte. Use it to read or write a `.syx` file, or hand it to an AI to do that. |
 | [Troubleshooting](troubleshooting.md) | Every message the app shows, and what to do. |
 | [Glossary](glossary.md) | The words these pages use. |

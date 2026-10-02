@@ -1,53 +1,54 @@
 # Editing a preset
 
-The basics: change what a switch on one preset does, try it, and keep it. No
-state machines needed.
+This page covers the basics: changing what a switch does on one preset,
+trying it, and keeping it. You don't need the preset map for any of this.
 
 ## 1. Find the preset
 
-Open the configuration you want to change — pull it from your Pacer, import a
-`.syx`, or start from the factory defaults (see
-[Devices and files](../reference/devices-and-files.md)). Then choose the
-preset: click the badge on the display's lower half for the
-[preset chooser](../reference/the-faceplate.md#the-preset-chooser), and pick
+Open the configuration you want to change. You can pull it from your Pacer,
+import a `.syx`, or start from the factory defaults (see
+[Devices and files](../reference/devices-and-files.md)). Then pick the preset:
+click the badge on the lower half of the display to open the
+[preset chooser](../reference/the-faceplate.md#the-preset-chooser), and choose
 one.
 
 ## 2. Open the switch
 
-Switch to **Program**. Every programmable control now carries a pencil:
+Switch to **Program**. Every control you can program now has a pencil on it:
 
 ![The faceplate in Program mode](../images/program-faceplate.png)
 
-Tap the switch you want. The faceplate gives way to the switch editor.
+Tap the switch you want, and the faceplate gives way to the switch editor.
 
 ## 3. Set what it does
 
 ![The switch editor](../images/switch-editor.png)
 
-- Choose what **step 1** does: its type (Program + Bank, CC Toggle, Note…),
-  channel, and values.
-- To make one press do several things, **+ Add step**. With *Fires: All at
-  once*, every step goes out on each press.
-- To make each press do the next thing, choose *Fires: Sequence*.
+Start with step 1: pick its type (Program + Bank, CC Toggle, Note and so on),
+its channel, and its values.
 
-[Switches and steps](switches-and-steps.md) explains steps and modes with
-examples. Every type and field is listed in
+If you want one press to do several things, click **+ Add step**. With
+**Fires** set to *All at once*, every step goes out on each press. If you'd
+rather have each press do the next thing in a list, set it to *Sequence*.
+
+[Switches and steps](switches-and-steps.md) walks through steps and modes with
+examples, and every type and field is listed in
 [Program mode](../reference/program-mode.md#step-types).
 
 ## 4. Choose its colours
 
-Under the step, choose which light it uses and its two colours. The labels say
-when each one shows: *While CC 52 = 127 / Otherwise*, say. See
-[Lights and colours](lights-and-colours.md).
+Under the step, pick which light it uses and its two colours. The labels tell
+you when each one shows, for example *While CC 52 = 127* and *Otherwise*.
+[Lights and colours](lights-and-colours.md) has the details.
 
 ## 5. Try it
 
-Press the live copy of the switch at the right of the editor. It sends, and
-its light changes, as the Pacer's would — and if you've chosen a
-[simulated MIDI output](the-simulator.md), your gear responds.
+Press the live copy of the switch on the right of the editor. It sends, and its
+light changes, the same way the Pacer's would. If you've picked a
+[simulated MIDI output](the-simulator.md), your gear responds too.
 
-Move between switches with the picker at the top, and between presets with
-the chooser beside it. **✕** goes back to the faceplate.
+The picker along the top moves between switches, and the chooser next to it
+moves between presets. The **✕** takes you back to the faceplate.
 
 ## 6. Name the preset
 
@@ -56,8 +57,7 @@ type up to five characters, and press Enter.
 
 ## 7. Keep it
 
-- **Undo / Redo** (⌘Z / ⇧⌘Z) step back and forth through every change.
-- **Save…** keeps the configuration as a snapshot in this browser.
-- **Send to Pacer…** writes the presets you changed to the Pacer.
-
-See [Saving and sending](saving-and-sending.md).
+Undo and Redo (⌘Z and ⇧⌘Z) step back and forth through every change.
+**Save…** keeps the configuration as a snapshot in this browser, and
+**Send to Pacer…** writes the presets you changed to the Pacer. See
+[Saving and sending](saving-and-sending.md).

@@ -1212,6 +1212,14 @@ so the link resolves for the owner only until it's published.
   The tutorial scenes build their configuration with the same editing and
   authoring functions the UI calls, so each picture is what following the
   steps produces. Re-run a scene after changing the UI it shows.
+- **Voice**: conversational, in the owner's own voice. First person for his
+  story (the looper, his rig, building LOOPR with an AI), "you" for the
+  reader, contractions. Avoid the AI tells: em dashes (keep them to quoted UI
+  text and the odd one), "not X, it's Y" contrasts, bold-led bullets,
+  reflexive triads, and summing-up closers. Don't invent anecdotes for him.
+  The front page leads with both halves of the app, the simulator (try a
+  change against real MIDI without sending to the Pacer) and the state
+  machine, with the `simulator` scene's screenshot.
 - **Checked by tests**: `src/test/docsLinks.test.ts` fails on any relative
   link or `#anchor` in `docs/` that doesn't resolve (GitHub's slugging), and
   `protocol/__tests__/docsExamples.test.ts` decodes every byte example in

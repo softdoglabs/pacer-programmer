@@ -1,16 +1,16 @@
 # Troubleshooting
 
-What the app's messages mean, and what to do about them. They're grouped by
-where you'll see them.
+This page covers what the app's messages mean and what to do about them,
+grouped by where you'll see them.
 
 ## Connecting
 
 | You see | Meaning | Try |
 |---|---|---|
-| **Web MIDI isn't available in this browser** | The browser has no Web MIDI. | Chrome, Edge, Opera or Brave. Firefox and Safari don't support SysEx reliably. |
-| **MIDI access denied** | The browser, or you, refused. | Allow MIDI (and SysEx) in the site's settings, then **Retry**. |
-| **SysEx off** | MIDI was granted without SysEx. | Re-allow with SysEx. Without it the Pacer can't be read or written, and MMC steps aren't sent. |
-| **No Pacer found** | No port with "Pacer" in its name, or the ports aren't chosen. | Check the USB cable, then pick the ports in the [device drawer](devices-and-files.md#the-device-drawer). |
+| Web MIDI isn't available in this browser | The browser has no Web MIDI. | Chrome, Edge, Opera or Brave. Firefox and Safari don't support SysEx reliably. |
+| MIDI access denied | The browser, or you, refused. | Allow MIDI (and SysEx) in the site's settings, then **Retry**. |
+| SysEx off | MIDI was granted without SysEx. | Re-allow with SysEx. Without it the Pacer can't be read or written, and MMC steps aren't sent. |
+| No Pacer found | No port with "Pacer" in its name, or the ports aren't chosen. | Check the USB cable, then pick the ports in the [device drawer](devices-and-files.md#the-device-drawer). |
 | *The Pacer didn't answer a MIDI Device Inquiry…* | It's connected but didn't say who it is. | Harmless: only the firmware line is missing. **Ask again** retries. |
 
 ## Pulling
@@ -66,11 +66,11 @@ find out on the next load.
 | *X is one of the presets this route runs between…* | A copy can't overwrite the presets it connects. | Choose another slot. |
 | *Can't route to "X": it's on the device N times…* | X has identical copies and none returns, so there's no telling which you mean. | Clear the extra copies, or give each a way back. |
 | *That would stop A3 coming back to where it was entered from…* | The edit would make a return read as an ordinary jump: typically, a second route into one copy of a returning state. | Route into the state from the state that should enter it, so it gets its own copy. |
-| *That would leave something unreadable: …* | The result couldn't be read back as states and routes. The rest of the message says what. | Undo isn't needed — nothing was written. Try the change another way. |
+| *That would leave something unreadable: …* | The result couldn't be read back as states and routes. The rest of the message says what. | Nothing was written, so there's nothing to undo. Try the change another way. |
 | *…is missing a jump its state has elsewhere.* | One copy of a state lacks a route the others have. | Usually after editing one copy alone; edit the state as a whole, or let the copy leave the state. |
 | *The copies of "X" lead to different states from the same switch…* | Copies disagree about where a switch goes. | Make them agree, on the map or with *Changes: this preset only*. |
 | *X has something in it. Clear it first, or pick an empty one.* | **Move to…** only moves into empty presets. | Clear the slot first. |
-| *Moving A3 to D6 would change what the configuration does…* | The move isn't a pure renumbering. | Report it — moves are meant to always be safe. |
+| *Moving A3 to D6 would change what the configuration does…* | The move isn't a pure renumbering. | Please report it, since moves are meant to always be safe. |
 
 ## In the output log
 
@@ -78,5 +78,5 @@ find out on the next load.
 |---|---|
 | *(warning) multiple preset-navigation actions fired by one press; using the first* | Two steps on one press both change preset. The Pacer takes the first. |
 | *(warning) StepSelect/StepIncDec targeting isn't simulated yet…* | External step select isn't followed across switches. |
-| *(warning) N of M message(s) not sent to …* | The MIDI output refused them — often because the port went away, or SysEx isn't granted for MMC. |
+| *(warning) N of M message(s) not sent to …* | The MIDI output refused them. Usually the port went away, or SysEx isn't granted for MMC. |
 | *(warning) step N: channel byte … is out of range* | A step's channel isn't 0–16. The file was probably hand-edited. |

@@ -7,11 +7,11 @@ import { StateDetails } from "./StateDetails";
 import { StateNode, type StateNodeData } from "./StateNode";
 import { MAP_ARROW, MapDefs } from "./MapDefs";
 import "@xyflow/react/dist/style.css";
-import { recoverMachine } from "@/pacer/analysis";
 import { presetIndexToLabel } from "@/pacer/protocol/constants";
 import { switchSpecForControl } from "@/pacer/hardware";
 import { controlLabel } from "@/pacer/simulator";
 import { usePacerStore } from "../../store/pacerStore";
+import { useMachine } from "../useMachine";
 import { layoutStates } from "./layout";
 
 /*
@@ -53,7 +53,7 @@ export function PresetMap() {
   const [intent, setIntent] = useState<RouteIntent | null>(null);
   // The state whose presets are being looked at, below the map.
   const [inspecting, setInspecting] = useState<string | null>(null);
-  const config = usePacerStore((s) => s.board.config);
+  const machine = useMachine();
   const activeIndex = usePacerStore((s) => s.board.activePresetIndex);
   const jumpToPreset = usePacerStore((s) => s.jumpToPreset);
   const setUiMode = usePacerStore((s) => s.setUiMode);
@@ -83,7 +83,7 @@ export function PresetMap() {
   );
 
   const { nodes, edges, notes } = useMemo(() => {
-    const machine = recoverMachine(config);
+    // The same object every other view of this configuration has (see `useMachine`).
     // Drawn, not merely present: hiding the plain stepping is what leaves a design's own shape, so
     // the layout reads the same routes the map does. Counting stepping makes every preset entered
     // from its neighbour, which has no beginning to rank from.
@@ -183,7 +183,7 @@ export function PresetMap() {
     });
 
     return { nodes, edges, notes: machine.notes };
-  }, [config, activeIndex, showing, programPreset]);
+  }, [machine, activeIndex, showing, programPreset]);
 
   return (
     <section aria-label="Preset map" className="flex min-h-0 flex-1 flex-col gap-2">
@@ -239,7 +239,7 @@ export function PresetMap() {
           nodesDraggable={false}
           onConnect={(connection) => {
             if (connection.source === connection.target) return;
-            const members = recoverMachine(config).members[connection.source] ?? [];
+            const members = machine.members[connection.source] ?? [];
             openRoute({ kind: "add", fromStateId: connection.source, toStateId: connection.target }, members);
           }}
           onEdgeClick={(_, edge) => {
@@ -247,11 +247,11 @@ export function PresetMap() {
             if (data?.controlId === undefined || data.stepNumber === undefined) return;
             openRoute(
               { kind: "existing", fromStateId: edge.source, controlId: data.controlId, stepNumber: data.stepNumber },
-              recoverMachine(config).members[edge.source] ?? [],
+              machine.members[edge.source] ?? [],
             );
           }}
           onNodeClick={(_, node) => {
-            const members = recoverMachine(config).members[node.id] ?? [];
+            const members = machine.members[node.id] ?? [];
             if (members[0] !== undefined) jumpToPreset(members[0]);
             // And show what it's made of: one node can be several presets, which is the thing a
             // map of states hides by design.
@@ -259,7 +259,7 @@ export function PresetMap() {
           }}
           // The shortcut for the pencil, for anyone who tries it.
           onNodeDoubleClick={(_, node) => {
-            const members = recoverMachine(config).members[node.id] ?? [];
+            const members = machine.members[node.id] ?? [];
             const open = members.includes(activeIndex) ? activeIndex : members[0];
             if (open !== undefined) programPreset(open);
           }}

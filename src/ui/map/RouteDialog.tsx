@@ -4,13 +4,13 @@ import { ModalDialog } from "@/components/ui/dialog";
 import { Checkbox } from "react-aria-components";
 import { Select } from "@/components/ui/select";
 import { ToggleGroup } from "@/components/ui/toggle-group";
-import { recoverMachine } from "@/pacer/analysis";
 import { editRoute, planRoute, switchUses, type SwitchUse } from "@/pacer/authoring";
 import { isSparePreset } from "@/pacer/editing";
 import { switchSpecForControl } from "@/pacer/hardware";
 import { FIRST_USER_PRESET_INDEX, LAST_USER_PRESET_INDEX, presetIndexToLabel } from "@/pacer/protocol/constants";
 import { controlLabel } from "@/pacer/simulator";
 import { usePacerStore } from "../../store/pacerStore";
+import { useMachine } from "../useMachine";
 
 /*
  * Where a switch leads, edited as the map shows it: from one state to another, however many
@@ -67,7 +67,7 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
   const applyEdit = usePacerStore((s) => s.applyEdit);
   const [error, setError] = useState<string | undefined>();
 
-  const machine = useMemo(() => recoverMachine(config), [config]);
+  const machine = useMachine();
   const nameOf = (id: string) => machine.states.find((s) => s.id === id)?.name?.trim() || id;
   const uses = useMemo(() => switchUses(config, intent.fromStateId), [config, intent.fromStateId]);
 

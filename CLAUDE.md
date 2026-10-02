@@ -389,6 +389,24 @@ states" made every multi-copy state on a real device unreadable the moment
 it was created.
 
 
+### One machine per configuration (`analysis/machineOf.ts`, `ui/useMachine.ts`)
+
+Everything that asks what the states are gets them from `machineOf(config)`,
+which recovers the machine once per configuration version and hands every
+caller the **same object**. Components use `useMachine()` (and
+`useStateOfPreset()` / `useEditTargets()` beside it in `src/ui/`).
+
+- Configurations are never changed in place — every edit copies the path it
+  touches — so a config object *is* a version and identity is an exact cache
+  key. A WeakMap lets old versions go with the undo history that held them.
+- The point isn't speed (recovery is about half a millisecond on a real
+  dump). It's that there's one: before this, the map, chooser, editor,
+  display and route dialog each recovered the states at their own moment,
+  so two parts of one screen could hold different ideas of them.
+- **Enforced:** ESLint forbids importing `recoverMachine` outside
+  `src/pacer/analysis` (tests excepted). The machine handed out is shared,
+  so treat it as read-only.
+
 ### Editing the machine (`src/pacer/authoring/`)
 
 A new layer where `analysis` and `editing` meet, which neither may depend

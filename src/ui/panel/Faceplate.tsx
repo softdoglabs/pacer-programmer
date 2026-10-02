@@ -9,7 +9,7 @@ import { Titled } from "@/components/ui/titled";
 import { cn } from "@/lib/utils";
 import { PresetChooser } from "../PresetChooser";
 import { usePacerStore } from "@/store/pacerStore";
-import { useStateOfPreset } from "../editor/useEditTargets";
+import { useStateOfPreset } from "../useMachine";
 import { useControlPress } from "../useControlPress";
 import { EditBadge, PresetBadge } from "./EditBadge";
 import { HOUSING_H, HOUSING_W, SwitchView } from "./SwitchView";

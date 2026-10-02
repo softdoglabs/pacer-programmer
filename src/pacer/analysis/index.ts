@@ -4,3 +4,4 @@ export * from "./machine";
 export * from "./recover";
 export * from "./verify";
 export * from "./apply";
+export * from "./machineOf";

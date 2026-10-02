@@ -1,4 +1,4 @@
-import { recoverMachine } from "../pacer/analysis";
+import { machineOf, stateContaining } from "../pacer/analysis";
 import { movePreset } from "../pacer/authoring";
 import type { PacerConfig } from "../pacer/protocol/types";
 import type { PacerStore } from "./pacerStore";
@@ -34,9 +34,7 @@ export type EditScope = "state" | "preset";
 /** The presets an edit applies to: every preset the current one behaves like, or just it. */
 export function editTargets(config: PacerConfig, presetIndex: number, scope: EditScope): number[] {
   if (scope === "preset") return [presetIndex];
-  const machine = recoverMachine(config);
-  const state = machine.states.find((s) => (machine.members[s.id] ?? []).includes(presetIndex));
-  const members = state ? (machine.members[state.id] ?? []) : [];
+  const members = stateContaining(machineOf(config), presetIndex)?.members ?? [];
   return members.length > 0 ? members : [presetIndex];
 }
 

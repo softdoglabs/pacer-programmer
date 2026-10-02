@@ -6,7 +6,7 @@ import { ControlMode, STEPS_PER_CONTROL } from "../../pacer/protocol/constants";
 import { showingStep } from "../../pacer/panel";
 import { controlKindOf } from "../../pacer/simulator";
 import { usePacerStore } from "../../store/pacerStore";
-import { useEditTargets } from "./useEditTargets";
+import { useEditTargets } from "../useMachine";
 import { StepCard } from "./StepCard";
 
 const MODE_OPTIONS = [

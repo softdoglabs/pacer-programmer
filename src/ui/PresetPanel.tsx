@@ -1,12 +1,12 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ModalDialog } from "@/components/ui/dialog";
-import { recoverMachine } from "../pacer/analysis";
 import { presetEntrants } from "../pacer/authoring";
 import { clearPreset, isSparePreset, nextFreePresetMidi, setPresetMidiType, SPARE_PRESET_NAME } from "../pacer/editing";
 import { PRESET_MIDI_SETTINGS, PresetMidiMessageType, presetIndexToLabel } from "../pacer/protocol/constants";
 import type { Preset } from "../pacer/protocol/types";
 import { usePacerStore } from "../store/pacerStore";
+import { useStateOfPreset } from "./useMachine";
 import { PresetMidiRow } from "./editor/PresetMidiRow";
 
 /**
@@ -38,11 +38,7 @@ export function PresetPanel() {
    * is how a state stops being one — worth saying, since the map presents them as a single thing
    * and this is where you arrive from it.
    */
-  const alike = useMemo(() => {
-    const machine = recoverMachine(config);
-    const state = machine.states.find((s) => (machine.members[s.id] ?? []).includes(index));
-    return { name: state?.name?.trim() || state?.id, members: state ? (machine.members[state.id] ?? []) : [] };
-  }, [config, index]);
+  const alike = useStateOfPreset();
   // Only worked out while the confirm is open: it's a question about this one preset.
   const entrants = clearing ? presetEntrants(config, index) : [];
   const presetLabel = (slot: number) =>

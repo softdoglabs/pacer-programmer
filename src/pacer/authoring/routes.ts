@@ -11,13 +11,7 @@ import {
 } from "../protocol/constants";
 
 import type { PacerConfig } from "../protocol/types";
-import {
-  isPlainStepping,
-  presetTransitions,
-  recoverMachine,
-  type MachineState,
-  type RecoveredMachine,
-} from "../analysis";
+import { isPlainStepping, presetTransitions, machineOf, type MachineState, type RecoveredMachine } from "../analysis";
 import { clearControl, clearPreset, copyPreset, isSparePreset, setStepType, updateStep } from "../editing";
 
 /*
@@ -109,7 +103,7 @@ function firstJump(config: PacerConfig, presetIndex: number, controlId: number):
 
 /** Every switch on a state, with what it does now — the material a route picker needs. */
 export function switchUses(config: PacerConfig, stateId: string): SwitchUse[] {
-  const machine = recoverMachine(config);
+  const machine = machineOf(config);
   const state = machine.states.find((s) => s.id === stateId);
   const members = machine.members[stateId] ?? [];
   if (!state || members.length === 0) return [];
@@ -272,7 +266,7 @@ function involved(machine: RecoveredMachine, ids: (string | undefined)[]): Set<n
  * than an error after the fact.
  */
 export function planRoute(config: PacerConfig, change: RouteChange): RoutePlan {
-  const machine = recoverMachine(config);
+  const machine = machineOf(config);
   const graph = presetTransitions(config);
   const from = machine.states.find((s) => s.id === change.fromStateId);
   const members = machine.members[change.fromStateId] ?? [];
@@ -399,7 +393,7 @@ export function planRoute(config: PacerConfig, change: RouteChange): RoutePlan {
  * that needs none takes none.
  */
 export function editRoute(config: PacerConfig, change: RouteChange, into: readonly number[] = []): RouteResult {
-  const before = recoverMachine(config);
+  const before = machineOf(config);
   const from = before.states.find((s) => s.id === change.fromStateId);
   const members = before.members[change.fromStateId] ?? [];
   if (!from || members.length === 0) return { ok: false, error: `There's no state "${change.fromStateId}" here.` };
@@ -509,7 +503,7 @@ export function editRoute(config: PacerConfig, change: RouteChange, into: readon
     }
   }
 
-  const after = recoverMachine(edited);
+  const after = machineOf(edited);
 
   /*
    * Returns are the thing to guard. They aren't stored anywhere — a copy returns because it's the
@@ -613,8 +607,8 @@ export function movePreset(config: PacerConfig, from: number, to: number): Route
    * The same round trip every other edit here is held to: the machine recovered afterwards has to
    * be the one recovered before, give or take which slots it sits in.
    */
-  const before = machineShape(config, recoverMachine(config), { [from]: to });
-  const after = machineShape(moved, recoverMachine(moved), {});
+  const before = machineShape(config, machineOf(config), { [from]: to });
+  const after = machineShape(moved, machineOf(moved), {});
   if (before !== after) {
     return { ok: false, error: `Moving ${presetIndexToLabel(from)} would change what the configuration does.` };
   }

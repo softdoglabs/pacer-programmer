@@ -2,7 +2,7 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { presetIndexToLabel } from "../../pacer/protocol/constants";
 import type { EditScope } from "../../store/editingSlice";
 import { usePacerStore } from "../../store/pacerStore";
-import { useStateOfPreset } from "./useEditTargets";
+import { useStateOfPreset } from "../useMachine";
 
 /**
  * What the editor's changes reach, shown only when the preset in front of you is one of several

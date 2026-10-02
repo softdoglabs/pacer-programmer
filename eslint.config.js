@@ -26,6 +26,17 @@ const noUiInDomain = {
   ],
 };
 
+/**
+ * One state machine per configuration (see `analysis/machineOf.ts`). Recovering it afresh is how
+ * two parts of one screen came to hold different ideas of what the states are, so outside the
+ * analysis layer — and its tests, which are about recovery itself — it's asked for, not rebuilt.
+ */
+const oneMachine = {
+  group: ["**/analysis", "@/pacer/analysis"],
+  importNames: ["recoverMachine"],
+  message: "Use machineOf(config), or useMachine() in a component: one machine object per configuration.",
+};
+
 export default tseslint.config(
   { ignores: ["dist", "src/components/ui"] },
   js.configs.recommended,
@@ -128,10 +139,16 @@ export default tseslint.config(
               group: ["**/simulator/**", "**/device/**", "**/panel/**", "**/simulator", "**/device", "**/panel"],
               message: "authoring is where analysis and editing meet; it may depend on those and protocol.",
             },
+            oneMachine,
           ],
         },
       ],
     },
+  },
+  {
+    files: ["src/ui/**/*.{ts,tsx}", "src/store/**/*.ts"],
+    ignores: ["**/__tests__/**"],
+    rules: { "no-restricted-imports": ["error", { patterns: [oneMachine] }] },
   },
   {
     files: ["src/pacer/simulator/**/*.ts"],

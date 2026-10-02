@@ -14,7 +14,6 @@ import { useShallow } from "zustand/react/shallow";
 import { Titled } from "@/components/ui/titled";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
-import { recoverMachine } from "../pacer/analysis";
 import { changedPresets } from "../pacer/editing";
 import {
   BANK_COUNT,
@@ -23,6 +22,7 @@ import {
   presetIndexToLabel,
   userPresetIndex,
 } from "../pacer/protocol/constants";
+import { machineOf } from "../pacer/analysis";
 import { usePacerStore } from "../store/pacerStore";
 
 /*
@@ -61,7 +61,7 @@ export function PresetChooser({ trigger }: { trigger: React.ReactNode }) {
 
   /** The states this configuration's presets make up, the ones with copies first. */
   const states = useMemo(() => {
-    const machine = recoverMachine(config);
+    const machine = machineOf(config);
     const groups = machine.states.map((state) => ({
       id: state.id,
       name: state.name?.trim() || state.id,

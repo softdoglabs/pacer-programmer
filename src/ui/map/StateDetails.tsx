@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { recoverMachine } from "@/pacer/analysis";
 import { presetEntrants } from "@/pacer/authoring";
 import { isSparePreset } from "@/pacer/editing";
 import { FIRST_USER_PRESET_INDEX, LAST_USER_PRESET_INDEX, presetIndexToLabel } from "@/pacer/protocol/constants";
 import { usePacerStore } from "../../store/pacerStore";
+import { useMachine } from "../useMachine";
 
 /*
  * What a state is actually made of.
@@ -28,15 +28,15 @@ export function StateDetails({ stateId, onClose }: { stateId: string; onClose: (
   // A move that's refused says why, here, rather than doing nothing where you were looking.
   const [refused, setRefused] = useState<string | undefined>();
 
+  const machine = useMachine();
   const { name, members, comesBack } = useMemo(() => {
-    const machine = recoverMachine(config);
     const state = machine.states.find((s) => s.id === stateId);
     return {
       name: state?.name?.trim() || stateId,
       members: state ? (machine.members[state.id] ?? []) : [],
       comesBack: state?.transitions.some((t) => t.to.kind === "return") ?? false,
     };
-  }, [config, stateId]);
+  }, [machine, stateId]);
 
   const spare = useMemo(() => {
     const free = [];

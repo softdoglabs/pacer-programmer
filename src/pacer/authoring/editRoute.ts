@@ -4,7 +4,7 @@ import { machineOf, whatWasLost } from "../analysis";
 import { clearControl, copyPreset, setJump, setStepType, updateStep } from "../editing";
 import type { RouteChange, RouteResult } from "./change";
 import { firstJump } from "./switches";
-import { involved, planRoute } from "./plan";
+import { existingEntry, involved, planRoute } from "./plan";
 
 /**
  * Points a state's switch at another state, on every copy at once — or takes the route away.
@@ -90,8 +90,11 @@ export function editRoute(config: PacerConfig, change: RouteChange, into: readon
   });
 
   // Then the route itself: each preset the state is gets the same switch, leading to its own copy
-  // when copies were made, or to the one preset the target state is when it needed none.
-  const single = change.toStateId === undefined ? undefined : (before.members[change.toStateId] ?? [])[0];
+  // when copies were made, to the copy it already led to when the route was there before, or to
+  // the one preset the target state is when it needed none.
+  const toMembers = change.toStateId === undefined ? [] : (before.members[change.toStateId] ?? []);
+  const single = toMembers[0];
+  const kept = change.toStateId === undefined ? undefined : existingEntry(config, change, members, toMembers);
   members.forEach((member, i) => {
     if (change.toStateId === undefined) {
       /*
@@ -103,7 +106,13 @@ export function editRoute(config: PacerConfig, change: RouteChange, into: readon
         edited = updateStep(edited, member, change.controlId, change.stepNumber, { active: false });
       return;
     }
-    edited = setJump(edited, member, change.controlId, change.stepNumber, plan.copies.length > 0 ? into[i]! : single!);
+    edited = setJump(
+      edited,
+      member,
+      change.controlId,
+      change.stepNumber,
+      plan.copies.length > 0 ? into[i]! : (kept?.[i] ?? single!),
+    );
   });
 
   // Moved, not copied: the switch it used to be on gives it up in the same edit.
@@ -142,7 +151,7 @@ export function editRoute(config: PacerConfig, change: RouteChange, into: readon
   if (change.toStateId === undefined) {
     if (route) return { ok: false, error: "That switch still leads somewhere afterwards." };
   } else {
-    const landed = plan.copies.length > 0 ? into[0]! : single!;
+    const landed = plan.copies.length > 0 ? into[0]! : (kept?.[0] ?? single!);
     const lands = route?.to.kind === "state" ? (after.members[route.to.id] ?? []) : [];
     if (!lands.includes(landed)) {
       return { ok: false, error: `That route doesn't read back as going to ${presetIndexToLabel(landed)}.` };

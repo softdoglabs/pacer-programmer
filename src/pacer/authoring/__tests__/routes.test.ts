@@ -406,6 +406,46 @@ describe("routing between states", () => {
     expect(moved.transitions.map((t) => t.controlId)).toEqual([ControlId.StompswitchB]);
   });
 
+  it("moves a route into a state that comes back, keeping each way in on its own copy", () => {
+    // MAIN1 enters the looper's second copy; moving its route must not aim it at the first.
+    const config = compiled(looper(2));
+    const machine = recoverMachine(config);
+    const main = machine.states.find((s) => s.name === "MAIN1")!;
+    const loop = machine.states.find((s) => s.name === "LOOPR")!;
+    const home = machine.members[main.id]![0]!;
+    const own = jumpTarget(config, home, ControlId.StompswitchA, 1);
+
+    const result = editRoute(config, {
+      fromStateId: main.id,
+      controlId: ControlId.StompswitchB,
+      stepNumber: 1,
+      toStateId: loop.id,
+      moveFrom: { controlId: ControlId.StompswitchA, stepNumber: 1 },
+    });
+    if (!result.ok) throw new Error(result.error);
+    expect(jumpTarget(result.config, home, ControlId.StompswitchB, 1)).toBe(own);
+  });
+
+  it("costs nothing to keep a route as it is, even into a state that comes back", () => {
+    // Opening a route and confirming it unchanged isn't a new way in.
+    const config = compiled(looper(2));
+    const machine = recoverMachine(config);
+    const loop = machine.states.find((s) => s.name === "LOOPR")!;
+    for (const name of ["MAIN0", "MAIN1"]) {
+      const main = machine.states.find((s) => s.name === name)!;
+      const change = {
+        fromStateId: main.id,
+        controlId: ControlId.StompswitchA,
+        stepNumber: 1,
+        toStateId: loop.id,
+      };
+      expect(planRoute(config, change)).toEqual({ ok: true, copies: [] });
+      const result = editRoute(config, change);
+      if (!result.ok) throw new Error(result.error);
+      expect(result.config.presets).toEqual(config.presets);
+    }
+  });
+
   it("moves a preset to another slot, and everything that led to it follows", () => {
     /*
      * A state's copies land wherever there was room, which is rarely where you'd have put them.

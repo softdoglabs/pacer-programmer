@@ -62,6 +62,23 @@ export function targetOfRoute(
   return presetSelectTargetToIndex(step.data[0]);
 }
 
+/**
+ * Where each of the state's presets already leads, if the route being edited already enters the
+ * target state from every one of them — read from the step it's on now (`moveFrom`, or the step
+ * itself when it stays put). Each preset keeps its own: the copies of a state that comes back are
+ * told apart by exactly this, so pointing them all at one would undo them.
+ */
+export function existingEntry(
+  config: PacerConfig,
+  change: RouteChange,
+  members: readonly number[],
+  toMembers: readonly number[],
+): number[] | undefined {
+  const at = change.moveFrom ?? { controlId: change.controlId, stepNumber: change.stepNumber };
+  const targets = members.map((member) => targetOfRoute(config, member, at));
+  return targets.every((t): t is number => t !== undefined && toMembers.includes(t)) ? targets : undefined;
+}
+
 /** Slots a route may not take: the presets it's being written to or from. */
 export function involved(machine: RecoveredMachine, ids: (string | undefined)[]): Set<number> {
   const used = new Set<number>();
@@ -99,18 +116,11 @@ export function planRoute(config: PacerConfig, change: RouteChange): RoutePlan {
   if (!to || toMembers.length === 0) return { ok: false, error: `There's no state "${change.toStateId}" here.` };
 
   /*
-   * A route being moved to another switch is the same way in, so it costs nothing — the copy it
-   * leads to already exists because this route is what made it. Only a new destination is a new
-   * way in, and that gets priced below like any other.
+   * A route that's already there — kept on its switch or moved to another — is the same way in, so
+   * it costs nothing: the copy it leads to exists because this route is what made it. Only a new
+   * destination is a new way in, and that gets priced below like any other.
    */
-  if (change.moveFrom) {
-    const current = (graph.from[members[0]!] ?? []).find(
-      (e) => e.controlId === change.moveFrom!.controlId && e.stepNumber === change.moveFrom!.stepNumber,
-    );
-    if (current?.target.kind === "preset" && toMembers.includes(current.target.index)) {
-      return { ok: true, copies: [] };
-    }
-  }
+  if (existingEntry(config, change, members, toMembers)) return { ok: true, copies: [] };
 
   const targetWayBack = wayBack(config, machine, to.id);
   const settled = (machine.members[to.id] ?? []).length > 1;

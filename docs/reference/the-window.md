@@ -35,7 +35,7 @@ the modes, the switch you were editing, and the device drawer.
 | Connect MIDI | The browser hasn't been asked for MIDI access yet. Click it, and the browser asks whether to allow MIDI (and SysEx, which the Pacer needs). |
 | Pacer connected | MIDI access is granted and a Pacer is on USB. Click it to see its ports and firmware in the device drawer. |
 | No Pacer found | MIDI access is granted but no Pacer is plugged in, or its ports aren't chosen. Click it to choose them. |
-| Web MIDI isn't available in this browser | Use a Chromium-based browser such as Chrome, Edge, Opera or Brave. |
+| Web MIDI isn't available in this browser | Use a browser that supports Web MIDI with SysEx. |
 | MIDI access denied | The browser refused. **Retry** asks again, though you may need to allow MIDI in the site settings first. |
 
 ![The header with a Pacer connected](../images/header-connected.png)

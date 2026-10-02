@@ -1,5 +1,5 @@
 /*
- * A thin wrapper over the Web MIDI API (browser-only; Chromium-based browsers support SysEx).
+ * A thin wrapper over the Web MIDI API (browser-only).
  * Typed against minimal structural interfaces rather than the DOM's MIDIAccess types, so tests
  * can pass fakes and nothing else in the app touches `navigator` directly.
  */
@@ -117,7 +117,7 @@ export class MidiConnection {
 export type ConnectResult =
   { kind: "connected"; connection: MidiConnection } | { kind: "unsupported" } | { kind: "denied"; message: string };
 
-/** The browser's requester, or undefined where Web MIDI isn't available (Firefox without an add-on, Safari, Node). */
+/** The browser's requester, or undefined where Web MIDI isn't available (some browsers, Node). */
 export function browserMidiRequester(): MidiAccessRequester | undefined {
   const nav = globalThis.navigator as (Navigator & { requestMIDIAccess?: unknown }) | undefined;
   if (typeof nav?.requestMIDIAccess !== "function") return undefined;

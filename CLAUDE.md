@@ -1232,10 +1232,11 @@ pnpm install
 pnpm dev
 ```
 
-Opens the Vite dev server. Requires a Chromium-based browser (Chrome, Edge,
-Opera) for Web MIDI + SysEx support — Firefox/Safari support is
-inconsistent. The simulator works with no hardware attached; connecting a
-real Pacer over USB enables live send/receive against the device.
+Opens the Vite dev server. MIDI needs a browser with Web MIDI and SysEx; the
+docs and the app say just that and **don't name browsers**, since any list
+would be incomplete and go stale. The simulator works with no hardware
+attached; connecting a real Pacer over USB enables live send/receive against
+the device.
 
 ## Planned UI reorganization (agreed, not built)
 

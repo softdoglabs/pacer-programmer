@@ -9,8 +9,8 @@ the Pacer until you send it.
 The Pacer holds whatever it was last sent. The app reads it with **Pull** and
 writes it with **Send**, and it never does either on its own.
 
-Pulling and sending both need MIDI with SysEx permission, in a Chromium-based
-browser (Chrome, Edge, Opera or Brave). Everything else, including the
+Pulling and sending both need MIDI with SysEx permission, so your browser has
+to support Web MIDI with SysEx. Everything else, including the
 simulator, programming, the map, and importing and exporting files, works
 without MIDI.
 

@@ -7,7 +7,7 @@ grouped by where you'll see them.
 
 | You see | Meaning | Try |
 |---|---|---|
-| Web MIDI isn't available in this browser | The browser has no Web MIDI. | Chrome, Edge, Opera or Brave. Firefox and Safari don't support SysEx reliably. |
+| Web MIDI isn't available in this browser | The browser has no Web MIDI. | Try a browser that supports Web MIDI with SysEx. |
 | MIDI access denied | The browser, or you, refused. | Allow MIDI (and SysEx) in the site's settings, then **Retry**. |
 | SysEx off | MIDI was granted without SysEx. | Re-allow with SysEx. Without it the Pacer can't be read or written, and MMC steps aren't sent. |
 | No Pacer found | No port with "Pacer" in its name, or the ports aren't chosen. | Check the USB cable, then pick the ports in the [device drawer](devices-and-files.md#the-device-drawer). |

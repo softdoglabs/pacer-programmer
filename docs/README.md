@@ -29,7 +29,7 @@ There's no project file. The app reads and writes the Pacer's own `.syx` dump,
 and the format is [documented](reference/programming-the-pacer.md) well enough
 that you (or an AI) can read and write it too.
 
-You'll need Chrome, Edge, Opera or Brave. MIDI is only needed to reach real
+To use MIDI, your browser needs to support Web MIDI with SysEx. MIDI is only needed to reach real
 gear and the Pacer; everything else works without it.
 
 ## Where to start

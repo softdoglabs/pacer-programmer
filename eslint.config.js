@@ -51,6 +51,11 @@ export default tseslint.config(
     },
   },
   {
+    // Tooling that runs under Node, outside the app: the docs' screenshot script.
+    files: ["scripts/**/*.mjs"],
+    languageOptions: { globals: globals.node },
+  },
+  {
     files: ["src/pacer/**/*.ts"],
     rules: { "no-restricted-imports": ["error", noUiInDomain] },
   },

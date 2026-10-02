@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "docs:screenshots": "node scripts/docs-screenshots.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

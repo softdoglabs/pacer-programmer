@@ -1,9 +1,10 @@
 # The simulator: your rig, without the Pacer
 
 The Pacer on screen runs your configuration the same way the Pacer's firmware
-does. Every step type works, every control mode, the lights, preset changes,
-and the MIDI each preset sends when it loads. It can also send that MIDI to
-your real gear.
+does. Step types, control modes, the lights, preset changes and the MIDI each
+preset sends when it loads all behave as they would on the hardware (there are
+a few exceptions, listed [at the end](#what-it-cant-do)). It can also send
+that MIDI to your real gear.
 
 So you can program a switch, press it on screen, and hear your modeller, synth
 or DAW respond. You don't need a Pacer connected, nothing gets written to one,
@@ -61,8 +62,9 @@ The loop goes like this:
    truth.
 4. Repeat until it's right, then save and send.
 
-Everything is undoable until you send, and nothing you do in the simulator
-touches the Pacer.
+Every edit can be undone, and nothing you do here touches the Pacer until you
+send it. (Undo only changes what's on screen, though. Once something has been
+sent, the Pacer keeps it until you send again.)
 
 ### It remembers, like the Pacer does
 

@@ -72,7 +72,8 @@ load a file.
 
 ## What's simulated
 
-- Every step type, in all three control modes, on press and release.
+- Every step type, on press and release, in All at once and Sequence modes.
+  (External step mode is listed [below](#what-isnt-simulated).)
 - The lights: which light, which colour, and bright or dim, following the same
   rules the hardware does (see
   [Programming the Pacer › Lights](programming-the-pacer.md#lights)).

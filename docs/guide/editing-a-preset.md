@@ -22,7 +22,10 @@ Tap the switch you want, and the faceplate gives way to the switch editor.
 
 ## 3. Set what it does
 
-![The switch editor](../images/switch-editor.png)
+![The switch editor, with a CC Toggle on step 1 and a program change on step 2](../images/switch-editor-plain.png)
+
+The [Program mode reference](../reference/program-mode.md#the-switch-editor)
+labels every part of this screen.
 
 Start with step 1: pick its type (Program + Bank, CC Toggle, Note and so on),
 its channel, and its values.
@@ -47,8 +50,9 @@ Press the live copy of the switch on the right of the editor. It sends, and its
 light changes, the same way the Pacer's would. If you've picked a
 [simulated MIDI output](the-simulator.md), your gear responds too.
 
-The picker along the top moves between switches, and the chooser next to it
-moves between presets. The **✕** takes you back to the faceplate.
+The row of buttons along the top picks a different switch on the same preset,
+and the preset name at the start of that row (`A1 PRGM1`) opens the preset
+chooser. The **✕** at the end takes you back to the faceplate.
 
 ## 6. Name the preset
 
@@ -57,7 +61,8 @@ type up to five characters, and press Enter.
 
 ## 7. Keep it
 
-Undo and Redo (⌘Z and ⇧⌘Z) step back and forth through every change.
+Undo and Redo (⌘Z and ⇧⌘Z on a Mac, Ctrl+Z and Ctrl+Shift+Z elsewhere) step
+back and forth through every change.
 **Save…** keeps the configuration as a snapshot in this browser, and
 **Send to Pacer…** writes the presets you changed to the Pacer. See
 [Saving and sending](saving-and-sending.md).

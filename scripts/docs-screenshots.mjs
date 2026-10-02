@@ -504,6 +504,8 @@ const scenes = {
       { n: 5, box: hint, at: "left" },
     ];
     await p.shot("switch-anatomy", { around: below, pad: 28, callouts });
+    // Unnumbered, for the guide, which explains the lights in prose rather than with a key.
+    await p.shot("switch-anatomy-plain", { around: below, pad: 28 });
   },
 
   /** Holding [Preset]: the firmware's preset select, waiting for a bank and a number. */
@@ -595,6 +597,8 @@ const scenes = {
       { n: 13, box: await p.rect("button", "+ Add step"), at: "left" },
     ];
     await p.shot("switch-editor", { around: await p.rect('[aria-label="Programming Stomp 1"]'), pad: 16, callouts });
+    // Unnumbered, for the guide; the key lives in the reference.
+    await p.shot("switch-editor-plain", { around: await p.rect('[aria-label="Programming Stomp 1"]'), pad: 16 });
 
     // The colour picker, opened on the first colour.
     await p.click('button[aria-label^="While CC 52 = 127"]');

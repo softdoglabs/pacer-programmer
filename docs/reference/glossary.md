@@ -21,13 +21,6 @@ See [Programming the Pacer › The Current slot](programming-the-pacer.md#the-cu
 **Dump**: The Pacer's whole configuration as SysEx messages, the format of a
 `.syx` file.
 
-**Edit scope**: Whether an edit in Program mode goes to every preset of a
-state or only the one in front of you. See
-[Editing a state](program-mode.md#editing-a-state-several-presets-at-once).
-
-**Entrant**: A preset with a switch that jumps to a given preset. Plain
-stepping doesn't count.
-
 **Legend**: The printed text or icons above a switch's bar. On the Pacer
 every legend is a full-colour light.
 
@@ -47,7 +40,7 @@ jumping back to its own origin.
 **Route**: A switch that changes preset, drawn as an arrow on the map.
 
 **Simulated MIDI output**: Where the simulator sends what its switches
-send. That's your rig, never the Pacer.
+send. That's normally your rig rather than the Pacer.
 
 **Snapshot**: A configuration saved in this browser.
 

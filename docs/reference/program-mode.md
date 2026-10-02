@@ -117,6 +117,7 @@ depends on the type:
 | Note, Note Toggle | While the note is on | Otherwise |
 | Program + Bank | While this program is active on the channel | Otherwise |
 | Preset Select (to a user preset) | Always (the second colour isn't used) | |
+| Preset Select (to Track or Transport) | While that DAW preset is active, in light blue | Dark otherwise |
 | Preset Inc/Dec | Never, since the light stays dark | |
 | Anything else | While the switch is held ("On color") | Otherwise ("Off color") |
 
@@ -206,7 +207,8 @@ new preset for a state that comes back (one copy for each place it's entered
 from), it offers the spare slots first. A preset only counts as spare if it
 does nothing except step to its neighbours.
 
-Like every other edit, clearing can be undone until you send.
+Like every other edit, clearing can be undone. Undo only changes the app's
+copy, though, so if you've already sent the cleared preset, send again.
 
 ## Editing a state: several presets at once
 

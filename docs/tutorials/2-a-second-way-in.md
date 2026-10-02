@@ -58,7 +58,7 @@ it takes you back to A1.
 
 Every new way into a state that returns costs one more copy, and so one more
 slot. Twelve main presets that each open the looper would need twelve copies,
-which is the whole Pacer. The map works out the cost before it writes
+and twelve mains plus twelve copies fills all 24 slots. The map works out the cost before it writes
 anything, asks you for a slot each time, and won't build a design that doesn't
 fit. See [Slot budget](../reference/preset-map.md#slot-budget).
 

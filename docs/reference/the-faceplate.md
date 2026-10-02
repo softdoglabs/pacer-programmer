@@ -13,8 +13,8 @@ instead (see [Program mode](program-mode.md)).
 | 2 | Stompswitches A–D | The back row. You program them like any other switch, and in preset select they choose a bank. |
 | 3 | Stompswitches 1–6 | The front row. Programmable, and in preset select they load a preset from the chosen bank. |
 | 4 | Hint | The app's note of what a press will do on this preset, like `PC0`, `→track` or `P+`. It isn't on the real hardware. It's there so you can read a preset at a glance. |
-| 5 | Display | The preset's name on the top line and its number on the bottom line, as on the Pacer. In Program mode you edit the name here. |
-| 6 | Preset chooser | Opens a grid of all 24 presets so you can jump to any of them (see [below](#the-preset-chooser)). |
+| 5 | Name | The preset's name, on the display's top line as on the Pacer. In Program mode you edit it here. |
+| 6 | Number | The preset's number, on the bottom line. Click it (or the badge in its corner) to open the preset chooser, a grid of all 24 presets you can jump between (see [below](#the-preset-chooser)). |
 
 Under each switch is its printed marking. The letters A–D and numbers 1–6 are
 on the real unit too. The encoder beside the display is only drawn for

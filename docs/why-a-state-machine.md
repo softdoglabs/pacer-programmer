@@ -19,8 +19,8 @@ A1.
 
 The fix is one looper preset per main preset. One copy's A goes back to A1,
 another's goes back to A2, and so on. The copies are identical except for that
-one target. With twelve main presets you need twelve copies, which is the
-whole device.
+one target. With twelve main presets you need twelve copies of the looper,
+and twelve mains plus twelve copies is all 24 slots.
 
 And then you have to keep them identical. Change a colour, move undo to
 another switch, or fix a CC, and you make the same change on every copy, in an
@@ -60,8 +60,9 @@ and tells you why. I'd much rather find that out at my desk than on stage.
 Finally, nothing else gets saved. There's no project file sitting next to your
 configuration. The design is worked out from the presets every time they're
 loaded, so the `.syx` you send to the Pacer is the whole story. Pull it back a
-year from now, or edit it on the Pacer's own front panel, and the map still
-shows your design.
+year from now and the map still shows your design. That holds even if you've
+tweaked it on the Pacer's own front panel, as long as the copies still match
+each other.
 
 ## When you don't need it
 

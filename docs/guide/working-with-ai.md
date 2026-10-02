@@ -31,7 +31,9 @@ up themselves, but attaching it is more reliable.
 Pull it from the Pacer, or open the snapshot you're working on. If you've
 made edits, save them first. Then, in the
 [device drawer](../reference/devices-and-files.md#the-device-drawer), click
-**Export .syx** on the snapshot.
+**Export .syx** on the snapshot. (The built-in factory defaults don't have an
+Export button, so if that's what you're starting from, pull from your Pacer
+instead, or make an edit and save it as a snapshot first.)
 
 Hang on to that snapshot. It's your way back if things go sideways.
 
@@ -88,9 +90,8 @@ presets share it.
    you. It opens as a new snapshot, and your original is left alone. If the
    import is refused, the message says which message is broken (a bad
    checksum, say, or an unterminated message). Paste that back to the AI.
-2. Open the presets it changed. The
-   [preset chooser](../reference/the-faceplate.md#the-preset-chooser) shows
-   which ones, and Program mode spells out each switch's steps.
+2. Open the presets you asked it to change, and check its table of changes
+   against them. Program mode spells out each switch's steps.
 3. Choose your gear as the [simulated MIDI output](the-simulator.md), and play
    it. Press every switch the AI touched and listen. The
    [output log](../reference/simulate-mode.md#the-output-log) shows each

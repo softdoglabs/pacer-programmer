@@ -170,7 +170,8 @@ other printable characters may not show as typed on the 14-segment display.
 
 ## Controls: modes, steps, lights
 
-Each switch or pedal (`obj` `0D`–`1B`, `36`, `37`) has three kinds of message.
+Each switch or pedal (`obj` `0D`–`1B`, `36`, `37`) has a control mode and six
+steps, and stompswitches also have a light setting per step.
 
 ### Control mode (element `60`)
 
@@ -411,7 +412,8 @@ byte, except at 127, where it sends the full 16383. Confirmed on hardware.
 
 Each preset has sixteen messages it sends whenever it's recalled (`obj` `7E`).
 Message *n* (1–16) occupies five elements starting at `base = (n − 1) × 6 + 1`,
-sent together:
+sent together. The blocks are six elements apart, like a step's, but the sixth
+element of each block isn't used:
 
 | Element | Field |
 |---|---|

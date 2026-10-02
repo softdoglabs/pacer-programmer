@@ -40,9 +40,8 @@ the modes, the switch you were editing, and the device drawer.
 
 ![The header with a Pacer connected](../images/header-connected.png)
 
-You don't need MIDI at all to use the simulator or to program, since the app
-works entirely on screen. MIDI is only for sending to real gear and for
-talking to the Pacer.
+You don't need MIDI to program or to play the simulator on screen. MIDI is
+only for sending to real gear and for talking to the Pacer.
 
 ## The context bar
 
@@ -74,8 +73,9 @@ drawer. See [The simulator](../guide/the-simulator.md).
 
 - **Undo** and **Redo**, or ⌘Z and ⇧⌘Z (Ctrl on Windows). The shortcuts don't
   apply while you're typing in a field.
-- **Changes: All N presets / this preset only** only appears when the preset
-  you're on is one of several that behave alike. See
+- **Changes: All N presets / A3 only** (with your preset's slot in place of
+  A3) only appears when the preset you're on is one of several that behave
+  alike. See
   [Editing a state](program-mode.md#editing-a-state-several-presets-at-once).
 - **unsaved** means you've changed something since the configuration was
   opened or last saved.

@@ -68,9 +68,9 @@ find out on the next load.
 | *That would stop A3 coming back to where it was entered from…* | The edit would make a return read as an ordinary jump: typically, a second route into one copy of a returning state. | Route into the state from the state that should enter it, so it gets its own copy. |
 | *That would leave something unreadable: …* | The result couldn't be read back as states and routes. The rest of the message says what. | Nothing was written, so there's nothing to undo. Try the change another way. |
 | *…is missing a jump its state has elsewhere.* | One copy of a state lacks a route the others have. | Usually after editing one copy alone; edit the state as a whole, or let the copy leave the state. |
-| *The copies of "X" lead to different states from the same switch…* | Copies disagree about where a switch goes. | Make them agree, on the map or with *Changes: this preset only*. |
+| *The copies of "X" lead to different states from the same switch…* | Copies disagree about where a switch goes. | Make them agree, on the map or by editing one copy with the *only* choice under *Changes*. |
 | *X has something in it. Clear it first, or pick an empty one.* | **Move to…** only moves into empty presets. | Clear the slot first. |
-| *Moving A3 to D6 would change what the configuration does…* | The move isn't a pure renumbering. | Please report it, since moves are meant to always be safe. |
+| *Moving A3 to D6 would change what the configuration does…* | The move isn't a pure renumbering. | Please report it as a bug, since moves are meant to always be safe. |
 
 ## In the output log
 

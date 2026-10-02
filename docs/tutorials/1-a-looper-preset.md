@@ -13,7 +13,9 @@ Start from the factory defaults: open the
 1. Switch to **Program**.
 2. Click the badge on the lower half of the display and choose **C1**.
 3. Under the faceplate, click **Clear preset…** and confirm. C1 is now called
-   `EMPTY`, and none of its switches do anything.
+   `EMPTY`, and none of its switches do anything, including C and D, which
+   used to step to the neighbouring presets. That's fine for a looper: switch
+   A will be the way out.
 4. Tap the small pencil next to `EMPTY` on the display, type `LOOPR`, and
    press Enter.
 
@@ -26,8 +28,8 @@ Tap switch **1**. In the editor:
 2. Set **CC#** to `53`, **Press** to `127` and **Release** to `0`. Leave the
    channel on *Global*.
 3. For the colours, pick **2A Red** for *While CC 53 = 127* and **2B Dim Red**
-   for *Otherwise*. The switch will sit at dim red and flash bright while you
-   press it.
+   for *Otherwise*. The switch will sit at dim red and light up bright while
+   you hold it down.
 
 ![Switch 1 on LOOPR: CC 53, red](../images/t1-loopr-switch-1.png)
 

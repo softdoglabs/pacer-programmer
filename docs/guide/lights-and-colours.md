@@ -1,10 +1,11 @@
 # Lights and colours
 
-Every switch on the Pacer has a colour bar, and the front-row switches also
-have two legends above the bar. All of them are full-colour lights. For each
-step, you pick which light it uses and what colours it shows.
+Every switch on the Pacer has a colour bar. Above it, the front-row switches
+have two legends (a text one and an icon one), and the back-row switches have
+one printed legend. All of them are full-colour lights. For each step, you pick
+which light it uses and what colours it shows.
 
-![One switch's lights](../images/switch-anatomy.png)
+![A front-row switch: the text legend, the icon legend, and the bar lit orange](../images/switch-anatomy-plain.png)
 
 ## One light at a time
 
@@ -26,8 +27,10 @@ did:
 | CC Toggle, CC Trigger | while the CC holds the step's first value | otherwise |
 | Note, Note Toggle | while the note is on | otherwise |
 | Program + Bank | while this program is the current one on its channel | otherwise |
-| Preset Select | always | (not used) |
+| Preset Select to one of your presets | always | (not used) |
+| Preset Select to Track or Transport | while that DAW preset is active, in light blue | |
 | Preset Inc/Dec | the light stays dark | |
+| anything else | while you hold the switch | otherwise |
 
 So a CC Toggle with green and red is green while its effect is on and red
 while it's off. It stays that way when you change preset and come back,
@@ -47,8 +50,9 @@ dark.
 
 ## Which light
 
-The **Light** setting picks the bar, the icon legend or the text legend. A
-legend lit by a step takes the step's colour, whatever colour it's printed in.
+The **Light** setting picks the bar or one of the legends. You're only offered
+the lights that switch has. A legend lit by a step takes the step's colour,
+whatever colour it's printed in.
 
 The firmware also lights legends on its own to show what a switch is assigned
 to: the arrows on C and D while they step through presets, *Track* on A while A

@@ -215,6 +215,52 @@ class Page {
     `);
   }
 
+  /**
+   * The tutorials' looper, built from the factory set the way the tutorials do it by hand.
+   * Stage 1: LOOPR in C1 — the looper's functions on 1-6 and B, A going back to A1 — and A1's A
+   * leading to it. Stage 2 adds A2 as a second way in, routed on the map, its copy in D6.
+   */
+  async loadLooperTutorial(stage) {
+    await this.app(`
+      const C = d.constants.ControlId;
+      const T = d.constants.SwitchMessageType;
+      const e = d.editing;
+      let c = d.factory.loadFactoryDefaults();
+      c = e.renamePreset(e.clearPreset(c, 13), 13, "LOOPR");
+      const pads = [
+        [C.Stompswitch1, 53, 3], [C.Stompswitch2, 54, 13], [C.Stompswitch3, 56, 7],
+        [C.Stompswitch4, 51, 17], [C.Stompswitch5, 55, 21], [C.Stompswitch6, 49, 15],
+        [C.StompswitchB, 52, 5],
+      ];
+      for (const [id, cc, colour] of pads) {
+        c = e.setStepType(c, 13, id, 1, "switch", T.CcTrigger);
+        c = e.updateStep(c, 13, id, 1, { data: [cc, 127, 0], channel: 0 });
+        c = e.updateStepLed(c, 13, id, 1, { activeColor: colour, inactiveColor: colour + 1 });
+      }
+      for (const [from, to] of [[13, 1], [1, 13]]) {
+        c = e.setJump(c, from, C.StompswitchA, 1, to);
+        c = e.updateStepLed(c, from, C.StompswitchA, 1, { activeColor: 23, inactiveColor: 24 });
+      }
+      if (${stage} >= 2) {
+        c = e.clearPreset(c, 24);
+        const m = d.analysis.machineOf(c);
+        const result = d.authoring.editRoute(c, {
+          fromStateId: d.analysis.stateContaining(m, 2).state.id,
+          controlId: C.StompswitchA,
+          stepNumber: 1,
+          toStateId: d.analysis.stateContaining(m, 13).state.id,
+          asReturn: true,
+          replace: true,
+        }, [24]);
+        if (!result.ok) throw new Error(result.error);
+        c = result.config;
+      }
+      // As on a real device, the working copy (slot 0) is the loaded preset, A1.
+      c = { ...c, presets: { ...c.presets, 0: { ...structuredClone(c.presets[1]), index: 0 } } };
+      d.store.getState().loadConfig(c, "Looper tutorial");
+    `);
+  }
+
   /** Back to the factory defaults in Simulate, nothing open, nothing remembered. */
   async reset() {
     await this.key("Escape");
@@ -296,6 +342,15 @@ class Page {
       });
     }
     await wait(350);
+  }
+
+  /** The centre of one of a map state's connection dots (`s-r`, `t-l`…), found by the state's name. */
+  async handle(name, id) {
+    return this.eval(`(() => {
+      const node = [...document.querySelectorAll(".react-flow__node")].find((n) => n.textContent.includes(${JSON.stringify(name)}));
+      const b = node.querySelector('[data-handleid="${id}"]').getBoundingClientRect();
+      return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+    })()`);
   }
 
   /** A real drag, in steps, from one point to another (React Flow needs the intermediate moves). */
@@ -644,13 +699,7 @@ const scenes = {
       s.setUiMode("map");
     `);
     await wait(800);
-    const handle = (name, id) =>
-      p.eval(`(() => {
-        const node = [...document.querySelectorAll(".react-flow__node")].find((n) => n.textContent.includes(${JSON.stringify(name)}));
-        const b = node.querySelector('[data-handleid="${id}"]').getBoundingClientRect();
-        return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
-      })()`);
-    await p.drag(await handle("MAIN1", "s-r"), await handle("LOOPR", "t-l"));
+    await p.drag(await p.handle("MAIN1", "s-r"), await p.handle("LOOPR", "t-l"));
     await p.click('[role="radio"]', "Comes back here");
     await p.shot("route-choice", { around: await p.rect('[role="dialog"]'), pad: 8 });
     await p.key("Escape");
@@ -703,6 +752,82 @@ const scenes = {
     await p.key("Escape");
     await p.click("button", "Send to Pacer…");
     await p.shot("send-dialog", { around: await p.rect('[role="dialog"]'), pad: 8 });
+    await p.key("Escape");
+  },
+
+  /** Tutorial 1: a looper preset in C1, programmed by hand, and the way in from A1. */
+  async "tutorial-1"(p) {
+    await p.resize(1500);
+    await p.loadLooperTutorial(1);
+    await p.app(`
+      const s = d.store.getState();
+      s.jumpToPreset(13);
+      s.setUiMode("program");
+      s.selectControl(d.constants.ControlId.Stompswitch1);
+    `);
+    await p.shot("t1-loopr-switch-1", { around: await p.rect('[aria-label="Programming Stomp 1"]'), pad: 12 });
+    await p.app(`
+      const s = d.store.getState();
+      s.jumpToPreset(1);
+      s.selectControl(d.constants.ControlId.StompswitchA);
+    `);
+    await p.shot("t1-a1-switch-a", { around: await p.rect('section[aria-label="Step 1"]'), pad: 12 });
+    await p.app(`
+      const s = d.store.getState();
+      s.selectControl(undefined);
+      s.setUiMode("simulate");
+      s.jumpToPreset(13);
+    `);
+    await p.shot("t1-loopr-faceplate", { around: await p.rect('[aria-label^="Pacer faceplate"]'), pad: 8 });
+    await p.app(`d.store.getState().setUiMode("map")`);
+    await wait(800);
+    const looper = await p.rect(".react-flow__node", "LOOPR");
+    const prgm = await p.rect(".react-flow__node", "PRGM1");
+    await p.shot("t1-map", { around: [looper, prgm], pad: 40 });
+  },
+
+  /** Tutorial 2: a second way in, routed on the map — the copy it costs, and the state it makes. */
+  async "tutorial-2"(p) {
+    await p.loadLooperTutorial(1);
+    await p.app(`
+      const s = d.store.getState();
+      s.applyEdit((c) => d.editing.clearPreset(c, 24));
+      s.setUiMode("map");
+    `);
+    await wait(800);
+    await p.drag(await p.handle("PRGM2", "s-r"), await p.handle("LOOPR", "t-l"));
+    await p.click('[role="dialog"] button[aria-haspopup]'); // the first is On switch
+    await p.click('[role="option"]', "A — selects the Track preset");
+    await p.click('[role="dialog"] label', "Replace what A does");
+    await p.click('[role="radio"]', "Comes back here");
+    await p.shot("t2-route", { around: await p.rect('[role="dialog"]'), pad: 8 });
+    await p.click('[role="dialog"] button', "Add route");
+    await wait(800);
+    await p.shot("t2-map", {
+      around: await p
+        .rects(".react-flow__node, .react-flow__edgelabel-renderer div")
+        .then((boxes) => boxes.filter((b) => b.y < 400)),
+      pad: 30,
+    });
+    await p.click(".react-flow__node", "LOOPR");
+    await p.shot("t2-details", { around: await p.rect('section[aria-label^="LOOPR"]'), pad: 8 });
+  },
+
+  /** Tutorial 3: editing the looper once, and both copies following. */
+  async "tutorial-3"(p) {
+    await p.loadLooperTutorial(2);
+    await p.app(`
+      const s = d.store.getState();
+      s.jumpToPreset(24);
+      s.setUiMode("program");
+    `);
+    const bar = await p.rects("header + div > *, header + div > * > *");
+    await p.shot("t3-scope", { around: bar });
+    const display = await p.rects('[data-testid="display-line1"], [data-testid="display-line2"]');
+    await p.shot("t3-display", { around: display, pad: 30 });
+    await p.click('[aria-label$="choose another"]');
+    await p.click('[role="radio"]', "By state");
+    await p.shot("t3-chooser", { around: await p.rect('[role="dialog"]'), pad: 8 });
     await p.key("Escape");
   },
 

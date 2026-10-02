@@ -1193,9 +1193,29 @@ no hover-only UI, for tablets.
 The user documentation lives in `docs/` as Markdown, rendered by GitHub.
 **The app links to it rather than carrying a copy** (`ui/DocsLink.tsx`, the
 header's Docs link): one canonical page per topic, nothing to keep in step,
-and nothing a search engine sees twice. `REPOSITORY_URL` there is the one
-place the address is written. The repository is private for now, so the
-link resolves for the owner only until it's published.
+and nothing a search engine sees twice. The repository is private for now,
+so the link resolves for the owner only until it's published.
+- **The address is written in two places**: `REPOSITORY_URL` in the app, and
+  the raw-file URL of `reference/programming-the-pacer.md` in
+  `guide/working-with-ai.md`'s prompt (an AI fetches it from there, so it has
+  to be absolute). The repository may move to an organization before it's
+  published; update both when it does.
+- **Layout**: `reference/` is the manual (one page per part of the app, each
+  led by an annotated screenshot, plus troubleshooting and a glossary),
+  `guide/` is short task pages, `tutorials/` builds the looper from factory
+  defaults, and `why-a-state-machine.md` is the rationale. `README.md` is the
+  entry point the app links to.
+- **Screenshots are generated**, never hand-made: `pnpm docs:screenshots
+  [scene]` drives the real app in headless Chrome
+  (`scripts/docs-screenshots.mjs`). MIDI is staged with the test suite's
+  fakes, including a Pacer that answers the identity inquiry and a full pull.
+  The tutorial scenes build their configuration with the same editing and
+  authoring functions the UI calls, so each picture is what following the
+  steps produces. Re-run a scene after changing the UI it shows.
+- **Checked by tests**: `src/test/docsLinks.test.ts` fails on any relative
+  link or `#anchor` in `docs/` that doesn't resolve (GitHub's slugging), and
+  `protocol/__tests__/docsExamples.test.ts` decodes every byte example in
+  Programming the Pacer.
 
 ### Running locally
 

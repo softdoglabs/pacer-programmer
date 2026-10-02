@@ -27,9 +27,9 @@ to open the drawer:
 | 2 | Import .syx | Opens a `.syx` file as a new snapshot. |
 | 3 | Pacer ports | The Pacer's MIDI input and output. The app picks any port with "Pacer" in its name; if yours is named differently, choose them by hand. |
 | 4 | Firmware | What the Pacer says when asked who it is. The app asks automatically whenever its ports show up. |
-| 5 | Factory defaults | The Pacer's factory configuration, built into the app. It's always there and can't be changed, so edits to it are saved as a new snapshot. |
+| 5 | Factory defaults | The Pacer's factory configuration, built into the app. It's always there and can't be changed, so edits to it are saved as a new snapshot. You can export it like any other. |
 | 6 | The open configuration | Highlighted. Click any other row to open that configuration instead. |
-| 7 | Rename, Export .syx, Delete | One set for each snapshot. Delete asks you to click again to confirm. |
+| 7 | Rename, Export .syx, Delete | One set for each snapshot (the factory defaults only have Export). Delete asks you to click again to confirm. |
 
 Until you've granted MIDI access, the drawer shows a **Connect MIDI** button
 where the ports would be.

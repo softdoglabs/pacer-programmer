@@ -31,9 +31,8 @@ up themselves, but attaching it is more reliable.
 Pull it from the Pacer, or open the snapshot you're working on. If you've
 made edits, save them first. Then, in the
 [device drawer](../reference/devices-and-files.md#the-device-drawer), click
-**Export .syx** on the snapshot. (The built-in factory defaults don't have an
-Export button, so if that's what you're starting from, pull from your Pacer
-instead, or make an edit and save it as a snapshot first.)
+**Export .syx** on the snapshot. The factory defaults have one too, if
+that's where you're starting.
 
 Hang on to that snapshot. It's your way back if things go sideways.
 

@@ -734,7 +734,7 @@ const scenes = {
           at: "right",
         },
         { n: 4, box: await p.rect("span", "Firmware"), at: "right" },
-        { n: 5, box: await p.rect("li", "Factory defaults"), at: "inside-right" },
+        { n: 5, box: await p.rect("li", "Factory defaults"), at: "corner" },
         { n: 6, box: await p.rect("li", "looper-from-claude"), at: "corner" },
         {
           n: 7,

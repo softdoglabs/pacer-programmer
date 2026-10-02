@@ -5,7 +5,8 @@ import { hasUnsavedEdits } from "../store/editingSlice";
 import { isSendingToPacer } from "../store/configurationsSlice";
 import { usePacerStore } from "../store/pacerStore";
 import { PullControls } from "./configurations/DeviceControls";
-import { EntryRow, OpenArea, rowClass, type Guard } from "./configurations/EntryRow";
+import { factoryDefaultBytes } from "../pacer/factoryDefaults";
+import { EntryRow, ExportButton, OpenArea, rowClass, type Guard } from "./configurations/EntryRow";
 
 /** Saved configurations: pull from a Pacer or import files, then switch between snapshots. */
 export function ConfigurationsPanel() {
@@ -74,6 +75,7 @@ export function ConfigurationsPanel() {
             active={activeConfigId === undefined}
             onOpen={() => guard(openFactoryDefaults)}
           />
+          <ExportButton fileName="Factory defaults" bytes={factoryDefaultBytes} />
         </li>
         {library.entries.map((entry) => (
           <EntryRow key={entry.id} entry={entry} guard={guard} />

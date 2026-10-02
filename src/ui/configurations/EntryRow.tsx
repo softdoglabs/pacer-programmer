@@ -14,6 +14,20 @@ function downloadBytes(fileName: string, bytes: Uint8Array) {
   URL.revokeObjectURL(url);
 }
 
+/** Downloads a configuration as a `.syx` file. Every row has one, the built-in factory defaults included. */
+export function ExportButton({ fileName, bytes }: { fileName: string; bytes: () => Uint8Array }) {
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      title="Download this configuration as a .syx file"
+      onPress={() => downloadBytes(`${fileName}.syx`, bytes())}
+    >
+      Export .syx
+    </Button>
+  );
+}
+
 export const rowClass = (active: boolean) =>
   cn(
     "flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border pr-2 transition-colors",
@@ -116,14 +130,7 @@ export function EntryRow({ entry, guard }: { entry: LibraryEntry; guard: Guard }
         >
           Rename
         </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          title="Download this snapshot as a .syx file"
-          onPress={() => downloadBytes(`${entry.name}.syx`, savedConfigBytes(entry.id))}
-        >
-          Export .syx
-        </Button>
+        <ExportButton fileName={entry.name} bytes={() => savedConfigBytes(entry.id)} />
         <Button
           size="sm"
           variant={confirmingDelete ? "destructive" : "ghost"}

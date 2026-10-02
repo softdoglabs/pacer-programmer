@@ -1139,7 +1139,9 @@ no hover-only UI, for tablets.
     localStorage. It holds the raw SysEx bytes as received, plus name,
     source, date and preset count.
   - Snapshots can be opened, renamed, exported as `.syx`, or deleted. The
-    built-in factory defaults are always listed.
+    built-in factory defaults are always listed, and export like any other
+    row (the fixture's bytes as captured, `factoryDefaultBytes`), since
+    they're the natural starting point for handing a dump to an AI.
   - The last-opened configuration is reopened on reload.
   - Raw bytes rather than the JSON mirror: they're canonical and lossless,
     and about 3x smaller, which matters because localStorage allows about

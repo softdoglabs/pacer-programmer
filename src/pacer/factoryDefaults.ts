@@ -8,6 +8,11 @@ import type { PacerConfig } from "./protocol/types";
  * See `fixtures/README.md` for the dump's provenance and its open licensing question.
  */
 export function loadFactoryDefaults(): PacerConfig {
+  return decodeSysex(factoryDefaultBytes());
+}
+
+/** The factory dump exactly as captured, for exporting it like any other snapshot. */
+export function factoryDefaultBytes(): Uint8Array {
   const base64 = factoryPresetsDataUrl.slice(factoryPresetsDataUrl.indexOf(",") + 1);
-  return decodeSysex(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)));
+  return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 }

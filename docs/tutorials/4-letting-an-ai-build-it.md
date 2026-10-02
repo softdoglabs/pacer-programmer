@@ -6,9 +6,8 @@ every effect on its own switch with matching colours, it's an evening's work.
 An AI assistant can do that part from your gear's MIDI chart, and this app is
 where you check what it did.
 
-1. Get your configuration as a `.syx`. Pull it from your Pacer (or open a
-   snapshot you've saved), then click **Export .syx** on it in the device
-   drawer. The built-in factory defaults can't be exported directly.
+1. Export the factory defaults (or your own configuration) as a `.syx`: open
+   the device drawer and click **Export .syx** on its row.
 2. Ask an assistant to build LOOPR in C1 and route A1 to it, using the prompt
    in [Working with an AI](../guide/working-with-ai.md#example-a-looper-preset-for-the-quad-cortex).
    It points the AI at the format reference.

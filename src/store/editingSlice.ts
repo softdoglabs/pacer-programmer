@@ -1,4 +1,5 @@
 import { recoverMachine } from "../pacer/analysis";
+import { movePreset } from "../pacer/authoring";
 import type { PacerConfig } from "../pacer/protocol/types";
 import type { PacerStore } from "./pacerStore";
 
@@ -53,6 +54,11 @@ export interface EditingSlice {
   applyPresetEdit: (edit: (config: PacerConfig, presetIndex: number) => PacerConfig) => void;
   editScope: EditScope;
   setEditScope: (scope: EditScope) => void;
+  /**
+   * Moves a preset to an empty slot, taking every route that named it along (see `movePreset`).
+   * Returns why it couldn't, or undefined when it did — a refusal has to reach whoever asked.
+   */
+  movePresetToSlot: (from: number, to: number) => string | undefined;
   undo: () => void;
   redo: () => void;
 }
@@ -91,6 +97,22 @@ export function createEditingSlice(set: Set, get: Get): EditingSlice {
 
     editScope: "state",
     setEditScope: (editScope) => set({ editScope }),
+
+    movePresetToSlot: (from, to) => {
+      const { board, applyEdit } = get();
+      const result = movePreset(board.config, from, to);
+      if (!result.ok) return result.error;
+      applyEdit(() => result.config);
+      /*
+       * The preset didn't change, its number did. Left alone, the simulator would sit on the slot
+       * just emptied — a preset that now does nothing, presented as the one you were editing. It
+       * follows quietly rather than through a recall: nothing was selected, so nothing should fire.
+       */
+      if (board.activePresetIndex === from) {
+        set((s) => ({ board: { ...s.board, activePresetIndex: to } }));
+      }
+      return undefined;
+    },
 
     applyPresetEdit: (edit) => {
       const { board, editScope, applyEdit } = get();

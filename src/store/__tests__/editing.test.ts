@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { compileMachine, recoverMachine } from "../../pacer/analysis";
-import { renamePreset, setStepType } from "../../pacer/editing";
+import { clearPreset, renamePreset, setStepType } from "../../pacer/editing";
 import { loadFactoryDefaults } from "../../pacer/factoryDefaults";
 import { ControlId, SwitchMessageType, userPresetIndex } from "../../pacer/protocol/constants";
 import { decodeSysex } from "../../pacer/protocol/decode";
@@ -163,5 +163,23 @@ describe("editing", () => {
     );
     expect(typeOf(copies[0]!)).toBe(SwitchMessageType.CcToggle);
     expect(typeOf(copies[1]!)).toBe(SwitchMessageType.Note); // left behind, on purpose
+  });
+
+  it("follows the preset you're on when its slot moves, and says when a move is refused", () => {
+    const D6 = userPresetIndex(3, 6);
+    store().applyEdit((c) => clearPreset(c, D6)); // somewhere empty to move to
+    store().jumpToPreset(A1);
+    const name = nameOf();
+
+    expect(store().movePresetToSlot(A1, D6)).toBeUndefined();
+    // Same preset, new number: the simulator didn't stay on the slot that was just emptied.
+    expect(store().board.activePresetIndex).toBe(D6);
+    expect(store().board.config.presets[D6]?.name).toBe(name);
+
+    // Onto a preset with something in it: refused, nothing changed, and the reason comes back.
+    const before = store().board.config;
+    const refused = store().movePresetToSlot(D6, userPresetIndex(0, 2));
+    expect(refused).toMatch(/Clear it first/);
+    expect(store().board.config).toBe(before);
   });
 });

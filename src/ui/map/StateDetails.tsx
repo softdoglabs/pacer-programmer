@@ -1,8 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { recoverMachine } from "@/pacer/analysis";
-import { movePreset, presetEntrants } from "@/pacer/authoring";
+import { presetEntrants } from "@/pacer/authoring";
 import { isSparePreset } from "@/pacer/editing";
 import { FIRST_USER_PRESET_INDEX, LAST_USER_PRESET_INDEX, presetIndexToLabel } from "@/pacer/protocol/constants";
 import { usePacerStore } from "../../store/pacerStore";
@@ -24,7 +24,9 @@ export function StateDetails({ stateId, onClose }: { stateId: string; onClose: (
   const activeIndex = usePacerStore((s) => s.board.activePresetIndex);
   const jumpToPreset = usePacerStore((s) => s.jumpToPreset);
   const setUiMode = usePacerStore((s) => s.setUiMode);
-  const applyEdit = usePacerStore((s) => s.applyEdit);
+  const movePresetToSlot = usePacerStore((s) => s.movePresetToSlot);
+  // A move that's refused says why, here, rather than doing nothing where you were looking.
+  const [refused, setRefused] = useState<string | undefined>();
 
   const { name, members, comesBack } = useMemo(() => {
     const machine = recoverMachine(config);
@@ -108,9 +110,7 @@ export function StateDetails({ stateId, onClose }: { stateId: string; onClose: (
                   value={undefined}
                   options={spare.filter((o) => Number(o.id) !== slot)}
                   onChange={(id) => {
-                    if (id === undefined) return;
-                    const result = movePreset(config, slot, Number(id));
-                    if (result.ok) applyEdit(() => result.config);
+                    if (id !== undefined) setRefused(movePresetToSlot(slot, Number(id)));
                   }}
                 />
               </div>
@@ -118,6 +118,11 @@ export function StateDetails({ stateId, onClose }: { stateId: string; onClose: (
           );
         })}
       </ul>
+      {refused && (
+        <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">
+          {refused}
+        </p>
+      )}
     </section>
   );
 }

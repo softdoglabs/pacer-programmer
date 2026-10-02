@@ -118,19 +118,25 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
   const hasRoom = use?.freeStep !== undefined || use?.route !== undefined;
   const replacing = replace && !staying;
   const stepNumber = staying ? intent.stepNumber : replacing ? 1 : (use?.route?.stepNumber ?? use?.freeStep);
-  const change = {
-    fromStateId: intent.fromStateId,
-    controlId: controlId ?? -1,
-    stepNumber: stepNumber ?? 1,
-    ...(toStateId !== undefined ? { toStateId } : {}),
-    ...(moveFrom ? { moveFrom } : {}),
-    asReturn,
-    replace: replacing,
-  };
-  // Cheap enough to do on every render (a pass over 24 presets) and awkward to memoize on an
-  // object that changes with every field: this is a modal with four controls in it.
-  const plan = planRoute(config, change);
-  const needs = plan.ok ? plan.copies : [];
+  /*
+   * The cost of the route as chosen so far — asked only once there's a switch and a step to ask
+   * about, rather than with a placeholder standing in for them. Cheap enough to work out on every
+   * render (a pass over 24 presets), and awkward to memoize on an object that changes with every
+   * field: this is a modal with four controls in it.
+   */
+  const plan =
+    controlId === undefined || stepNumber === undefined
+      ? undefined
+      : planRoute(config, {
+          fromStateId: intent.fromStateId,
+          controlId,
+          stepNumber,
+          ...(toStateId !== undefined ? { toStateId } : {}),
+          ...(moveFrom ? { moveFrom } : {}),
+          asReturn,
+          replace: replacing,
+        });
+  const needs = plan?.ok ? plan.copies : [];
   const spare = useMemo(() => {
     const free: number[] = [];
     for (let i = FIRST_USER_PRESET_INDEX; i <= LAST_USER_PRESET_INDEX; i++) {
@@ -230,7 +236,7 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
           }))}
       />
 
-      {plan.ok && plan.choice && toStateId !== undefined && (
+      {plan?.ok && plan.choice && toStateId !== undefined && (
         <div className="space-y-2 rounded-md border px-3 py-2">
           <p className="text-xs text-muted-foreground">
             {nameOf(toStateId)} is one preset, entered from {plan.choice.sharedBy.map(presetIndexToLabel).join(" and ")}
@@ -303,7 +309,9 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
         </div>
       )}
 
-      {!plan.ok && <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">{plan.error}</p>}
+      {plan && !plan.ok && (
+        <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">{plan.error}</p>
+      )}
 
       {use?.route?.isReturn && (
         <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
@@ -358,7 +366,7 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
             (stepNumber === undefined && !replacing) ||
             toStateId === undefined ||
             !from ||
-            !plan.ok ||
+            !plan?.ok ||
             slots.some((slot) => slot === undefined)
           }
           onPress={() => commit(toStateId)}

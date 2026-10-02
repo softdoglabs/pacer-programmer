@@ -5,6 +5,7 @@ import {
   PresetMidiMessageType,
   STEPS_PER_CONTROL,
   SwitchMessageType,
+  presetIndexToPresetSelectTarget,
   type ControlMode,
 } from "../protocol/constants";
 import type { LedConfig, PacerConfig, Preset, PresetMidiSetting, Step, SwitchControl } from "../protocol/types";
@@ -177,6 +178,24 @@ export function setStepType(
     msgType,
     data: defaultData(kind, msgType, previous),
     ...(msgType !== off ? { active: true } : {}),
+  });
+}
+
+/**
+ * Makes one switch step a jump to a user preset: a Preset Select to that slot, switched on. The
+ * primitive every route is written with — on each copy of a state, by `pacer/authoring`.
+ */
+export function setJump(
+  config: PacerConfig,
+  presetIndex: number,
+  controlId: number,
+  stepNumber: number,
+  target: number,
+): PacerConfig {
+  const typed = setStepType(config, presetIndex, controlId, stepNumber, "switch", SwitchMessageType.PresetSelect);
+  return updateStep(typed, presetIndex, controlId, stepNumber, {
+    data: [presetIndexToPresetSelectTarget(target), 0, 0],
+    active: true,
   });
 }
 

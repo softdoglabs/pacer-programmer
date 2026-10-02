@@ -1,6 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ControlId, ControlMode, SwitchMessageType, userPresetIndex } from "../../protocol/constants";
+import {
+  ControlId,
+  ControlMode,
+  SwitchMessageType,
+  presetSelectTargetToIndex,
+  userPresetIndex,
+} from "../../protocol/constants";
 import { decodeSysex } from "../../protocol/decode";
 import { encodeSysex } from "../../protocol/encode";
 import {
@@ -8,6 +14,7 @@ import {
   normalizePresetName,
   renamePreset,
   setControlMode,
+  setJump,
   setStepType,
   updateStep,
   updateStepLed,
@@ -90,5 +97,18 @@ describe("editing", () => {
 
   it("rejects step numbers outside 1-6", () => {
     expect(() => updateStep(factory, A1, S1, 7, { active: true })).toThrow(RangeError);
+  });
+});
+
+describe("setJump", () => {
+  it("makes a step a Preset Select to a user preset, switched on", () => {
+    const config = factory;
+    const A1 = userPresetIndex(0, 1);
+    const D6 = userPresetIndex(3, 6);
+    const jumped = setJump(config, A1, ControlId.Stompswitch3, 2, D6);
+    const step = jumped.presets[A1]?.controls[ControlId.Stompswitch3]?.steps[2];
+    expect(step?.msgType).toBe(SwitchMessageType.PresetSelect);
+    expect(step?.active).toBe(true);
+    expect(presetSelectTargetToIndex(step!.data[0])).toBe(D6);
   });
 });

@@ -5,7 +5,6 @@ import {
   SwitchMessageType,
   isUserPresetIndex,
   presetIndexToLabel,
-  presetIndexToPresetSelectTarget,
   presetSelectTargetToIndex,
 } from "../protocol/constants";
 
@@ -19,7 +18,7 @@ import {
   wayBack,
   type RecoveredMachine,
 } from "../analysis";
-import { clearControl, clearPreset, copyPreset, isSparePreset, setStepType, updateStep } from "../editing";
+import { clearControl, clearPreset, copyPreset, isSparePreset, setJump, setStepType, updateStep } from "../editing";
 
 /*
  * Editing the machine, not the presets.
@@ -414,11 +413,11 @@ export function editRoute(config: PacerConfig, change: RouteChange, into: readon
     const slot = into[at]!;
     edited = copyPreset(edited, copy.template, slot);
     for (const { controlId, stepNumber } of copy.returns) {
-      edited = writeJump(edited, slot, controlId, stepNumber, copy.entryFrom);
+      edited = setJump(edited, slot, controlId, stepNumber, copy.entryFrom);
     }
     // A preset that was sharing the old copy now has one of its own, so its own switch follows.
     if (copy.repoint) {
-      edited = writeJump(edited, copy.entryFrom, copy.repoint.controlId, copy.repoint.stepNumber, slot);
+      edited = setJump(edited, copy.entryFrom, copy.repoint.controlId, copy.repoint.stepNumber, slot);
     }
   });
 
@@ -436,13 +435,7 @@ export function editRoute(config: PacerConfig, change: RouteChange, into: readon
         edited = updateStep(edited, member, change.controlId, change.stepNumber, { active: false });
       return;
     }
-    edited = writeJump(
-      edited,
-      member,
-      change.controlId,
-      change.stepNumber,
-      plan.copies.length > 0 ? into[i]! : single!,
-    );
+    edited = setJump(edited, member, change.controlId, change.stepNumber, plan.copies.length > 0 ? into[i]! : single!);
   });
 
   // Moved, not copied: the switch it used to be on gives it up in the same edit.
@@ -491,21 +484,6 @@ export function editRoute(config: PacerConfig, change: RouteChange, into: readon
   return { ok: true, config: edited };
 }
 
-/** One switch step, made into a jump to a preset. */
-function writeJump(
-  config: PacerConfig,
-  presetIndex: number,
-  controlId: number,
-  stepNumber: number,
-  target: number,
-): PacerConfig {
-  const typed = setStepType(config, presetIndex, controlId, stepNumber, "switch", SwitchMessageType.PresetSelect);
-  return updateStep(typed, presetIndex, controlId, stepNumber, {
-    data: [presetIndexToPresetSelectTarget(target), 0, 0],
-    active: true,
-  });
-}
-
 /**
  * Moves a preset into another slot, with everything that led to it following.
  *
@@ -532,7 +510,7 @@ export function movePreset(config: PacerConfig, from: number, to: number): Route
   for (const edge of graph.edges) {
     if (edge.target.kind !== "preset" || edge.target.index !== from) continue;
     if (isPlainStepping(config, edge)) continue;
-    moved = writeJump(moved, edge.from, edge.controlId, edge.stepNumber, to);
+    moved = setJump(moved, edge.from, edge.controlId, edge.stepNumber, to);
   }
 
   // A renumbering, held to the strongest version of the round trip: the same design, slots renamed.

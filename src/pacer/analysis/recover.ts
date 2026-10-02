@@ -49,7 +49,17 @@ export function recoverMachine(config: PacerConfig): RecoveredMachine {
    * state look like it has an extra copy whose jumps disagree with the rest.
    */
   const groups = presetStates(config)
-    .map((g) => ({ ...g, members: g.members.filter((m) => m !== CURRENT_PRESET_INDEX) }))
+    .map((g) => {
+      const members = g.members.filter((m) => m !== CURRENT_PRESET_INDEX);
+      /*
+       * And it doesn't get a say in the name either. A state is named only when all its presets
+       * agree, and the working copy lags behind the slot it copies until the next send — so
+       * renaming the loaded preset left its state with two names and therefore none.
+       */
+      const names = members.map((m) => config.presets[m]?.name);
+      const name = names.every((n) => n === names[0]) ? names[0] : undefined;
+      return { members, ...(name !== undefined ? { name } : {}) };
+    })
     .filter((g) => g.members.length > 0);
   const graph = presetTransitions(config);
   const notes: RecoveryNote[] = [];

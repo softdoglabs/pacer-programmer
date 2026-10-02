@@ -1,4 +1,6 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { decodeSysex } from "../../protocol/decode";
 import { CURRENT_PRESET_INDEX, ControlId, FIRST_USER_PRESET_INDEX, SwitchMessageType } from "../../protocol/constants";
 import type { Preset } from "../../protocol/types";
 import { compileMachine, type MachineState, type StateMachine } from "../machine";
@@ -258,5 +260,19 @@ describe("the device's working copy", () => {
     const loop = recovered.states.find((s) => s.name === "LOOPR")!;
     expect(loop.transitions[0]?.to).toEqual({ kind: "return" });
     expect(recovered.notes).toHaveLength(0);
+  });
+
+  it("doesn't let the working copy vote on a state's name", () => {
+    /*
+     * Current duplicates the loaded preset but only catches up on the next send, so right after a
+     * rename the two disagree. A state is named only when its presets agree, and Current isn't one
+     * of its presets — counting it left the renamed state with no name at all.
+     */
+    const factory = decodeSysex(new Uint8Array(readFileSync("fixtures/factory-presets.syx")));
+    const A1 = FIRST_USER_PRESET_INDEX;
+    const renamed = { ...factory, presets: { ...factory.presets, [A1]: { ...factory.presets[A1]!, name: "HOME " } } };
+    const recovered = recoverMachine(renamed);
+    const home = recovered.states.find((s) => (recovered.members[s.id] ?? []).includes(A1))!;
+    expect(home.name?.trim()).toBe("HOME");
   });
 });

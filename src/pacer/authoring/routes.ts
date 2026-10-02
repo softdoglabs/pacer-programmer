@@ -112,8 +112,7 @@ export function switchUses(config: PacerConfig, stateId: string): SwitchUse[] {
   const machine = recoverMachine(config);
   const state = machine.states.find((s) => s.id === stateId);
   const members = machine.members[stateId] ?? [];
-  const first = members[0];
-  if (!state || first === undefined) return [];
+  if (!state || members.length === 0) return [];
   const graph = presetTransitions(config);
 
   return SWITCH_CONTROL_IDS.map((controlId) => {
@@ -121,19 +120,30 @@ export function switchUses(config: PacerConfig, stateId: string): SwitchUse[] {
     const steps = [];
     for (let n = 1; n <= STEPS_PER_CONTROL; n++) steps.push(n);
 
+    /*
+     * Asked of every copy, not just the first. The copies of a state agree on everything but where
+     * their jumps lead — that's what makes them one state — so on a healthy configuration this
+     * changes nothing. But it's an answer about *where a route can go*, and the copies are where
+     * it goes, so the earliest jump on any of them is the one that decides.
+     */
+    const jumps = members.map((m) => firstJump(config, m, controlId)).filter((n): n is number => n !== undefined);
+    const jump = jumps.length > 0 ? Math.min(...jumps) : undefined;
     // A step after the one that jumps would never fire, so it isn't anywhere to put a route.
-    const jump = firstJump(config, first, controlId);
     const freeStep = steps.find((n) => (jump === undefined || n < jump) && isFree(config, members, controlId, n));
 
-    const elsewhere = (graph.from[first] ?? []).find((e) => e.controlId === controlId && e.target.kind !== "preset");
+    const elsewhere = members
+      .flatMap((m) => graph.from[m] ?? [])
+      .find((e) => e.controlId === controlId && e.target.kind !== "preset");
     const firmwareTarget =
       elsewhere?.target.kind === "special" ? elsewhere.target.preset : elsewhere ? ("reload" as const) : undefined;
 
-    let sends = 0;
-    for (const n of steps) {
-      const step = config.presets[first]?.controls[controlId]?.steps[n];
-      if (step?.active && step.msgType !== SwitchMessageType.Off && !navigates(step.msgType)) sends++;
-    }
+    // A step counts as sending only if it sends on every copy, which is what a press anywhere in
+    // the state will do.
+    const sending = (m: number, n: number) => {
+      const step = config.presets[m]?.controls[controlId]?.steps[n];
+      return step?.active === true && step.msgType !== SwitchMessageType.Off && !navigates(step.msgType);
+    };
+    const sends = steps.filter((n) => members.every((m) => sending(m, n))).length;
     return {
       controlId,
       ...(transition

@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { compileMachine, recoverMachine, type MachineState, type StateMachine } from "../../analysis";
 import { ControlId, SwitchMessageType, presetSelectTargetToIndex, userPresetIndex } from "../../protocol/constants";
 import type { PacerConfig, Preset } from "../../protocol/types";
-import { isSparePreset } from "../../editing";
+import { readFileSync } from "node:fs";
+import { clearPreset, isSparePreset } from "../../editing";
+import { decodeSysex } from "../../protocol/decode";
 import { editRoute, movePreset, planRoute, switchUses } from "../routes";
 
 const body = (note: number): Preset["controls"] => ({
@@ -412,6 +414,21 @@ describe("routing between states", () => {
     const moved = after.states.find((s) => s.name === "LOOPR")!;
     expect(after.members[moved.id]).toHaveLength(2);
     expect(moved.transitions.some((t) => t.to.kind === "return")).toBe(true);
+  });
+
+  it("moves a preset on a real device, where its neighbours step to it", () => {
+    /*
+     * Every factory preset's C and D step to its neighbours, and a move deliberately leaves that
+     * alone — next/previous names a direction, not a preset. The check that the design survived has
+     * to leave it alone too, or no preset on a real device could ever be moved.
+     */
+    const factory = decodeSysex(new Uint8Array(readFileSync("fixtures/factory-presets.syx")));
+    const D6 = userPresetIndex(3, 6);
+    const room = clearPreset(factory, D6);
+
+    const result = movePreset(room, userPresetIndex(0, 1), D6);
+    if (!result.ok) throw new Error(result.error);
+    expect(result.config.presets[D6]?.name).toBe(factory.presets[userPresetIndex(0, 1)]?.name);
   });
 
   it("won't move a preset onto one that has something in it", () => {

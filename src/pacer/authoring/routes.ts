@@ -612,7 +612,10 @@ function machineShape(config: PacerConfig, machine: RecoveredMachine, rename: Pa
     .filter((state) => !(machine.members[state.id] ?? []).every((m) => isSparePreset(config.presets[m])))
     .map((state) => ({
       members: (machine.members[state.id] ?? []).map(slot).sort((a, b) => a - b),
+      // Plain stepping isn't compared: a move leaves it alone on purpose (next/previous names a
+      // direction, not a preset), so the neighbours of both slots step somewhere new afterwards.
       routes: state.transitions
+        .filter((t) => !t.viaStepping)
         .map((t) => ({
           c: t.controlId,
           n: t.stepNumber,

@@ -118,14 +118,19 @@ export function PresetChooser({ trigger }: { trigger: React.ReactNode }) {
          * One dot for "you changed it", hollow for "the Pacer hasn't got it yet". A glyph is a
          * riddle on its own, so each says what it means and the legend below repeats it — asked
          * what the turquoise circles were, which is the answer to whether a mark explains itself.
+         *
+         * It sits against the name rather than at the cell's right edge: pushed over there it was
+         * a dot in open space, and which row it belonged to was a guess. Names are stored padded
+         * to five characters in a monospace line, so following the name still leaves it in a
+         * column.
          */}
         {edited.has(slot) && (
-          <span className="ml-auto text-primary" title={EDITED_MARK}>
+          <span className="text-primary" title={EDITED_MARK}>
             ●
           </span>
         )}
         {!edited.has(slot) && unsent.has(slot) && (
-          <span className="ml-auto text-muted-foreground" title={UNSENT_MARK}>
+          <span className="text-muted-foreground" title={UNSENT_MARK}>
             ○
           </span>
         )}
@@ -218,10 +223,10 @@ export function PresetChooser({ trigger }: { trigger: React.ReactNode }) {
                 <p className="flex flex-wrap gap-x-3 gap-y-1 border-t pt-1.5 text-[11px] text-muted-foreground">
                   {edited.size > 0 && (
                     <span>
-                      <span className="text-primary">●</span> {EDITED_MARK.toLowerCase()}
+                      <span className="text-primary">●</span> edited since this configuration was opened
                     </span>
                   )}
-                  {unsent.size > 0 && <span>○ {UNSENT_MARK.toLowerCase()}</span>}
+                  {unsent.size > 0 && <span>○ differs from what the Pacer was last given</span>}
                   {states.shared.length > 0 && (
                     <span>
                       <span className="text-primary">×n</span> one state, several presets

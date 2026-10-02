@@ -7,6 +7,7 @@ import { RearJacks } from "./ui/RearJacks";
 import { useAppHistory } from "./ui/appHistory";
 import { ContextBar } from "./ui/ContextBar";
 import { ConfigurationButton, DeviceDrawer } from "./ui/DeviceDrawer";
+import { DocsLink } from "./ui/DocsLink";
 import { SwitchEditorView } from "./ui/editor/SwitchEditorView";
 import { FirmwareModeNote } from "./ui/FirmwareModeNote";
 import { MessageLog } from "./ui/MessageLog";
@@ -36,6 +37,7 @@ export function App() {
         {/* MIDI access is one grant for the whole app, so it's asked for here, not per mode. */}
         {/* The device slot: asks for MIDI access, then shows whether the Pacer is there. */}
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          <DocsLink />
           <MidiAccessControl />
         </div>
       </header>

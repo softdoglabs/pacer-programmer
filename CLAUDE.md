@@ -1188,6 +1188,15 @@ no hover-only UI, for tablets.
   be without a MIDI input path (see the LED model above).
 - Checks: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm format:check`.
 
+### User docs (`docs/`)
+
+The user documentation lives in `docs/` as Markdown, rendered by GitHub.
+**The app links to it rather than carrying a copy** (`ui/DocsLink.tsx`, the
+header's Docs link): one canonical page per topic, nothing to keep in step,
+and nothing a search engine sees twice. `REPOSITORY_URL` there is the one
+place the address is written. The repository is private for now, so the
+link resolves for the owner only until it's published.
+
 ### Running locally
 
 ```
@@ -1280,7 +1289,9 @@ preset chooser, then the analysis views.
 
 ## Open questions
 
-- **License** for this repo hasn't been decided yet.
+- **License: decided, GPL-3.0**, and the source will be published on
+  GitHub (`github.com/mvachhar/pacer-programmer`; private for now). No
+  LICENSE file yet.
 - Whether v1 needs to cover **global config** and **NP-1/expression
   pedal/relay** settings, or start scoped to the 24 built-in presets only.
 - Framing/checksum/field layout is now verified against a real factory
@@ -1288,13 +1299,11 @@ preset chooser, then the analysis views.
   writing Global settings, and the
   Global-config field semantics (currently preserved opaquely, not
   decoded). Preset writes over Web MIDI are confirmed (see Send to Pacer).
-- Licensing: `francoisgeorgy/pacer-editor` is GPLv3. We're treating its
-  documented protocol facts (message type IDs, element layout) as
-  unencumbered — the same facts anyone would recover from staring at a
-  device dump — and independently reimplementing our own encoder/decoder
-  in TypeScript rather than porting or copying any of its source. Worth a
-  sanity check before release if this project's own license ends up
-  incompatible with GPL in some way that matters.
+- Licensing: `francoisgeorgy/pacer-editor` is GPLv3, the same licence
+  this project has chosen, so compatibility is no longer a concern. We
+  still describe the protocol from our own verified facts rather than
+  porting its source — that's what makes `docs/reference/programming-the-
+  pacer.md` our own work, and the thing to point an AI at.
 - The exact algorithm for the preset-analysis engine (template hierarchy +
   transition-graph grouping) is unspecified beyond the goals above — worth
   spiking on a few real preset dumps before committing to one approach.

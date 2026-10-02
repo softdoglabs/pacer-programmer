@@ -29,9 +29,8 @@ import { clearControl, clearPreset, copyPreset, isSparePreset, setStepType, upda
  * project exists to remove, and it's where the copies drift apart.
  *
  * Nothing is persisted but the dump, so every edit has to leave a configuration the recovery can
- * still read as the design meant (see `analysis/verify.ts`). Here that's checked the same way:
- * the machine is recovered before and after, and an edit that costs a return or makes the
- * configuration unreadable is refused with the reason rather than written and discovered later.
+ * still read as the design meant. Each one is checked with `whatWasLost` before it's written, and
+ * refused with the reason rather than written and discovered later.
  */
 
 export interface RouteChange {
@@ -176,10 +175,9 @@ function navigates(msgType: number): boolean {
  * somewhere new isn't an edit to a switch, it's a new preset.
  *
  * One level deep, which is as far as a configuration can say anything. A state that comes back
- * *and* leads on to another state that comes back would need copies of that one too, and the
- * compiler refuses to write that shape in the first place: with the copies of the outer state
- * leading to different copies of the inner one, nothing in the presets says which of the two
- * switches is the way back (`analysis/verify.ts`).
+ * *and* leads on to another state that comes back would need copies of that one too, and that
+ * shape can't be read back: with the copies of the outer state leading to different copies of the
+ * inner one, nothing in the presets says which of the two switches is the way back.
  */
 export interface NeededCopy {
   stateId: string;

@@ -17,7 +17,7 @@ import type { LedConfig, PacerConfig, Preset, PresetMidiSetting, Step, SwitchCon
 
 export type ControlKind = "switch" | "expressionPedal";
 
-/** Re-exported: a name's length is a protocol fact, and the compiler needs it too. */
+/** Re-exported: a name's length is a protocol fact, and the name checks here are where it's enforced. */
 export { PRESET_NAME_LENGTH };
 
 /**

@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { clearPreset, copyPreset, setStepType } from "../../editing";
 import { ControlId, SwitchMessageType, userPresetIndex } from "../../protocol/constants";
 import type { Preset } from "../../protocol/types";
-import { compileMachine, type StateMachine } from "../machine";
+import { compileMachine } from "../../../test/compileMachine";
+import type { StateMachine } from "../model";
 import { machineOf } from "../machineOf";
 import { whatWasLost } from "../survives";
 

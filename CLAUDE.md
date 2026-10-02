@@ -269,11 +269,10 @@ to remove.
 **The invariant: whatever can be authored must be recoverable.** The
 design is not persisted anywhere — the dump remains the only source of
 truth (see Persistence philosophy) — so a state machine survives only by
-being re-derived from the presets it compiled to. That constrains the
-authoring side more than the analysis: the editor must refuse to express
-anything `presetStates` and `presetTransitions` can't read back. The
-acceptance test is a round trip, `recover(compile(model))` equalling the
-model, and it should be written before the compiler, not after.
+being re-derived from its presets. That constrains the authoring side more
+than the analysis: the editor must refuse anything the recovery can't read
+back, and every multi-preset edit is checked against exactly that before
+it's written (`whatWasLost`, below).
 
 If some authorable shape turns out not to be recoverable, the fallback is
 a saved design document plus tools to merge states — but that reintroduces
@@ -283,33 +282,34 @@ if the round trip can't be made to hold.
 
 **Slot arithmetic is a hard constraint, not a detail.** A state entered
 from twelve origins costs twelve presets on top of the twelve originals —
-the whole device. The compiler has to price a design before writing
-anything and refuse one that doesn't fit, rather than compiling half of
-it.
+the whole device. Every edit is priced before it's written: a route that
+needs another copy says so and asks which preset it may take
+(`planRoute`, below), rather than being refused or half-done.
 
-### The compiler (`analysis/machine.ts`, `analysis/recover.ts`)
+**Machines are edited where they are, not compiled from scratch.** There
+was once a whole-machine compiler (`compileMachine`): describe states,
+get presets. The app never used it — the editor changes a machine by
+editing the presets already on the device, which works the same on a
+fresh dump as on an empty one — so it now lives in `src/test/` as a
+fixture builder and the engine of the round-trip property test
+(`analysis/__tests__/roundTrip.test.ts`), which checks that recovery reads
+back the design that was meant.
+
+### The model and its recovery (`analysis/model.ts`, `analysis/recover.ts`)
 
 A machine is states with a body (controls, minus navigation) and
 transitions. A transition leads to a named state, or **returns** — back to
 whatever entered this state, the action the hardware doesn't have, and the
-reason a state ever needs duplicating.
+reason a state ever needs duplicating. **Only states that return
+multiply**: a tuner reached from everywhere is one preset, because its
+behaviour doesn't depend on where you came from.
 
-`compileMachine` expands it into presets, one per (state, continuation):
-- **Only states that return multiply.** A tuner reached from everywhere is
-  one preset, because its behaviour doesn't depend on where you came from.
-  A looper that returns needs one copy per distinct continuation, and a
-  state entered *from* such a copy multiplies in turn — which is how three
-  states on a diagram can cost more than 24 presets.
-- It refuses rather than half-compiling: a design over budget, a returning
-  state nothing enters, a body containing a navigation step (that would be
-  a transition the model doesn't know it has).
-- Slots are allocated deterministically, so compiling twice puts
-  everything in the same place.
-
-`recoverMachine` reads one back. A group of look-alike presets is a state;
-a transition is a **return** when every copy leads back to whatever entered
-it, and a fixed jump when every copy leads to the same state. Anything it
-can't express becomes a `note` rather than a wrong answer.
+`recoverMachine` reads one out of the presets. A group of look-alike
+presets is a state; a transition is a **return** when every copy leads
+back to whatever entered it, and a fixed jump when every copy leads to the
+same state. Anything it can't express becomes a `note` rather than a wrong
+answer. Nothing outside the analysis layer calls it — they ask `machineOf`
+(below).
 
 **Two states are the same when they differ in nothing but where their
 navigation leads** — the rule the recovery groups on, and therefore the
@@ -319,58 +319,23 @@ which matters on a five-character display. Names that repeat are still
 qualified by their starting slot when ids are needed as keys, but that's
 presentation, not identity.
 
-**The invariant is checked, not assumed.** `compileMachine` recovers its
-own output and refuses if it didn't get the same machine back
-(`whatWontSurvive`). Hand-derived rules about what survives are guesses;
-this is the property itself, and it costs one pass over 24 presets. What
-it catches:
-- Two states that behave alike apart from their navigation, which come
-  back as one, because by the rule they *are* one.
-**What the invariant actually demands is that the recovered machine
-*means* the same thing, not that it has the same shape.** A return from a
-state only one place enters comes back as a jump to that one place — and
-with a single origin those are the same machine: recompiling what came
-back produces the identical presets. It's allowed, and there's a test that
-recompiles the recovered model and compares the presets. The two only part
-company once a second origin exists, and a return is expressible and
-recovers as one from then on.
-
-An earlier version refused it on structural grounds, which conflated a
-harmless restatement with a real loss and would have stopped a design
-being built up one origin at a time. The verifier still compares
-structure, with that one equivalence allowed explicitly; the recompile is
-what justifies it.
-
-
-### Putting a machine into a configuration that exists (`analysis/apply.ts`)
-
-`compileMachine` builds its presets from nothing, which is the right thing
-to reason about but not a thing you can send: a real configuration also
-carries global settings, and usually presets the machine has no opinion
-about. `applyMachine` writes the slots the machine occupies and leaves
-everything else exactly as it was.
-
-The invariant is then checked against the **merged** configuration rather
-than the compiled one, because the presets around a machine change what it
-means:
-- A switch on an untouched preset that jumps into a copy gives that copy a
-  second way in, and a return is only recognisable while each copy has
-  exactly one.
-- An untouched preset that behaves like one of the states joins it, giving
-  the state a copy the machine never made and, if it returns, somewhere
-  else to come back from. Refused first, naming the preset, because the
-  symptoms it causes further down read as the design's fault.
-- Whatever those presets already say on their own — an unreadable jump of
-  their own making — is the user's business and isn't judged. Only notes
-  about the machine's own slots refuse it.
+**What the invariant demands is that the recovered machine *means* the
+same thing, not that it has the same shape.** A return from a state only
+one place enters comes back as a jump to that one place — and with a single
+origin those are the same machine. The two only part company once a second
+origin exists, which is exactly when the editor asks whether the state
+comes back (`RoutePlan.choice`). An earlier version refused a single-origin
+return on structural grounds, which conflated a harmless restatement with a
+real loss and would have stopped a design being built up one origin at a
+time.
 
 **Plain stepping isn't an entrance.** Next/previous names a direction, not
 a preset, so it says nothing about which state a press meant to reach, and
 it doesn't count as entering one for the purpose of spotting a return. It
 can't: every slot has neighbours and C/D step on nearly every preset, so
 counting it would mean no state on a real device could ever be seen to
-return — dropping a looper into the factory set would be refused. It's the
-same distinction the map's "hide default stepping" filter draws.
+return. It's the same distinction the map's "hide default stepping" filter
+draws.
 
 **Neither is the Current slot** (idx 0). It's the device's working copy of
 whichever preset is loaded, so its switches are a second copy of that
@@ -378,7 +343,10 @@ preset's, and every dump from real hardware has one. Counting it gave
 everything the loaded preset leads to a phantom second way in, which is
 precisely what stops a return being recognised — on the owner's device it
 hid the return of the one hand-built looper there is. Found by running the
-map on that dump, not by reading the code.
+map on that dump, not by reading the code. It doesn't vote on a state's
+name either: it lags behind the slot it copies until the next send, so
+renaming the loaded preset used to leave its state with two names and
+therefore none.
 
 **Copies step to their own neighbours, and that isn't a disagreement.**
 Two presets of the same state sit in different slots, so C and D lead to
@@ -387,7 +355,6 @@ copy happens to live rather than something the state does, so the slot is
 left undrawn and unremarked. Calling it "copies that lead to different
 states" made every multi-copy state on a real device unreadable the moment
 it was created.
-
 
 ### The rules a machine is read by (`analysis/returns.ts`)
 

@@ -60,8 +60,8 @@ export function soleEntrant(
  *
  * With one copy this is never true, deliberately. "Goes back to whatever entered it" and "goes to
  * A1" are then the same preset, and nothing in the dump says which was meant — so it reads as the
- * jump it literally is (`analysis/verify.ts` allows that one restatement). A second way in is what
- * settles it.
+ * jump it literally is — the same machine, as long as there's only one way in. A second way in is
+ * what settles it.
  */
 export function readsAsReturn(
   config: PacerConfig,

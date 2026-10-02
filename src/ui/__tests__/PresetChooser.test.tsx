@@ -2,7 +2,8 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "../../App";
-import { compileMachine, type StateMachine } from "../../pacer/analysis";
+import type { StateMachine } from "../../pacer/analysis";
+import { compileMachine } from "../../test/compileMachine";
 import { renamePreset } from "../../pacer/editing";
 import { ControlId, SwitchMessageType, userPresetIndex } from "../../pacer/protocol/constants";
 import type { Preset } from "../../pacer/protocol/types";

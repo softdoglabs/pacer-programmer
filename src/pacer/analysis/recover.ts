@@ -1,6 +1,6 @@
 import { CURRENT_PRESET_INDEX, SwitchMessageType, presetIndexToLabel } from "../protocol/constants";
 import type { PacerConfig, Preset } from "../protocol/types";
-import type { MachineState, MachineTransition, StateMachine } from "./machine";
+import type { MachineState, MachineTransition, StateMachine } from "./model";
 import { presetStates } from "./states";
 import { readsAsReturn } from "./returns";
 import { isPlainStepping, presetTransitions, type TransitionEdge } from "./transitions";

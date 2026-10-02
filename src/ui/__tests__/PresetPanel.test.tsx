@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "../../App";
-import { compileMachine } from "../../pacer/analysis";
+import { compileMachine } from "../../test/compileMachine";
 import { ControlId, SwitchMessageType, userPresetIndex } from "../../pacer/protocol/constants";
 import type { Preset } from "../../pacer/protocol/types";
 import { usePacerStore } from "../../store/pacerStore";

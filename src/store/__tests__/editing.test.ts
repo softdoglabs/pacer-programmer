@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { compileMachine, recoverMachine } from "../../pacer/analysis";
+import { recoverMachine } from "../../pacer/analysis";
+import { compileMachine } from "../../test/compileMachine";
 import { clearPreset, renamePreset, setStepType } from "../../pacer/editing";
 import { loadFactoryDefaults } from "../../pacer/factoryDefaults";
 import { ControlId, SwitchMessageType, userPresetIndex } from "../../pacer/protocol/constants";

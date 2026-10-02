@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { compileMachine, recoverMachine, type MachineState, type StateMachine } from "../../../pacer/analysis";
+import { recoverMachine, type MachineState, type StateMachine } from "../../../pacer/analysis";
+import { compileMachine } from "../../../test/compileMachine";
 import {
   ControlId,
   SwitchMessageType,

@@ -3,14 +3,18 @@ import { describe, expect, it } from "vitest";
 import { decodeSysex } from "../../protocol/decode";
 import { CURRENT_PRESET_INDEX, ControlId, FIRST_USER_PRESET_INDEX, SwitchMessageType } from "../../protocol/constants";
 import type { Preset } from "../../protocol/types";
-import { compileMachine, type MachineState, type StateMachine } from "../machine";
+import { compileMachine } from "../../../test/compileMachine";
+import type { MachineState, StateMachine } from "../model";
 import { recoverMachine } from "../recover";
 
 /*
  * The invariant the whole design rests on: whatever can be authored must be recoverable. Nothing
- * but the dump is persisted, so a machine survives only by being compiled to presets and read
- * back out of them. These tests are the acceptance criterion, and they exist before the editor
- * that will author these models.
+ * but the dump is persisted, so a machine survives only by being read back out of its presets.
+ *
+ * A property test: designs are built into presets by the test-side compiler (`src/test/
+ * compileMachine.ts`), and the recovery has to read back the design that was meant. The editor
+ * itself never compiles — it edits presets in place — but what it can make, these can describe,
+ * and recovery is the one reader both answer to.
  */
 
 const body = (controlId: number, msgType: number, data: [number, number, number]): Preset["controls"] => ({

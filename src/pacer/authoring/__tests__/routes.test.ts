@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { compileMachine, recoverMachine, type MachineState, type StateMachine } from "../../analysis";
+import { compileMachine } from "../../../test/compileMachine";
+import { recoverMachine, type MachineState, type StateMachine } from "../../analysis";
 import { ControlId, SwitchMessageType, presetSelectTargetToIndex, userPresetIndex } from "../../protocol/constants";
 import type { PacerConfig, Preset } from "../../protocol/types";
 import { readFileSync } from "node:fs";

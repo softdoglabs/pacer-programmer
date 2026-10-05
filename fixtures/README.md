@@ -20,18 +20,13 @@ file). It was presumably captured by that project's author directly from a
 real Pacer unit's factory-reset state — i.e. it's Nektar's own shipped
 configuration data, not an original work of that project's author.
 
-**Open licensing question.** That said, it's currently sourced from a
-GPLv3 repository, and this project hasn't picked a license yet. Before
-this repo is made public or distributed, worth either (a) re-sourcing this
-exact data from Nektar's own official factory-preset/reset downloads at
-support.nektartech.com, which appear to distribute the same factory
-defaults for legitimate reset purposes, or (b) capturing a fresh dump from
-real hardware once this project's own MIDI I/O + backup-request code
-exists. Tracked as an open item, not blocking early development/parser
-work. Note that the app now bundles this file as its startup config
-(`src/pacer/factoryDefaults.ts`), so it ships with any build, not just
-the test suite. That makes resolving this a prerequisite for publishing a
-build, not only the repo.
+**Licensing.** It's sourced from a GPLv3 repository, and this project is
+GPLv3 too (see `LICENSE`), so carrying it here, and bundling it into every
+build as the app's startup configuration (`src/pacer/factoryDefaults.ts`),
+is compatible with how it was distributed to us. It's Nektar's data in the
+first place, which Nektar also distributes for factory resets. A dump
+captured from real hardware by this app's own Pull would be a cleaner
+provenance, and could replace it byte for byte if wanted.
 
 ## What it's for
 

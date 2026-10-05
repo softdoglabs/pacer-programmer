@@ -194,8 +194,7 @@ live hardware or Web MIDI involvement. It's also what the app starts on:
 with `.syx` in `assetsInclude`), and the header's "Factory defaults"
 button reloads it. Vitest 2 doesn't inline assets, so `src/test/setup.ts`
 mocks that import with the same data URL. See `fixtures/README.md` for
-provenance and an open licensing question to resolve before this repo is
-made public.
+provenance, and why carrying it fits the project's GPL-3.0 license.
 
 ## Implementation status
 
@@ -1353,9 +1352,12 @@ preset chooser, then the analysis views.
 
 ## Open questions
 
-- **License: decided, GPL-3.0**, and the source will be published on
-  GitHub (`github.com/mvachhar/pacer-programmer`; private for now). No
-  LICENSE file yet.
+- **License: GPL-3.0-only** (`LICENSE`, the FSF's text; the notice is
+  in the top-level `README.md`, and `package.json` carries the SPDX id).
+  Chosen because the protocol was first learned from the GPLv3
+  `pacer-editor`, and because the app is a promotional tool rather than a
+  product. The source will be published on GitHub
+  (`github.com/mvachhar/pacer-programmer`; private for now).
 - Whether v1 needs to cover **global config** and **NP-1/expression
   pedal/relay** settings, or start scoped to the 24 built-in presets only.
 - Framing/checksum/field layout is now verified against a real factory

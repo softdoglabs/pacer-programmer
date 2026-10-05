@@ -1206,6 +1206,11 @@ so the link resolves for the owner only until it's published.
   `guide/` is short task pages, `tutorials/` builds the looper from factory
   defaults, and `why-a-state-machine.md` is the rationale. `README.md` is the
   entry point the app links to.
+- **The intro lives in two places on purpose**: `docs/README.md` and
+  `docs/guide/README.md` open with the same text and the simulator
+  screenshot, so the guide still makes sense if it's built and hosted on its
+  own, away from GitHub. Edit both together (only the relative paths
+  differ).
 - **Screenshots are generated**, never hand-made: `pnpm docs:screenshots
   [scene]` drives the real app in headless Chrome
   (`scripts/docs-screenshots.mjs`). MIDI is staged with the test suite's

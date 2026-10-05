@@ -1215,12 +1215,20 @@ so the link resolves for the owner only until it's published.
   authoring functions the UI calls, so each picture is what following the
   steps produces. Re-run a scene after changing the UI it shows.
 - **The tutorials are walked, not just pictured**: `pnpm docs:walkthrough`
-  (`scripts/docs-walkthrough.mjs`) follows tutorials 1-3 click by click in
+  (`scripts/docs-walkthrough.mjs`) follows tutorials 1-4 click by click in
   the real app, finding controls by the words the text uses, asserts what
   each step says you'll see, and compares the result with the configuration
   the screenshots were built from. Run it after changing the editor or the
   tutorials; it's how a step that no longer matches the UI gets caught. The
   browser plumbing both scripts share is `scripts/docs-browser.mjs`.
+  - Tutorial 4's AI step is played by `scripts/docs-ai-example.mjs`, which
+    writes `fixtures/ai-looper.syx` from the format page alone (no app code);
+    the walkthrough exports the factory defaults through the real button,
+    imports that file through the real file input, and finishes the tutorial
+    on it. If Programming the Pacer gets something wrong, this is where it
+    shows.
+  - The guide's examples are tests: `store/__tests__/guideExamples.test.ts`,
+    each quoting the sentence it checks.
 - **Voice**: conversational, in the owner's own voice, with "you" for the
   reader and contractions. "I" and "my" only for motivation (why the app
   exists, how the looper problem came up); the examples themselves stay

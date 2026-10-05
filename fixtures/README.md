@@ -39,3 +39,15 @@ This is the first real-world input for the SysEx decoder: parsing this
 file end-to-end (into the canonical JSON mirror described in `CLAUDE.md`)
 and round-tripping it back to identical bytes is the first correctness
 target for that code, before ever touching live hardware or Web MIDI.
+
+## `ai-looper.syx`
+
+The factory dump with tutorial 4's looper built into it: LOOPR in C1, entered
+from A1 on switch A and returning to it. It's written by
+`scripts/docs-ai-example.mjs`, which plays the AI in that tutorial and uses
+nothing but `docs/reference/programming-the-pacer.md`: no app code. The docs
+walkthrough (`pnpm docs:walkthrough`) imports it and finishes tutorial 4 on it,
+so it's the check that the format page is enough on its own to write a dump the
+app reads as intended. Regenerate it with `node scripts/docs-ai-example.mjs`.
+It's derived from `factory-presets.syx`, so the licensing note above applies
+to it too.

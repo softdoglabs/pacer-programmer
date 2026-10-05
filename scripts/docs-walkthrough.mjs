@@ -13,10 +13,16 @@
  * built from, so the two can't drift apart unnoticed.
  */
 
-import { writeFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { wait, withApp } from "./docs-browser.mjs";
+import { ROOT, wait, withApp } from "./docs-browser.mjs";
+
+const exists = (path) =>
+  access(path).then(
+    () => true,
+    () => false,
+  );
 
 // ---------------------------------------------------------------------------------------------
 // Finding things the way a reader would: by the words on screen.
@@ -348,6 +354,11 @@ async function tutorial1(r) {
   r.at("On the map");
   await r.toggle("Mode", "Preset map");
   await wait(600);
+  await looperPairOnTheMap(r);
+}
+
+/** The end of tutorial 1, on the map: PRGM1 and LOOPR, each leading to the other on A. */
+async function looperPairOnTheMap(r) {
   const routes = await r.state(`(() => {
     const m = d.analysis.machineOf(s.board.config);
     const of = (i) => d.analysis.stateContaining(m, i).state;
@@ -483,6 +494,49 @@ async function tutorial3(r) {
   );
 }
 
+async function tutorial4(r) {
+  r.at("Export the factory defaults");
+  const folder = await mkdtemp(join(tmpdir(), "pacer-walkthrough-"));
+  await r.p.cdp.send("Browser.setDownloadBehavior", { behavior: "allow", downloadPath: folder });
+  await r.click(`document.querySelector('[title^="Open configurations"] button')`, "the configuration's name");
+  await r.click(
+    `[...(window.__find.byText("li", "Factory defaults", { prefix: true })?.querySelectorAll("button") ?? [])].find((b) => b.textContent.trim() === "Export .syx")`,
+    "Export .syx on the Factory defaults row",
+  );
+  const file = join(folder, "Factory defaults.syx");
+  for (let i = 0; i < 50 && !(await exists(file)); i++) await wait(100);
+  if (!(await exists(file))) r.fail("the factory defaults didn't download");
+  const exported = await readFile(file);
+  const factory = await readFile(join(ROOT, "fixtures", "factory-presets.syx"));
+  if (!exported.equals(factory)) r.fail("the exported factory defaults aren't the factory dump byte for byte");
+  await r.key("Escape");
+
+  r.at("Import the file it gives you");
+  // The assistant's part, done from the format page alone: scripts/docs-ai-example.mjs. Then
+  // Import .syx in the drawer, whose file picker is a file input.
+  await r.click(`document.querySelector('[title^="Open configurations"] button')`, "the configuration's name");
+  const { root } = await r.p.cdp.send("DOM.getDocument");
+  const { nodeId } = await r.p.cdp.send("DOM.querySelector", { nodeId: root.nodeId, selector: 'input[type="file"]' });
+  await r.p.cdp.send("DOM.setFileInputFiles", { nodeId, files: [join(ROOT, "fixtures", "ai-looper.syx")] });
+  await wait(600);
+  await r.expect(`s.configSource`, "ai-looper", "the open configuration");
+  await r.toggle("Mode", "Preset map");
+  await wait(600);
+  await looperPairOnTheMap(r);
+
+  r.at("Play the looper in the simulator");
+  await r.toggle("Mode", "Simulate");
+  await r.faceplateSwitch("A");
+  await r.expect(`s.board.activePresetIndex`, 13, "the preset after pressing A on A1");
+  await r.faceplateSwitch("1");
+  await r.expectText("CC#53 = 127");
+  await r.faceplateSwitch("A");
+  await r.expect(`s.board.activePresetIndex`, 1, "the preset after pressing A on LOOPR");
+
+  r.at("Add the second way in on the map, as in tutorial 2");
+  await tutorial2(r);
+}
+
 // ---------------------------------------------------------------------------------------------
 
 async function run(page, r, problems) {
@@ -507,6 +561,11 @@ async function run(page, r, problems) {
   console.log("Tutorial 3");
   await page.app(`d.store.getState().loadConfig(${JSON.stringify(walked2)}, "Looper tutorial")`);
   await tutorial3(r);
+
+  console.log("Tutorial 4");
+  await page.reset();
+  await r.install();
+  await tutorial4(r);
 }
 
 async function main() {

@@ -145,7 +145,7 @@ The message tells you why. These are the common ones:
 |---|---|---|
 | *A route can't lead to the state it leaves from.* | That's a reload. | Use Preset Select → Current in Program mode. |
 | *Step 1 on that switch already jumps somewhere…* | A press only takes the first jump. | Tick *Replace*, or pick another switch. |
-| *Every step on that switch is in use…* | There's nowhere to put the jump. | Tick *Replace*, or pick another switch. |
+| *Every step on A is in use…* | There's nowhere to put the jump. | Tick *Replace*, or pick another switch. |
 | *That would stop A3 coming back to where it was entered from…* | The edit would turn a return into a plain jump. | Usually the fix is to change the route on the state that enters it, rather than on the copy. |
 | *Can't route to "X": it's on the device N times…* | X has several identical copies and none of them returns, so there's no telling which one you mean. | Clear the extra copies, or give each one a way back. |
 

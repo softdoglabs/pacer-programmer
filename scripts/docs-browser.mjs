@@ -234,7 +234,8 @@ export class Page {
       }
       for (const [from, to] of [[13, 1], [1, 13]]) {
         c = e.setJump(c, from, C.StompswitchA, 1, to);
-        c = e.updateStepLed(c, from, C.StompswitchA, 1, { activeColor: 23, inactiveColor: 24 });
+        // As the tutorial says: White for the colour. A Preset Select never shows its second.
+        c = e.updateStepLed(c, from, C.StompswitchA, 1, { activeColor: 23 });
       }
       if (${stage} >= 2) {
         c = e.clearPreset(c, 24);

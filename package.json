@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "docs:screenshots": "node scripts/docs-screenshots.mjs"
+    "docs:screenshots": "node scripts/docs-screenshots.mjs",
+    "docs:walkthrough": "node scripts/docs-walkthrough.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

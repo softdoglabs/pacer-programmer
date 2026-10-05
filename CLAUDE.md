@@ -1214,6 +1214,13 @@ so the link resolves for the owner only until it's published.
   The tutorial scenes build their configuration with the same editing and
   authoring functions the UI calls, so each picture is what following the
   steps produces. Re-run a scene after changing the UI it shows.
+- **The tutorials are walked, not just pictured**: `pnpm docs:walkthrough`
+  (`scripts/docs-walkthrough.mjs`) follows tutorials 1-3 click by click in
+  the real app, finding controls by the words the text uses, asserts what
+  each step says you'll see, and compares the result with the configuration
+  the screenshots were built from. Run it after changing the editor or the
+  tutorials; it's how a step that no longer matches the UI gets caught. The
+  browser plumbing both scripts share is `scripts/docs-browser.mjs`.
 - **Voice**: conversational, in the owner's own voice, with "you" for the
   reader and contractions. "I" and "my" only for motivation (why the app
   exists, how the looper problem came up); the examples themselves stay

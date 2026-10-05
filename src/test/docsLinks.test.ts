@@ -56,7 +56,8 @@ function links(file: string): { target: string; line: number }[] {
 }
 
 describe("links in the docs", () => {
-  const files = markdownFiles(DOCS);
+  // The repository's own README links into the docs too, and is what GitHub shows first.
+  const files = [...markdownFiles(DOCS), "README.md"];
 
   it("has pages to check", () => {
     expect(files.length).toBeGreaterThan(5);

@@ -1,4 +1,4 @@
-# Devices and files
+# Devices and Files
 
 Your work lives in two places, and the app keeps them apart.
 
@@ -14,7 +14,7 @@ to support Web MIDI with SysEx. Everything else, including the
 simulator, programming, the map, and importing and exporting files, works
 without MIDI.
 
-## The device drawer
+## The Device Drawer
 
 Click the configuration's name in the header, or the device status next to it,
 to open the drawer:
@@ -48,7 +48,7 @@ The firmware line only shows the Pacer's major and minor version (`0101` means
 firmware 1.01), because that's all the Pacer reports. A dump doesn't carry a
 version at all.
 
-### Importing and exporting files
+### Importing and Exporting Files
 
 **Import .syx** takes any full Pacer dump, whether it was saved by this app, by
 Nektar's editor, by a MIDI utility, or written by hand or by an AI (see

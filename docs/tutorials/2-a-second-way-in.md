@@ -1,4 +1,4 @@
-# 2. A second way in
+# 2. A Second Way In
 
 Now say you'd like the looper from A2 as well. Pressing A on A2 should open
 it, and pressing A on the looper should bring you back to A2, not to A1.
@@ -11,13 +11,13 @@ you.
 
 This picks up where [tutorial 1](1-a-looper-preset.md) left off.
 
-## Free up a slot
+## Free Up a Slot
 
 The copy needs a preset of its own, and the Pacer doesn't have any empty ones.
 In **Program**, choose **D6** and click **Clear preset…**. D6 is now `EMPTY`,
 and the map will offer it when it needs a slot.
 
-## Draw the route
+## Draw the Route
 
 1. Switch to **Preset map**.
 2. Drag from the dot on the right edge of **PRGM2** to **LOOPR**, and let go.
@@ -35,7 +35,7 @@ and the map will offer it when it needs a slot.
 
 Click **Add route**.
 
-## One state, two presets
+## One State, Two Presets
 
 ![PRGM1 and PRGM2 both lead to LOOPR, which returns](../images/t2-map.png)
 
@@ -48,13 +48,13 @@ came from. Click it to see what it's made of:
 C1 is entered from A1, and D6 from A2. The two are identical except for switch
 A, which on each copy leads back to its own origin.
 
-## Try it
+## Try It
 
 In **Simulate**, choose A2 and press **A**. The display shows `LOOPR`, and
 you're on D6. Press **A** again and you're back on A2. From A1 you get C1, and
 it takes you back to A1.
 
-## More ways in
+## More Ways In
 
 Every new way into a state that returns costs one more copy, and so one more
 slot. Twelve main presets that each open the looper would need twelve copies,

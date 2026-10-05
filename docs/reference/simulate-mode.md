@@ -1,4 +1,4 @@
-# Simulate mode
+# Simulate Mode
 
 Simulate mode turns the on-screen Pacer into a working one. Press its switches
 and it does what the hardware would do with the configuration you have open.
@@ -14,14 +14,14 @@ plugged in at all. You only send the programming to the Pacer once you're happy
 with it. See [The simulator](../guide/the-simulator.md) for more on working
 this way.
 
-## What's on screen
+## What's on Screen
 
 The context bar holds the simulated MIDI output and the **Reset MIDI state**
 button (see [The window › In Simulate](the-window.md#in-simulate)). Below it
 are the [faceplate](the-faceplate.md), the rear jacks with the external
 footswitches and expression pedals, and the output log.
 
-## The output log
+## The Output Log
 
 ![The output log after three presses](../images/output-log.png)
 
@@ -42,7 +42,7 @@ The firmware's own presets show up here too: entering preset select, Track or
 Transport, and the DAW commands those presets send (by name; see
 [What isn't simulated](#what-isnt-simulated)).
 
-## What the simulator remembers
+## What the Simulator Remembers
 
 Like the Pacer, the simulator remembers the last value it sent on every
 controller, note and program, per channel. That memory decides two things.
@@ -58,7 +58,7 @@ on. Opening another configuration does the same.
 The simulator also remembers where each expression pedal sits, since a real
 pedal stays wherever your foot left it.
 
-## Loading presets
+## Loading Presets
 
 Every way of reaching a preset counts as recalling it, and fires the preset's
 [MIDI sent on load](program-mode.md#midi-sent-on-load) before anything else
@@ -70,7 +70,7 @@ the [map](preset-map.md).
 Opening a configuration doesn't count as a recall, so nothing is sent when you
 load a file.
 
-## What's simulated
+## What's Simulated
 
 - Every step type, on press and release, in All at once and Sequence modes.
   (External step mode is listed [below](#what-isnt-simulated).)
@@ -85,7 +85,7 @@ load a file.
   spread over 14 bits the way the hardware does it.
 - Relay actions, which show up in the log.
 
-## What isn't simulated
+## What Isn't Simulated
 
 - DAW commands from the Track and Transport presets are logged by name but not
   sent, because we don't know the bytes of Nektar's DAW integration.

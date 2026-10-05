@@ -1,4 +1,4 @@
-# Saving and sending
+# Saving and Sending
 
 There are three copies of your configuration floating around, and it helps to
 know which is which:
@@ -9,7 +9,7 @@ know which is which:
 | Snapshots | This browser | Save, Pull, Import |
 | What the Pacer has | The Pacer | Send |
 
-## Save often
+## Save Often
 
 **Save…** keeps your edits as a snapshot, either a new one or over the one you
 opened. Saving doesn't touch the Pacer. Snapshots survive closing the browser;
@@ -18,7 +18,7 @@ unsaved edits don't.
 If you want a file (a backup, or something to hand an AI), save first, then
 open the device drawer and click **Export .syx** on that snapshot.
 
-## Send when it's right
+## Send When It's Right
 
 **Send to Pacer…** writes presets to the Pacer. By default it only sends the
 presets you've changed. It lists them and asks you to confirm.

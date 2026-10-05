@@ -48,7 +48,7 @@ grouped by where you'll see them.
 | *The Pacer may not display…* | Stored, but the Pacer's display may not draw it. | Fine to keep; A–Z, 0–9, space and `-` are certain. |
 | *A built-in firmware mode is showing…* | You're in preset select, Track or Transport. | Edits apply to the user preset underneath. Tap [Preset] to return. |
 
-## The preset map
+## The Preset Map
 
 These come from the [route dialog](preset-map.md#the-route-dialog) and the
 [state details](preset-map.md#a-states-presets). The app refuses an edit it
@@ -72,7 +72,7 @@ find out on the next load.
 | *X has something in it. Clear it first, or pick an empty one.* | **Move to…** only moves into empty presets. | Clear the slot first. |
 | *Moving A3 to D6 would change what the configuration does…* | The move isn't a pure renumbering. | Please report it as a bug, since moves are meant to always be safe. |
 
-## In the output log
+## In the Output Log
 
 | You see | Meaning |
 |---|---|

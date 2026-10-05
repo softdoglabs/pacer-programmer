@@ -1,4 +1,4 @@
-# 3. Changing the looper
+# 3. Changing the Looper
 
 The looper is now two presets, C1 and D6. If you were doing this by hand,
 every change would have to be made twice, and the day you forgot, the copies
@@ -6,7 +6,7 @@ would start to drift apart. Here you change the state, and the copies follow.
 
 This picks up where [tutorial 2](2-a-second-way-in.md) left off.
 
-## Edit once
+## Edit Once
 
 In **Program**, choose **D6** (C1 works just as well, since either one is the
 looper). The app tells you in three places that you're editing more than one
@@ -34,14 +34,14 @@ A's target is what tells the copies apart, so it's only edited on the copy in
 front of you. If you want to change routes, do it on the map, which keeps every
 copy's way back straight.
 
-## See the copies
+## See the Copies
 
 The [preset chooser](../reference/the-faceplate.md#the-preset-chooser) has a
 **By state** view that groups them together:
 
 ![The preset chooser by state](../images/t3-chooser.png)
 
-## Editing one copy on purpose
+## Editing One Copy on Purpose
 
 If you choose **D6 only**, your edits go to D6 alone. As soon as it differs
 from C1 in anything other than its jumps, it isn't the same state anymore.
@@ -49,7 +49,7 @@ The map will show two looper boxes, and D6's A becomes an ordinary jump to A2.
 Sometimes that's what you want (a looper variant for one song, say), but it's
 a different design, so the app never makes that choice for you.
 
-## Tidy up the slots
+## Tidy Up the Slots
 
 Copies land wherever there was room. If you'd like them together, say with the
 whole looper in bank D, click LOOPR on the map and use **Move to…** on a copy.

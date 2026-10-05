@@ -18,7 +18,7 @@ result onto the Pacer, find what was wrong, go back and ask again. With the
 format documented and the simulator catching mistakes before they reach the
 device, that loop gets a lot shorter.
 
-## What you need
+## What You Need
 
 You'll want an AI assistant that can take a file, run code and hand a file
 back. Claude (with its analysis tool) can, and so can ChatGPT and others.
@@ -26,7 +26,7 @@ You'll also need your configuration as a `.syx` file, and ideally the MIDI
 documentation for whatever you're controlling. Most assistants can look that
 up themselves, but attaching it is more reliable.
 
-## 1. Export your configuration
+## 1. Export Your Configuration
 
 Pull it from the Pacer, or open the snapshot you're working on. If you've
 made edits, save them first. Then, in the
@@ -62,7 +62,7 @@ download, and a short table of what each changed switch now does.
 If your AI can't fetch web pages, download the page from GitHub and attach it
 along with the dump.
 
-### Example: a looper preset for the Quad Cortex
+### Example: A Looper Preset for the Quad Cortex
 
 ```text
 Build a looper preset for a Neural DSP Quad Cortex in slot C1, named LOOPR.
@@ -83,7 +83,7 @@ into the looper, and C1's switch A takes you back out. The
 [tutorials](../tutorials/README.md) build the same thing by hand and then let several
 presets share it.
 
-## 3. Load it and try it
+## 3. Load It and Try It
 
 1. In the device drawer, click **Import .syx** and pick the file the AI gave
    you. It opens as a new snapshot, and your original is left alone. If the
@@ -100,7 +100,7 @@ presets share it.
 5. Look at the [preset map](../reference/preset-map.md). Does every route go
    where it should, and does every way in have a way out?
 
-## 4. Fix and repeat
+## 4. Fix and Repeat
 
 Small fixes are quickest in the app itself. Change a CC, a colour or a target
 in Program mode and try it again right away. For bigger changes, tell the AI

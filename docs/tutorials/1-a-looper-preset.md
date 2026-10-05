@@ -1,4 +1,4 @@
-# 1. A looper preset
+# 1. A Looper Preset
 
 In this tutorial we'll turn C1 into a preset that drives the Quad Cortex's
 looper, and make switch A on A1 lead to it and back. When we're done, the map
@@ -8,7 +8,7 @@ Start from the factory defaults: open the
 [device drawer](../reference/devices-and-files.md#the-device-drawer) and click
 **Factory defaults**.
 
-## Make room in C1
+## Make Room in C1
 
 1. Switch to **Program**.
 2. Click the badge on the lower half of the display and choose **C1**.
@@ -19,7 +19,7 @@ Start from the factory defaults: open the
 4. Tap the small pencil next to `EMPTY` on the display, type `LOOPR`, and
    press Enter.
 
-## Put the looper on the switches
+## Put the Looper on the Switches
 
 Tap switch **1**. In the editor:
 
@@ -52,13 +52,13 @@ These are the CCs this example uses for the looper's functions. Check them
 against the MIDI chart for your own unit and firmware, and put each function on
 whichever switch you'd want under your foot.
 
-## The way back
+## The Way Back
 
 Tap switch **A**. Set its step to **Preset Select**, set **Jump to** to `A1`,
 and set its colour to **12A White**. Now pressing A on LOOPR takes you back to
 A1.
 
-## The way in
+## The Way In
 
 Choose **A1** (the breadcrumb at the top of the editor is the same chooser) and
 tap its switch **A**. In the factory set it's already a Preset Select, pointing
@@ -67,7 +67,7 @@ to **12A White**:
 
 ![A1's switch A, now jumping to C1](../images/t1-a1-switch-a.png)
 
-## Try it
+## Try It
 
 Close the editor and switch to **Simulate**. On A1, press **A**. The display
 reads `LOOPR`, and the looper's switches glow in their colours.
@@ -77,7 +77,7 @@ reads `LOOPR`, and the looper's switches glow in their colours.
 Press a few switches and watch the log (or your looper, if you've chosen a
 simulated MIDI output). Press **A** to go back to A1.
 
-## On the map
+## On the Map
 
 Switch to **Preset map**:
 

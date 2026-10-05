@@ -32,7 +32,7 @@ that you (or an AI) can read and write it too.
 You only need MIDI to reach real gear and the Pacer, and for that your browser
 has to support Web MIDI with SysEx. Everything else works without it.
 
-## Where to start
+## Where to Start
 
 If you're new, read [The simulator](guide/the-simulator.md) and then
 [Editing a preset](guide/editing-a-preset.md). The [tutorials](tutorials/README.md)
@@ -45,32 +45,32 @@ part, see [Working with an AI](guide/working-with-ai.md).
 
 [Guide](guide/README.md): how to get things done
 
-- [The simulator](guide/the-simulator.md)
-- [Editing a preset](guide/editing-a-preset.md)
-- [Switches and steps](guide/switches-and-steps.md)
-- [Lights and colours](guide/lights-and-colours.md)
-- [MIDI sent when a preset loads](guide/preset-midi-on-load.md)
-- [Saving and sending](guide/saving-and-sending.md)
+- [The Simulator](guide/the-simulator.md)
+- [Editing a Preset](guide/editing-a-preset.md)
+- [Switches and Steps](guide/switches-and-steps.md)
+- [Lights and Colours](guide/lights-and-colours.md)
+- [MIDI Sent When a Preset Loads](guide/preset-midi-on-load.md)
+- [Saving and Sending](guide/saving-and-sending.md)
 - [Working with an AI](guide/working-with-ai.md)
 
 [Tutorials](tutorials/README.md): a looper, step by step
 
-1. [A looper preset](tutorials/1-a-looper-preset.md)
-2. [A second way in](tutorials/2-a-second-way-in.md)
-3. [Changing the looper](tutorials/3-changing-the-looper.md)
-4. [Letting an AI build it](tutorials/4-letting-an-ai-build-it.md)
+1. [A Looper Preset](tutorials/1-a-looper-preset.md)
+2. [A Second Way In](tutorials/2-a-second-way-in.md)
+3. [Changing the Looper](tutorials/3-changing-the-looper.md)
+4. [Letting an AI Build It](tutorials/4-letting-an-ai-build-it.md)
 
 [Reference](reference/README.md): the manual
 
-- [The window](reference/the-window.md)
-- [The faceplate](reference/the-faceplate.md)
-- [Simulate mode](reference/simulate-mode.md)
-- [Program mode](reference/program-mode.md)
-- [The preset map](reference/preset-map.md)
-- [Devices and files](reference/devices-and-files.md)
+- [The Window](reference/the-window.md)
+- [The Faceplate](reference/the-faceplate.md)
+- [Simulate Mode](reference/simulate-mode.md)
+- [Program Mode](reference/program-mode.md)
+- [The Preset Map](reference/preset-map.md)
+- [Devices and Files](reference/devices-and-files.md)
 - [Programming the Pacer](reference/programming-the-pacer.md)
 - [Troubleshooting](reference/troubleshooting.md)
 - [Glossary](reference/glossary.md)
 
-[Why a state machine](why-a-state-machine.md): the problem the preset map
+[Why a State Machine](why-a-state-machine.md): the problem the preset map
 solves.

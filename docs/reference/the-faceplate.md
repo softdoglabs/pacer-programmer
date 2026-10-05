@@ -1,4 +1,4 @@
-# The faceplate
+# The Faceplate
 
 The faceplate is the on-screen Pacer. In Simulate mode it behaves like the real
 one: press a switch and it lights, changes preset, and sends whatever MIDI the
@@ -20,7 +20,7 @@ Under each switch is its printed marking. The letters A–D and numbers 1–6 ar
 on the real unit too. The encoder beside the display is only drawn for
 completeness, since the app doesn't simulate the Pacer's setup menus.
 
-## A switch up close
+## A Switch Up Close
 
 ![One front-row switch, lit, its lights numbered](../images/switch-anatomy.png)
 
@@ -38,7 +38,7 @@ the picture, switch 1's step sends Program Change 0, and the bar is bright
 orange because the program on that channel is 0. In other words, the switch is
 "on".
 
-### What the lights mean
+### What the Lights Mean
 
 | You see | Meaning |
 |---|---|
@@ -65,7 +65,7 @@ let go.
 Everything a press sends shows up in the output log, and goes to your gear if
 you've chosen a [simulated MIDI output](the-window.md#in-simulate).
 
-## Preset select
+## Preset Select
 
 Hold [Preset] for two seconds and the Pacer goes into preset select, just like
 the hardware does:
@@ -94,7 +94,7 @@ The app writes these DAW commands to the output log by name, but it doesn't
 send them as MIDI, because we don't know the bytes Nektar's DAW integration
 uses.
 
-## The rear jacks
+## The Rear Jacks
 
 ![The external footswitches and expression pedals](../images/rear-jacks.png)
 
@@ -106,7 +106,7 @@ and the pedal sends its message continuously, for example a CC from its minimum
 to its maximum. Where each pedal sits is remembered across preset changes, the
 same way a real pedal stays where your foot left it.
 
-## The preset chooser
+## The Preset Chooser
 
 The badge on the lower half of the display (and the preset button in the
 preset map's context bar) opens a grid of every preset, so you can jump

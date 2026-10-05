@@ -1,4 +1,4 @@
-# The preset map
+# The Preset Map
 
 The preset map draws your configuration the way you designed it: as places,
 and the switches that move between them. This is where you'll notice that four
@@ -24,7 +24,7 @@ The context bar above the map has the preset chooser, plus the same undo, Save
 and Send controls as [Program mode](program-mode.md), since changing a route is
 an edit like any other.
 
-## What makes a state
+## What Makes a State
 
 Two presets are the same state when they do exactly the same thing on every
 switch (the same messages, lights, control modes and load-time MIDI) and only
@@ -47,7 +47,7 @@ Stepping doesn't count as a way in. Next and previous name a direction rather
 than a preset, so they never count towards entering a state, and they're left
 off the map unless you choose *Everything*.
 
-## Clicking around
+## Clicking Around
 
 | Do this | And you get |
 |---|---|
@@ -56,7 +56,7 @@ off the map unless you choose *Everything*.
 | Click a route (the line or its badge) | The [route dialog](#the-route-dialog) for it. The preset it leaves from is loaded, so the faceplate is the one you're changing. |
 | Drag from one state to another | A new route between them. Drag from one of the small dots on a state's edge and drop on the other state's. |
 
-## A state's presets
+## A State's Presets
 
 Clicking a state lists the presets behind it:
 
@@ -76,7 +76,7 @@ state's copies into one bank, say.
 If a move would change what the configuration does, rather than just where a
 preset sits, it's refused and the reason shows up here.
 
-## The route dialog
+## The Route Dialog
 
 Clicking a route opens it:
 
@@ -101,7 +101,7 @@ Clicking a route opens it:
 Dragging between two states opens the same dialog, with *Goes to* filled in and
 *On switch* set to the first free switch.
 
-### When a route costs a preset
+### When a Route Costs a Preset
 
 A state that returns needs one preset per way in. So routing to it from
 somewhere new needs a new copy, and the dialog tells you that and asks where to
@@ -119,7 +119,7 @@ overwrite.
 The Pacer has 24 presets and no spare ones, so a design that returns from lots
 of places can fill them up quickly. See [Slot budget](#slot-budget).
 
-### When the map has to ask
+### When the Map Has to Ask
 
 Take a state you can only enter from one place, whose switch leads back
 there. That switch could mean "go back to where I came from," or it could mean
@@ -136,7 +136,7 @@ If other presets were already sharing that single copy, choosing *Comes back
 here* gives them their own copies too, and points their switches at them. The
 dialog lists which ones.
 
-### When a route is refused
+### When a Route Is Refused
 
 The dialog won't write a route that the map couldn't read back the same way.
 The message tells you why. These are the common ones:
@@ -151,7 +151,7 @@ The message tells you why. These are the common ones:
 
 [Troubleshooting](troubleshooting.md) covers the rest.
 
-## Slot budget
+## Slot Budget
 
 Every state that returns costs one preset per way in. If you have twelve main
 presets that each lead into a looper, that's twelve looper copies, and all 24
@@ -163,7 +163,7 @@ you don't use, which turns it into an empty slot that routes will offer first.
 Or, where you don't actually need to return to the origin, use **Always goes
 to** instead.
 
-## Notes the map can't draw
+## Notes the Map Can't Draw
 
 Sometimes there's something on the device that can't be expressed as states
 and routes, such as two copies that should be one but lead somewhere

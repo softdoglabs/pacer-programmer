@@ -10,13 +10,13 @@ trying it, and keeping it.
 
 For programming in more depth:
 
-- [Switches and steps](switches-and-steps.md): steps, control modes, toggles
+- [Switches and Steps](switches-and-steps.md): steps, control modes, toggles
   and pedals.
-- [Lights and colours](lights-and-colours.md): which light shows, and when
+- [Lights and Colours](lights-and-colours.md): which light shows, and when
   each colour shows.
-- [MIDI sent when a preset loads](preset-midi-on-load.md): setting up your rig
+- [MIDI Sent When a Preset Loads](preset-midi-on-load.md): setting up your rig
   the moment a preset is chosen.
-- [Saving and sending](saving-and-sending.md): snapshots, and writing to the
+- [Saving and Sending](saving-and-sending.md): snapshots, and writing to the
   Pacer.
 
 And for going further, [Working with an AI](working-with-ai.md) shows how to

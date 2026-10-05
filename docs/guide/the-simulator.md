@@ -1,4 +1,4 @@
-# The simulator: your rig, without the Pacer
+# The Simulator: Your Rig, Without the Pacer
 
 The Pacer on screen runs your configuration the same way the Pacer's firmware
 does. Step types, control modes, the lights, preset changes and the MIDI each
@@ -11,7 +11,7 @@ or DAW respond. You don't need a Pacer connected, nothing gets written to one,
 and if you get it wrong nothing is lost. Once it does what you want,
 [send it](saving-and-sending.md) to the Pacer.
 
-## Connecting your gear
+## Connecting Your Gear
 
 The simulator sends from your computer, so your gear needs a MIDI connection to
 the computer. Many modellers, synths and controllers show up as a MIDI port
@@ -34,7 +34,7 @@ Then:
 The output starts out as **Don't send**, so nothing reaches real gear until you
 pick a port.
 
-## Two MIDI setups
+## Two MIDI Setups
 
 The app talks MIDI in two directions, and it keeps them separate on purpose.
 
@@ -49,7 +49,7 @@ The simulator plays the Pacer's part. It sends your rig what the Pacer would
 send, but it doesn't drive the Pacer, and the Pacer doesn't drive it. You can
 use either one without the other.
 
-## Working with it
+## Working with It
 
 The loop goes like this:
 
@@ -66,7 +66,7 @@ Every edit can be undone, and nothing you do here touches the Pacer until you
 send it. (Undo only changes what's on screen, though. Once something has been
 sent, the Pacer keeps it until you send again.)
 
-### It remembers, like the Pacer does
+### It Remembers, Like the Pacer Does
 
 It turns out the Pacer remembers the last value it sent on every controller,
 note and program, and its toggles and lights both follow that memory. The
@@ -79,7 +79,7 @@ Of course, your gear has its own memory, and the simulator can't see it. If
 you change something on the gear directly, the simulator and the gear can
 disagree, just as the Pacer and the gear would.
 
-### What it can't do
+### What It Can't Do
 
 The simulator doesn't receive MIDI, doesn't send the firmware's DAW
 integration commands, and doesn't follow External step select between

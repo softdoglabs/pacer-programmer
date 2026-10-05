@@ -1,11 +1,11 @@
-# Why a state machine
+# Why a State Machine
 
 The Pacer has 24 presets and no memory. A switch can send MIDI and jump to a
 preset, but nothing on the device remembers where you were. If you want it to
 behave as though it remembers, you have to build that memory out of presets,
 by hand.
 
-## The looper problem
+## The Looper Problem
 
 Here's where I ran into it. I wanted to open a looper from any of my main
 presets, use it, and come back to the preset I started on.
@@ -27,7 +27,7 @@ another switch, or fix a CC, and you make the same change on every copy, in an
 editor that shows them as twelve unrelated presets. Miss one and the looper
 behaves differently depending on how you got there.
 
-## What you actually designed
+## What You Actually Designed
 
 Underneath all those copies there's a pretty simple design. There are states,
 which are the places the Pacer can be: main 1, main 2, the looper. And there
@@ -38,7 +38,7 @@ That last kind of route, a return, is the one thing the Pacer can't express.
 It's the whole reason the copies exist. The design has one looper; the
 hardware needs one per way in.
 
-## What the app does with it
+## What the App Does with It
 
 It reads the design out of your presets. When you load a configuration, the
 [preset map](reference/preset-map.md) groups presets that behave identically
@@ -64,7 +64,7 @@ year from now and the map still shows your design. That holds even if you've
 tweaked it on the Pacer's own front panel, as long as the copies still match
 each other.
 
-## When you don't need it
+## When You Don't Need It
 
 Plenty of boards are just presets: each one a set of patch changes and effect
 toggles, with next and previous to move between them. That's fine. The

@@ -1,4 +1,4 @@
-# 4. Letting an AI build it
+# 4. Letting an AI Build It
 
 In tutorial 1 we programmed nine switches by hand. For one looper that's
 fine. For a whole board, with every preset sending the right patch changes and

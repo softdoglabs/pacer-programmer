@@ -1,4 +1,4 @@
-# The window
+# The Window
 
 ![The Pacer Programmer window, its regions numbered](../images/app-window.png)
 
@@ -13,7 +13,7 @@
 | 7 | Rear jacks | The four external footswitches and two expression pedals that plug into the back of the unit. |
 | 8 | Output log | Every press and what it sent, newest first. **Clear** empties it. |
 
-## The three modes
+## The Three Modes
 
 | Mode | What you do there |
 |---|---|
@@ -28,7 +28,7 @@ the map loads it everywhere.
 Your browser's Back and Forward buttons move between the places you've been:
 the modes, the switch you were editing, and the device drawer.
 
-## The device slot
+## The Device Slot
 
 | It shows | Meaning |
 |---|---|
@@ -43,7 +43,7 @@ the modes, the switch you were editing, and the device drawer.
 You don't need MIDI to program or to play the simulator on screen. MIDI is
 only for sending to real gear and for talking to the Pacer.
 
-## The context bar
+## The Context Bar
 
 ### In Simulate
 
@@ -84,7 +84,7 @@ drawer. See [The simulator](../guide/the-simulator.md).
 - **Send to Pacer…** writes your changes to the Pacer. See
   [Sending to the Pacer](devices-and-files.md#sending-to-the-pacer).
 
-### On the preset map
+### On the Preset Map
 
 ![The preset map's context bar](../images/context-map.png)
 

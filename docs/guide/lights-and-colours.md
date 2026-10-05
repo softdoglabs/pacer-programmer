@@ -1,4 +1,4 @@
-# Lights and colours
+# Lights and Colours
 
 Every switch on the Pacer has a colour bar. Above it, the front-row switches
 have two legends (a text one and an icon one), and the back-row switches have
@@ -7,7 +7,7 @@ which light it uses and what colours it shows.
 
 ![A front-row switch: the text legend, the icon legend, and the bar lit orange](../images/switch-anatomy-plain.png)
 
-## One light at a time
+## One Light at a Time
 
 A switch shows the colours of one step, the one that will fire next. In *All
 at once* mode that's always step 1, so give step 1 the colours you want to see.
@@ -17,7 +17,7 @@ the steps as you press.
 Each step's card in the editor tells you whether its colours will show, and
 the one that's lighting the switch has a **lights the switch** badge.
 
-## Two colours, picked by state
+## Two Colours, Picked by State
 
 Each step has two colours, and which one you see depends on what the step last
 did:
@@ -36,7 +36,7 @@ So a CC Toggle with green and red is green while its effect is on and red
 while it's off. It stays that way when you change preset and come back,
 because the Pacer remembers the CC's value.
 
-## Default, Off and the palette
+## Default, Off and the Palette
 
 ![The colour picker](../images/colour-picker.png)
 
@@ -48,7 +48,7 @@ CCs, green for notes, red for preset changes, and so on. It's bright when on
 and dim when off, and most factory presets use it. **Off** keeps the light
 dark.
 
-## Which light
+## Which Light
 
 The **Light** setting picks the bar or one of the legends. You're only offered
 the lights that switch has. A legend lit by a step takes the step's colour,
@@ -58,7 +58,7 @@ The firmware also lights legends on its own to show what a switch is assigned
 to: the arrows on C and D while they step through presets, *Track* on A while A
 selects the Track preset, and so on.
 
-## Lit by incoming MIDI
+## Lit by Incoming MIDI
 
 If you set **Lit by** to *Incoming MIDI*, a CC step's light belongs to whatever
 sends that CC back to the Pacer over USB, usually a DAW. Pressing the switch no

@@ -1,4 +1,4 @@
-# Program mode
+# Program Mode
 
 Program mode is where you change what your presets do. Your changes take
 effect right away: the faceplate, the simulator and the preset map all run the
@@ -7,7 +7,7 @@ your gear before the Pacer ever sees it.
 
 Nothing reaches the Pacer until you [send it](devices-and-files.md#sending-to-the-pacer).
 
-## The faceplate in Program mode
+## The Faceplate in Program Mode
 
 ![The faceplate in Program mode, with a pencil on everything programmable](../images/program-faceplate.png)
 
@@ -23,7 +23,7 @@ The display has two badges. The small pencil beside the name
 [renames the preset](#renaming-a-preset), and the one in the corner opens the
 [preset chooser](the-faceplate.md#the-preset-chooser).
 
-## The switch editor
+## The Switch Editor
 
 When you open a control, its editor replaces the faceplate:
 
@@ -50,7 +50,7 @@ switch lights one step at a time, and in All-at-once mode that's the first
 step.* Each card tells you whether its colours will ever be seen, and when.
 Step 1 has the **lights the switch** badge.
 
-### Control modes
+### Control Modes
 
 | Fires | One press… |
 |---|---|
@@ -61,7 +61,7 @@ Step 1 has the **lights the switch** badge.
 There's more detail, including what the hardware does in each mode, in
 [Programming the Pacer › Control modes](programming-the-pacer.md#control-modes-what-a-press-fires).
 
-### Step types
+### Step Types
 
 The type picker groups them by what they do.
 
@@ -98,7 +98,7 @@ moves.
 The byte layout of every type is in
 [Programming the Pacer › Step message types](programming-the-pacer.md#step-message-types).
 
-### Lights and colours
+### Lights and Colours
 
 A switch shows the colours of one step at a time, the one that will fire next.
 In All-at-once mode that's always step 1, and in Sequence mode it follows the
@@ -137,7 +137,7 @@ the light dark.
 The full colour table is in
 [Programming the Pacer › Colour codes](programming-the-pacer.md#colour-codes).
 
-### Lit by incoming MIDI
+### Lit by Incoming MIDI
 
 Setting **Lit by** to *Incoming MIDI* hands a CC step's light over to your DAW.
 The light then follows that CC as it arrives over USB, and pressing the switch
@@ -150,7 +150,7 @@ over USB from something that echoes it. And because the app has no MIDI input,
 the simulator shows what the Pacer shows before anything answers, which is the
 second colour.
 
-### Edits that reach further than you'd think
+### Edits That Reach Further Than You'd Think
 
 Two switches on the same CC share a value whether you meant them to or not.
 Toggling one changes what the other sends next, and both lights follow.
@@ -159,7 +159,7 @@ A Preset Select's target is the one thing that's edited per preset, even when
 you're [editing a state](#editing-a-state-several-presets-at-once). It's where
 that copy leads, and the copies need to differ there.
 
-## Renaming a preset
+## Renaming a Preset
 
 Tap the small pencil beside the name on the display. The name line opens for
 typing, with the old name selected:
@@ -175,14 +175,14 @@ Names are stored in capitals, the way the Pacer has them. Characters other
 than A–Z, 0–9, space and `-` are allowed, but you'll get a warning, because
 the Pacer can store them but may not be able to draw them.
 
-## The preset's own settings
+## The Preset's Own Settings
 
 Under the faceplate, Program mode shows the settings that belong to the preset
 rather than to any one switch:
 
 ![The preset panel: MIDI sent on load, and Clear preset](../images/preset-panel.png)
 
-### MIDI sent on load
+### MIDI Sent on Load
 
 A preset can send up to sixteen messages whenever it's recalled, whether by
 preset select, by a switch jumping to it, or by stepping. Use them to put your
@@ -196,7 +196,7 @@ one value, while a switch's CC Toggle has two values.
 
 The simulator sends these too, whenever you load the preset.
 
-### Clear preset
+### Clear Preset
 
 **Clear preset…** empties the preset. Every switch is set to Off, its
 load-time MIDI is removed, and it's renamed `EMPTY`. The confirmation tells you
@@ -210,7 +210,7 @@ does nothing except step to its neighbours.
 Like every other edit, clearing can be undone. Undo only changes the app's
 copy, though, so if you've already sent the cleared preset, send again.
 
-## Editing a state: several presets at once
+## Editing a State: Several Presets at Once
 
 On the preset map, presets that behave alike are drawn as one state. The usual
 example is a looper preset with one copy for each place you can enter it from.
@@ -247,7 +247,7 @@ because it's what tells the copies apart. If you want to change routes between
 states, the [preset map](preset-map.md) is the better place, since it keeps
 every copy's way back in order.
 
-## Undo, redo and unsaved changes
+## Undo, Redo and Unsaved Changes
 
 Undo and Redo (⌘Z and ⇧⌘Z, or Ctrl on Windows and Linux) cover every edit:
 steps, names, preset MIDI, clearing, and anything you change on the preset

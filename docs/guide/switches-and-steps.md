@@ -1,4 +1,4 @@
-# Switches and steps
+# Switches and Steps
 
 Every programmable control has six steps, plus a control mode that decides
 which of them a press fires.
@@ -14,9 +14,9 @@ The steps on a switch don't have to be the same kind of thing. One switch can
 send a program change to your amp, a CC to your delay, and jump to another
 preset, all on one press.
 
-## Control modes
+## Control Modes
 
-### All at once
+### All at Once
 
 Every active step fires, in order, each time you press. This is the default,
 and it's what you want most of the time.
@@ -43,13 +43,13 @@ in the middle of a sequence.
 
 The light follows along: it shows the colours of whichever step fires next.
 
-### External step
+### External Step
 
 The switch fires whichever step another switch has picked, using a *Step
 Select* or *Step Inc/Dec* step. The simulator doesn't follow this between
 switches yet.
 
-## Toggles share their state
+## Toggles Share Their State
 
 A CC Toggle sends its first value, or its second value if the controller
 already holds the first. "Holds" here means the Pacer's memory of the last
@@ -61,21 +61,21 @@ That's usually what you want, since a delay that's on is on no matter which
 switch turned it on. If it isn't, use different CCs, or use CC Trigger, which
 always sends the same values.
 
-## Momentary or latching
+## Momentary or Latching
 
 CC Trigger sends one value when you press and another when you let go, so
 it's momentary. CC Toggle alternates on each press, so it latches. Likewise,
 Note sounds while you hold the switch down, and Note Toggle starts on one press
 and stops on the next.
 
-## Expression pedals
+## Expression Pedals
 
 Pedals have steps too, but you sweep them instead of pressing them. A pedal
 step sends a continuous message (a CC, pitch bend, aftertouch or NRPN) between
 a minimum and a maximum as the pedal moves. In the simulator, drag the pedal's
 slider from heel to toe.
 
-## External footswitches
+## External Footswitches
 
 Footswitches 1 to 4 plug into the back, and you program them just like the
 stompswitches. They just don't have any lights.

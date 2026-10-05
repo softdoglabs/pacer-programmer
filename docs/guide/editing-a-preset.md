@@ -1,9 +1,9 @@
-# Editing a preset
+# Editing a Preset
 
 This page covers the basics: changing what a switch does on one preset,
 trying it, and keeping it. You don't need the preset map for any of this.
 
-## 1. Find the preset
+## 1. Find the Preset
 
 Open the configuration you want to change. You can pull it from your Pacer,
 import a `.syx`, or start from the factory defaults (see
@@ -12,7 +12,7 @@ click the badge on the lower half of the display to open the
 [preset chooser](../reference/the-faceplate.md#the-preset-chooser), and choose
 one.
 
-## 2. Open the switch
+## 2. Open the Switch
 
 Switch to **Program**. Every control you can program now has a pencil on it:
 
@@ -20,7 +20,7 @@ Switch to **Program**. Every control you can program now has a pencil on it:
 
 Tap the switch you want, and the faceplate gives way to the switch editor.
 
-## 3. Set what it does
+## 3. Set What It Does
 
 ![The switch editor, with a CC Toggle on step 1 and a program change on step 2](../images/switch-editor-plain.png)
 
@@ -38,13 +38,13 @@ rather have each press do the next thing in a list, set it to *Sequence*.
 examples, and every type and field is listed in
 [Program mode](../reference/program-mode.md#step-types).
 
-## 4. Choose its colours
+## 4. Choose Its Colours
 
 Under the step, pick which light it uses and its two colours. The labels tell
 you when each one shows, for example *While CC 52 = 127* and *Otherwise*.
 [Lights and colours](lights-and-colours.md) has the details.
 
-## 5. Try it
+## 5. Try It
 
 Press the live copy of the switch on the right of the editor. It sends, and its
 light changes, the same way the Pacer's would. If you've picked a
@@ -54,12 +54,12 @@ The row of buttons along the top picks a different switch on the same preset,
 and the preset name at the start of that row (`A1 PRGM1`) opens the preset
 chooser. The **✕** at the end takes you back to the faceplate.
 
-## 6. Name the preset
+## 6. Name the Preset
 
 Back on the faceplate, tap the small pencil next to the name on the display,
 type up to five characters, and press Enter.
 
-## 7. Keep it
+## 7. Keep It
 
 Undo and Redo (⌘Z and ⇧⌘Z on a Mac, Ctrl+Z and Ctrl+Shift+Z elsewhere) step
 back and forth through every change.

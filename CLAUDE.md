@@ -1221,6 +1221,9 @@ so the link resolves for the owner only until it's published.
   Cortex". Avoid the AI tells: em dashes (keep them to quoted UI
   text and the odd one), "not X, it's Y" contrasts, bold-led bullets,
   reflexive triads, and summing-up closers. Don't invent anecdotes for him.
+  Headings, and the page names in contents lists and indexes, are in title
+  case (articles, short conjunctions and prepositions lowercase unless first,
+  last or after a colon); links in running prose stay in prose case.
   The front page leads with both halves of the app, the simulator (try a
   change against real MIDI without sending to the Pacer) and the state
   machine, with the `simulator` scene's screenshot.

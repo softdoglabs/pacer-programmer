@@ -1,4 +1,4 @@
-# MIDI sent when a preset loads
+# MIDI Sent When a Preset Loads
 
 Each preset can send up to sixteen messages the moment it loads, before you
 press anything. That's how you put your rig in the state the preset expects.
@@ -13,14 +13,14 @@ You'll find them in Program mode, under the faceplate:
 a step does, with one difference worth knowing about: a preset's CC has a
 single value, while a switch's CC Toggle has two.
 
-## When they're sent
+## When They're Sent
 
 They go out whenever the preset is recalled. That includes a switch that jumps
 or steps to it, the firmware's preset select, and choosing it in the app's
 preset chooser or on the map. Opening a configuration doesn't count, so
 nothing is sent when you load a file.
 
-## They light switches too
+## They Light Switches Too
 
 Load-time messages update the Pacer's memory like any other message, and the
 switches light to match. If a preset sends PC 5 on load, and switch 2 sends

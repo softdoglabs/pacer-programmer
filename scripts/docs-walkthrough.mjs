@@ -69,7 +69,10 @@ class Reader {
     await this.p.eval(HELPERS);
   }
 
-  /** Where in the tutorial we are, for error messages. */
+  /**
+   * Where in the tutorial we are, for error messages. Named after the tutorial's section heading,
+   * word for word, where the step is one; sub-steps within a section are described in prose.
+   */
   at(step) {
     this.step = step;
     console.log(`  ${step}`);
@@ -280,7 +283,7 @@ async function tutorial1(r) {
   await r.click(`window.__find.byText("button", "Factory defaults", { prefix: true })`, "the Factory defaults row");
   await r.expect(`s.configSource`, "Factory defaults", "the open configuration");
 
-  r.at("Make room in C1");
+  r.at("Make Room in C1");
   await r.toggle("Mode", "Program");
   await r.preset("C1");
   await r.expect(`s.board.activePresetIndex`, 13, "the preset");
@@ -292,7 +295,7 @@ async function tutorial1(r) {
   await r.key("Enter");
   await r.expect(`s.board.config.presets[13].name.trim()`, "LOOPR", "C1's name");
 
-  r.at("Put the looper on the switches");
+  r.at("Put the Looper on the Switches");
   await r.faceplateSwitch("1");
   for (const [marking, cc, on, off] of LOOPER) {
     if (marking !== "1") await r.labelled(`Program ${marking === "B" ? "Stomp B" : `Stomp ${marking}`}`);
@@ -319,13 +322,13 @@ async function tutorial1(r) {
     }
   }
 
-  r.at("The way back");
+  r.at("The Way Back");
   await r.labelled("Program Stomp A");
   await r.choose("Step 1 type", "Preset Select");
   await r.choose("Jump to", "A1");
   await r.colour("Color", "12A White");
 
-  r.at("The way in");
+  r.at("The Way In");
   await r.click(`window.__find.label("button", "Preset: C1")`, "the breadcrumb's preset chooser");
   await r.click(
     `window.__find.all("[role=option]").find((e) => (e.getAttribute("aria-label") ?? "").startsWith("A1 "))`,
@@ -340,7 +343,7 @@ async function tutorial1(r) {
   await r.choose("Jump to", "C1");
   await r.colour("Color", "12A White");
 
-  r.at("Try it");
+  r.at("Try It");
   await r.labelled("Back to faceplate");
   await r.toggle("Mode", "Simulate");
   await r.faceplateSwitch("A");
@@ -351,7 +354,7 @@ async function tutorial1(r) {
   await r.faceplateSwitch("A");
   await r.expect(`s.board.activePresetIndex`, 1, "the preset after pressing A on LOOPR");
 
-  r.at("On the map");
+  r.at("On the Map");
   await r.toggle("Mode", "Preset map");
   await wait(600);
   await looperPairOnTheMap(r);
@@ -375,14 +378,14 @@ async function looperPairOnTheMap(r) {
 }
 
 async function tutorial2(r) {
-  r.at("Free up a slot");
+  r.at("Free Up a Slot");
   await r.toggle("Mode", "Program");
   await r.preset("D6");
   await r.button("Clear preset…");
   await r.button("Clear it");
   await r.expect(`s.board.config.presets[24].name.trim()`, "EMPTY", "D6's name");
 
-  r.at("Draw the route");
+  r.at("Draw the Route");
   await r.toggle("Mode", "Preset map");
   await wait(800);
   await r.p.drag(await r.p.handle("PRGM2", "s-r"), await r.p.handle("LOOPR", "t-l"));
@@ -401,7 +404,7 @@ async function tutorial2(r) {
   await r.button("Add route");
   await wait(600);
 
-  r.at("One state, two presets");
+  r.at("One State, Two Presets");
   await r.expectText("2 presets · one state");
   await r.expectText("A returns");
   await r.click(
@@ -411,7 +414,7 @@ async function tutorial2(r) {
   await r.expectText("entered from A1 PRGM1");
   await r.expectText("entered from A2 PRGM2");
 
-  r.at("Try it");
+  r.at("Try It");
   await r.toggle("Mode", "Simulate");
   await r.preset("A2");
   await r.faceplateSwitch("A");
@@ -427,7 +430,7 @@ async function tutorial2(r) {
 }
 
 async function tutorial3(r) {
-  r.at("Edit once");
+  r.at("Edit Once");
   await r.toggle("Mode", "Program");
   await r.preset("D6");
   await r.expectText("All 2 presets", "Changes: All 2 presets");
@@ -450,7 +453,7 @@ async function tutorial3(r) {
   );
   await r.labelled("Back to faceplate");
 
-  r.at("See the copies");
+  r.at("See the Copies");
   await r.click(
     `window.__find.all("button").find((e) => (e.getAttribute("aria-label") ?? "").endsWith("choose another"))`,
     "the preset chooser",
@@ -459,7 +462,7 @@ async function tutorial3(r) {
   await r.expectText("LOOPR — 2 presets, one state");
   await r.key("Escape");
 
-  r.at("Editing one copy on purpose");
+  r.at("Editing One Copy on Purpose");
   await r.preset("D6");
   await r.toggle("Changes", "D6 only");
   await r.faceplateSwitch("6");
@@ -475,7 +478,7 @@ async function tutorial3(r) {
   );
   if (back !== 1) r.fail(`expected undo to make LOOPR one state again, got ${back}`);
 
-  r.at("Tidy up the slots");
+  r.at("Tidy Up the Slots");
   await r.preset("D5");
   await r.button("Clear preset…");
   await r.button("Clear it");

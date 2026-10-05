@@ -1221,6 +1221,17 @@ so the link resolves for the owner only until it's published.
   the screenshots were built from. Run it after changing the editor or the
   tutorials; it's how a step that no longer matches the UI gets caught. The
   browser plumbing both scripts share is `scripts/docs-browser.mjs`.
+  - **It's a hand transcription of the tutorials, not a reader of them**,
+    by choice: reading the markdown was judged overkill while edits keep the
+    two in step. So **when a tutorial changes, change the walkthrough with
+    it** (and vice versa). It catches the UI drifting from the docs; it can't
+    catch the docs drifting from it. The data the tutorials state lives in
+    four places that must agree: tutorial 1's switch/CC/colour table, the
+    walkthrough's `LOOPER`, `loadLooperTutorial` in `docs-browser.mjs`
+    (which the screenshots are built from), and `docs-ai-example.mjs`. The
+    labels the text tells you to click are typed into the walkthrough, and
+    its `r.at(...)` step names match the tutorials' section headings word for
+    word.
   - Tutorial 4's AI step is played by `scripts/docs-ai-example.mjs`, which
     writes `fixtures/ai-looper.syx` from the format page alone (no app code);
     the walkthrough exports the factory defaults through the real button,

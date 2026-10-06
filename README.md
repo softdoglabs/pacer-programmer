@@ -49,6 +49,14 @@ pnpm install
 pnpm dev
 ```
 
+## Not Affiliated with Nektar
+
+Pacer Programmer is an independent project. It isn't affiliated with,
+endorsed by, or supported by Nektar Technology. Nektar and Pacer are
+trademarks of their owner, and other product names mentioned here, such as
+Quad Cortex, belong to their respective owners. Please don't contact Nektar
+for help with this app.
+
 ## License
 
 Copyright (C) 2026 Soft Dog Labs, LLC

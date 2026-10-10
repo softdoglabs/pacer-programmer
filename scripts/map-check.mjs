@@ -9,6 +9,7 @@
  * - arrowheads closer than a head's width (two routes reading as one),
  * - a head landing on another edge's tail,
  * - two edges whose paths run together,
+ * - two edge badges on top of each other,
  * - states outside the visible map, including after an edit re-lays it out,
  * - fewer dashed return edges than the configuration has ways back.
  *
@@ -63,7 +64,10 @@ const MEASURE = `(() => {
   // Screen-space node boxes, to see whether any fall outside the map's viewport.
   const nodes = [...document.querySelectorAll(".react-flow__node")].map((n) => { const b = n.getBoundingClientRect(); return { t: n.textContent.slice(0, 5), x: b.x, y: b.y, r: b.right, b: b.bottom }; });
   const t = document.querySelector(".react-flow__viewport").style.transform;
-  return { paths, nodes, vp: { x: vp.x, y: vp.y, r: vp.right, b: vp.bottom }, t };
+  const labels = [...document.querySelectorAll(".react-flow__edgelabel-renderer > div > div, .react-flow__edgelabel-renderer > div")]
+    .filter((e) => e.children.length === 0 && e.textContent.trim())
+    .map((e) => { const b = e.getBoundingClientRect(); return { t: e.textContent.trim(), x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
+  return { labels, paths, nodes, vp: { x: vp.x, y: vp.y, r: vp.right, b: vp.bottom }, t };
 })()`;
 
 function analyse(m, name) {
@@ -87,6 +91,9 @@ function analyse(m, name) {
       }
     }
   }
+  for (let i = 0; i < m.labels.length; i++)
+    for (let j = i + 1; j < m.labels.length; j++)
+      if (d(m.labels[i], m.labels[j]) < 16) problems.push(`badges overlap: ${m.labels[i].t} & ${m.labels[j].t}`);
   const outside = m.nodes.filter((n) => n.x < m.vp.x - 1 || n.r > m.vp.r + 1 || n.y < m.vp.y - 1 || n.b > m.vp.b + 1);
   if (outside.length)
     problems.push(`${outside.length} node(s) outside the visible map: ${outside.map((n) => n.t).join(", ")}`);

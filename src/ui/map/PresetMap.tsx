@@ -15,6 +15,7 @@ import { entrantStates } from "@/pacer/authoring";
 import { usePacerStore } from "../../store/pacerStore";
 import { useMachine } from "../useMachine";
 import { layoutStates } from "./layout";
+import { LabelBoard, LabelBoardContext } from "./labelBoard";
 
 /*
  * The configuration as the machine its author meant, rather than 24 slots. Presets that behave
@@ -75,6 +76,8 @@ export function PresetMap() {
   const [intent, setIntent] = useState<RouteIntent | null>(null);
   // The state whose presets are being looked at, below the map.
   const [inspecting, setInspecting] = useState<string | null>(null);
+  // Where the edge badges go, settled across the map (see `labelBoard`).
+  const [labels] = useState(() => new LabelBoard());
   const machine = useMachine();
   const activeIndex = usePacerStore((s) => s.board.activePresetIndex);
   const jumpToPreset = usePacerStore((s) => s.jumpToPreset);
@@ -319,48 +322,50 @@ export function PresetMap() {
       </p>
       {/* A definite height: React Flow is height:100%, which resolves to nothing against min-height. */}
       <div className="h-[70vh] min-h-96 overflow-hidden rounded-lg border bg-card">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={NODE_TYPES}
-          edgeTypes={EDGE_TYPES}
-          fitView
-          // Selecting a node otherwise lifts it over the edge labels, so the map rearranges
-          // itself in depth as soon as you click anything.
-          elevateNodesOnSelect={false}
-          colorMode="dark"
-          proOptions={{ hideAttribution: true }}
-          nodesDraggable={false}
-          onConnect={(connection) => {
-            if (connection.source === connection.target) return;
-            const members = machine.members[connection.source] ?? [];
-            openRoute({ kind: "add", fromStateId: connection.source, toStateId: connection.target }, members);
-          }}
-          onEdgeClick={(_, edge) => {
-            const data = edge.data as FlowEdgeData | undefined;
-            if (data?.controlId === undefined || data.stepNumber === undefined) return;
-            openRoute(
-              { kind: "existing", fromStateId: edge.source, controlId: data.controlId, stepNumber: data.stepNumber },
-              machine.members[edge.source] ?? [],
-            );
-          }}
-          onNodeClick={(_, node) => {
-            const members = machine.members[node.id] ?? [];
-            if (members[0] !== undefined) jumpToPreset(members[0]);
-            // And show what it's made of: one node can be several presets, which is the thing a
-            // map of states hides by design.
-            setInspecting(node.id);
-          }}
-          // The shortcut for the pencil, for anyone who tries it.
-          onNodeDoubleClick={(_, node) => {
-            const members = machine.members[node.id] ?? [];
-            const open = members.includes(activeIndex) ? activeIndex : members[0];
-            if (open !== undefined) programPreset(open);
-          }}
-        >
-          <Background />
-          <FitOnLayoutChange layout={layoutSignature} />
-        </ReactFlow>
+        <LabelBoardContext.Provider value={labels}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={NODE_TYPES}
+            edgeTypes={EDGE_TYPES}
+            fitView
+            // Selecting a node otherwise lifts it over the edge labels, so the map rearranges
+            // itself in depth as soon as you click anything.
+            elevateNodesOnSelect={false}
+            colorMode="dark"
+            proOptions={{ hideAttribution: true }}
+            nodesDraggable={false}
+            onConnect={(connection) => {
+              if (connection.source === connection.target) return;
+              const members = machine.members[connection.source] ?? [];
+              openRoute({ kind: "add", fromStateId: connection.source, toStateId: connection.target }, members);
+            }}
+            onEdgeClick={(_, edge) => {
+              const data = edge.data as FlowEdgeData | undefined;
+              if (data?.controlId === undefined || data.stepNumber === undefined) return;
+              openRoute(
+                { kind: "existing", fromStateId: edge.source, controlId: data.controlId, stepNumber: data.stepNumber },
+                machine.members[edge.source] ?? [],
+              );
+            }}
+            onNodeClick={(_, node) => {
+              const members = machine.members[node.id] ?? [];
+              if (members[0] !== undefined) jumpToPreset(members[0]);
+              // And show what it's made of: one node can be several presets, which is the thing a
+              // map of states hides by design.
+              setInspecting(node.id);
+            }}
+            // The shortcut for the pencil, for anyone who tries it.
+            onNodeDoubleClick={(_, node) => {
+              const members = machine.members[node.id] ?? [];
+              const open = members.includes(activeIndex) ? activeIndex : members[0];
+              if (open !== undefined) programPreset(open);
+            }}
+          >
+            <Background />
+            <FitOnLayoutChange layout={layoutSignature} />
+          </ReactFlow>
+        </LabelBoardContext.Provider>
       </div>
       {inspecting !== null && <StateDetails stateId={inspecting} onClose={() => setInspecting(null)} />}
       <RouteDialog intent={intent} onClose={() => setIntent(null)} />

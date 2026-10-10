@@ -33,6 +33,8 @@ export interface EdgeEnds {
   /** Where along its side the edge leaves and arrives, from `spreadEnds`: +down for left/right, +right for top/bottom. */
   sourceShift?: number;
   targetShift?: number;
+  /** How far along the edge its label sits, 0 at the source to 1 at the target. The middle by default. */
+  labelAt?: number;
 }
 
 export interface EdgeGeometry {
@@ -141,6 +143,7 @@ export function edgeGeometry({
   offset,
   sourceShift = 0,
   targetShift = 0,
+  labelAt = 0.5,
 }: EdgeEnds): EdgeGeometry {
   // Ends moved along their sides rather than off them, so each still sits on the node's edge and
   // its head still points straight in.
@@ -171,16 +174,35 @@ export function edgeGeometry({
 
   const sourceNormal = normal(sourcePosition);
   const targetNormal = normal(targetPosition);
-  const path = [
-    `M ${start.x},${start.y}`,
-    `C ${start.x + sourceNormal.x * reach},${start.y + sourceNormal.y * reach}`,
-    `${midX - along.x * glide},${midY - along.y * glide}`,
-    `${midX},${midY}`,
-    `C ${midX + along.x * glide},${midY + along.y * glide}`,
-    `${end.x + targetNormal.x * reach},${end.y + targetNormal.y * reach}`,
-    `${end.x},${end.y}`,
-  ].join(" ");
+  const mid = { x: midX, y: midY };
+  const first = [
+    start,
+    { x: start.x + sourceNormal.x * reach, y: start.y + sourceNormal.y * reach },
+    { x: midX - along.x * glide, y: midY - along.y * glide },
+    mid,
+  ] as const;
+  const second = [
+    mid,
+    { x: midX + along.x * glide, y: midY + along.y * glide },
+    { x: end.x + targetNormal.x * reach, y: end.y + targetNormal.y * reach },
+    end,
+  ] as const;
+  const point = (p: { x: number; y: number }) => `${p.x},${p.y}`;
+  const path = `M ${point(start)} C ${first.slice(1).map(point).join(" ")} C ${second.slice(1).map(point).join(" ")}`;
 
-  // The join between the two curves is the middle of the line, so a label sits on its own path.
-  return { path, start, end, label: { x: midX, y: midY } };
+  // On its own path wherever it sits: the first curve runs to the middle, the second from it.
+  const label = labelAt <= 0.5 ? cubicAt(first, labelAt * 2) : cubicAt(second, labelAt * 2 - 1);
+  return { path, start, end, label };
+}
+
+type Point = { x: number; y: number };
+
+/** A point on a cubic Bézier curve. */
+function cubicAt([p0, p1, p2, p3]: readonly [Point, Point, Point, Point], t: number): Point {
+  const u = 1 - t;
+  const a = u * u * u,
+    b = 3 * u * u * t,
+    c = 3 * u * t * t,
+    d = t * t * t;
+  return { x: a * p0.x + b * p1.x + c * p2.x + d * p3.x, y: a * p0.y + b * p1.y + c * p2.y + d * p3.y };
 }

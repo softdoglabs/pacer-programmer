@@ -1,5 +1,6 @@
 import { BaseEdge, EdgeLabelRenderer, type EdgeProps } from "@xyflow/react";
 import { edgeGeometry } from "./edgePath";
+import { LABEL_SPOTS, useLabelSpot } from "./labelBoard";
 
 /*
  * An edge that can be pushed aside without losing its bearings.
@@ -32,6 +33,7 @@ export interface FlowEdgeData extends Record<string, unknown> {
 }
 
 export function FlowEdge({
+  id,
   sourceX,
   sourceY,
   targetX,
@@ -42,7 +44,7 @@ export function FlowEdge({
   style,
   data,
 }: EdgeProps & { data?: FlowEdgeData }) {
-  const geometry = edgeGeometry({
+  const ends = {
     sourceX,
     sourceY,
     targetX,
@@ -52,11 +54,14 @@ export function FlowEdge({
     offset: data?.offset ?? 0,
     sourceShift: data?.sourceShift ?? 0,
     targetShift: data?.targetShift ?? 0,
-  });
+  };
+  const geometry = edgeGeometry(ends);
   const path = geometry.path;
-  const labelX = geometry.label.x;
-  const labelY = geometry.label.y;
-
+  // Where the badge goes is settled with every other edge's (see `labelBoard`).
+  const spots = LABEL_SPOTS.map((labelAt) => edgeGeometry({ ...ends, labelAt }).label);
+  const spot = useLabelSpot(id, spots, data?.faded ? 2 : data?.dashed ? 1 : 0);
+  const labelX = spots[spot]?.x ?? geometry.label.x;
+  const labelY = spots[spot]?.y ?? geometry.label.y;
   return (
     <>
       <BaseEdge path={path} markerEnd={markerEnd} style={style} />

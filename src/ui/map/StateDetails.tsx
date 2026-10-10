@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { presetEntrants } from "@/pacer/analysis";
+import { dependsOnEntry, presetEntrants } from "@/pacer/analysis";
 import { isSparePreset } from "@/pacer/editing";
 import { FIRST_USER_PRESET_INDEX, LAST_USER_PRESET_INDEX, presetIndexToLabel } from "@/pacer/protocol/constants";
 import { usePacerStore } from "../../store/pacerStore";
@@ -34,7 +34,7 @@ export function StateDetails({ stateId, onClose }: { stateId: string; onClose: (
     return {
       name: state?.name?.trim() || stateId,
       members: state ? (machine.members[state.id] ?? []) : [],
-      comesBack: state?.transitions.some((t) => t.to.kind === "return") ?? false,
+      comesBack: state ? dependsOnEntry(state) : false,
     };
   }, [machine, stateId]);
 

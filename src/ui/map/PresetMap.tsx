@@ -11,6 +11,7 @@ import "@xyflow/react/dist/style.css";
 import { presetIndexToLabel } from "@/pacer/protocol/constants";
 import { switchSpecForControl } from "@/pacer/hardware";
 import { controlLabel } from "@/pacer/simulator";
+import { entrantStates } from "@/pacer/authoring";
 import { usePacerStore } from "../../store/pacerStore";
 import { useMachine } from "../useMachine";
 import { layoutStates } from "./layout";
@@ -43,6 +44,9 @@ function collapsedLabel(members: number[]): string {
  */
 const marking = (controlId: number) =>
   (switchSpecForControl(controlId)?.name ?? controlLabel(controlId)).replace(/^FS/, "");
+
+/** ↩ as text: on its own the platform's font draws it as an emoji tile. */
+const RETURN_GLYPH = "\u21A9\uFE0E";
 
 /** How far apart to bow the two halves of a reciprocal pair, in flow units. */
 const SEPARATION = 26;
@@ -120,15 +124,28 @@ export function PresetMap() {
       ).map((p) => [p.id, p]),
     );
 
-    // A return has no single destination to draw, so it's named on the node it leaves from.
-    const returnsVia = (state: (typeof machine.states)[number]) => {
-      const via = state.transitions.filter((t) => t.to.kind === "return").map((t) => marking(t.controlId));
-      return via.length > 0 ? via.join(", ") : undefined;
-    };
+    const openExisting = (stateId: string, t: Transition) =>
+      openRoute(
+        { kind: "existing", fromStateId: stateId, controlId: t.controlId, stepNumber: t.stepNumber },
+        machine.members[stateId] ?? [],
+      );
 
     const nodes: Node[] = machine.states.map((state) => {
       const members = machine.members[state.id] ?? [];
-      const via = returnsVia(state);
+      /*
+       * A switch whose destination depends on the way in is named on the node as well as drawn:
+       * the dashed edges show where it can go, the note says it's one switch doing that, and it's
+       * where to click to change it — to stop returning, say, which frees the copies.
+       */
+      const conditional = state.transitions
+        .filter((t) => t.to.kind !== "state")
+        .map((t) => ({
+          key: `${t.controlId}:${t.stepNumber}`,
+          glyph: t.to.kind === "return" ? RETURN_GLYPH : "\u2442",
+          text: `${marking(t.controlId)} ${t.to.kind === "return" ? "returns" : "by way in"}`,
+          title: `${marking(t.controlId)} ${t.to.kind === "return" ? "goes back to wherever this state was entered from" : "leads somewhere different depending on the way in"}. Click to change it.`,
+          onPress: () => openExisting(state.id, t),
+        }));
       // Whichever copy you're on, or the first: the copies behave alike, so any of them is the
       // state — it's only the way back that tells them apart.
       const open = members.includes(activeIndex) ? activeIndex : members[0];
@@ -144,7 +161,7 @@ export function PresetMap() {
             members.length > 1
               ? `${members.length} presets, one state: ${members.map(presetIndexToLabel).join(", ")}`
               : undefined,
-          ...(via !== undefined ? { returnsVia: via } : {}),
+          ...(conditional.length > 0 ? { conditional } : {}),
           // The preset the simulator is on, wherever among the copies it happens to be.
           here: members.includes(activeIndex),
           ...(open !== undefined ? { onEdit: () => programPreset(open) } : {}),
@@ -152,12 +169,29 @@ export function PresetMap() {
       };
     });
 
+    /*
+     * A return is drawn too, dashed, to each state it can lead back to: the note on the node was
+     * easy to miss, and without the edges the map showed a looper with no way out. A switch that
+     * depends on the way in draws each of its destinations the same way. Dashed because it's one
+     * of several places the switch can go, not where it always goes.
+     */
     const drawn = machine.states.flatMap((state) =>
-      state.transitions.flatMap((t, i) =>
-        drawnRoute(t) && t.to.kind === "state"
-          ? [{ id: `${state.id}-${i}`, source: state.id, target: t.to.id, t }]
-          : [],
-      ),
+      state.transitions.flatMap((t, i) => {
+        if (t.to.kind === "state")
+          return drawnRoute(t) ? [{ id: `${state.id}-${i}`, source: state.id, target: t.to.id, t, back: false }] : [];
+        const targets =
+          t.to.kind === "return"
+            ? entrantStates(machine, state.id).map((id) => ({ id, back: true }))
+            : t.to.routes.map((r) =>
+                r.to.kind === "state" ? { id: r.to.id, back: false } : { id: r.from, back: true },
+              );
+        const seen = new Set<string>();
+        return targets.flatMap((target) => {
+          if (seen.has(target.id) || target.id === state.id) return [];
+          seen.add(target.id);
+          return [{ id: `${state.id}-${i}-${target.id}`, source: state.id, target: target.id, t, back: target.back }];
+        });
+      }),
     );
     /*
      * Edges between the same two states would sit on one line: a pair leading both ways, or two
@@ -211,6 +245,7 @@ export function PresetMap() {
 
     const edges: Edge[] = routed.map((e) => {
       const faded = e.t.viaStepping === true;
+      const dashed = e.t.to.kind !== "state";
       return {
         id: e.id,
         source: e.source,
@@ -220,8 +255,9 @@ export function PresetMap() {
         type: "flow",
         data: {
           // "C", "1", "FS1" — the marking on the hardware, not a sentence about it.
-          label: marking(e.t.controlId),
+          label: `${marking(e.t.controlId)}${e.back ? RETURN_GLYPH : ""}`,
           faded,
+          dashed,
           controlId: e.t.controlId,
           stepNumber: e.t.stepNumber,
           offset: e.offset,
@@ -230,7 +266,9 @@ export function PresetMap() {
         } satisfies FlowEdgeData,
         // Stated outright rather than left to the library's default, which is a dark grey that
         // all but disappears on this background. Stepping stays quieter, but still readable.
-        style: faded ? { strokeWidth: 1.25, stroke: "#8b8b96" } : { strokeWidth: 2, stroke: "#d8d8de" },
+        style: faded
+          ? { strokeWidth: 1.25, stroke: "#8b8b96" }
+          : { strokeWidth: 2, stroke: "#d8d8de", ...(dashed ? { strokeDasharray: "6 4" } : {}) },
         // Which way the press takes you, in our own slender head (see MapDefs).
         // The id, not a url: React Flow wraps it in url(#...) itself.
         markerEnd: MAP_ARROW,
@@ -239,7 +277,7 @@ export function PresetMap() {
 
     const layoutSignature = nodes.map((n) => `${n.id}@${n.position.x},${n.position.y}`).join("|");
     return { nodes, edges, notes: machine.notes, layoutSignature };
-  }, [machine, activeIndex, showing, programPreset]);
+  }, [machine, activeIndex, showing, programPreset, openRoute]);
 
   return (
     <section aria-label="Preset map" className="flex min-h-0 flex-1 flex-col gap-2">

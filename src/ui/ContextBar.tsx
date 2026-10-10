@@ -24,7 +24,7 @@ export function ContextBar() {
           {/* The map reroutes states, so it carries the same editing controls Program does. */}
           <EditingBar />
           <span className="text-xs text-muted-foreground">
-            Presets that behave alike are one state; ↩ marks a jump back to whatever entered it.
+            Presets that behave alike are one state; {"\u21A9\uFE0E"} marks a jump back to whatever entered it.
           </span>
         </>
       ) : uiMode === "simulate" ? (

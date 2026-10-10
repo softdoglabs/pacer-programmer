@@ -23,8 +23,11 @@ export interface StateNodeData extends Record<string, unknown> {
    */
   presets: string;
   presetsTitle?: string;
-  /** Switch markings that come back to whatever entered the state, if any. */
-  returnsVia?: string;
+  /**
+   * Switches whose destination depends on the way in ("A returns"), each opening its route. They're
+   * drawn as dashed edges too, but a switch that returns is one thing, and this is where it's named.
+   */
+  conditional?: { key: string; glyph: string; text: string; title: string; onPress: () => void }[];
   /** The simulator is on one of its presets. */
   here?: boolean;
   /** Open this state's preset for programming. */
@@ -59,7 +62,21 @@ export function StateNode({ data, isConnectable }: NodeProps & { data: StateNode
       <div className="truncate text-[11px] opacity-70" title={data.presetsTitle}>
         {data.presets}
       </div>
-      {data.returnsVia && <div className="mt-0.5 truncate text-[11px] text-primary">↩ {data.returnsVia} returns</div>}
+      {data.conditional?.map((c) => (
+        <button
+          key={c.key}
+          type="button"
+          // nodrag/nopan: React Flow would otherwise take the press as the start of a drag.
+          className="nodrag nopan ring-focus block max-w-full truncate rounded text-left text-[11px] text-primary underline-offset-2 hover:underline"
+          title={c.title}
+          onClick={(event) => {
+            event.stopPropagation();
+            c.onPress();
+          }}
+        >
+          {c.glyph} {c.text}
+        </button>
+      ))}
       {/* The same pencil the faceplate puts on anything programmable, so the habit carries over. */}
       {data.onEdit && <EditBadge size="small" label={`Program ${data.name}`} onPress={data.onEdit} />}
     </div>

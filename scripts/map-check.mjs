@@ -9,7 +9,8 @@
  * - arrowheads closer than a head's width (two routes reading as one),
  * - a head landing on another edge's tail,
  * - two edges whose paths run together,
- * - states outside the visible map, including after an edit re-lays it out.
+ * - states outside the visible map, including after an edit re-lays it out,
+ * - fewer dashed return edges than the configuration has ways back.
  *
  * Screenshots of anything that fails are saved to the system's temp folder. Configurations are
  * built through the app's own modules; add one here whenever the map draws something wrong.
@@ -32,16 +33,24 @@ const LOOPER = (mains, ret) => `
   const f = d.factory.loadFactoryDefaults();
   d.store.getState().loadConfig({ ...f, presets: { ...f.presets, ...r.config.presets } }, "x");
 `;
+// Each scenario, and how many dashed edges (returns, and rows of a table) it should draw.
 const scenarios = {
   // Built by the tutorials' own builder (see loadLooperTutorial).
   "t1 pair": "tutorial 1",
   "t2 two in, returns": "tutorial 2",
   "four in, returns": LOOPER(4, `{ kind: "return" }`),
+  // Partial: MAIN0 and MAIN1 are taken back, the rest go to MAIN0.
+  "four in, depends on the way in": LOOPER(
+    4,
+    `{ kind: "byEntry", routes: [{ from: "m0", to: { kind: "return" } }, { from: "m1", to: { kind: "return" } }, { from: "m2", to: { kind: "state", id: "m0" } }, { from: "m3", to: { kind: "state", id: "m0" } }] }`,
+  ),
   // Two mains share one LOOPR that always goes to MAIN0: the "Always goes to A1" answer.
   "two in, fixed back to one": LOOPER(2, `{ kind: "state", id: "m0" }`),
   "three in, fixed back to one": LOOPER(3, `{ kind: "state", id: "m0" }`),
   factory: `d.store.getState().loadConfig(d.factory.loadFactoryDefaults(), "f")`,
 };
+
+const DASHED = { "t2 two in, returns": 2, "four in, returns": 4, "four in, depends on the way in": 2 };
 
 const MEASURE = `(() => {
   const vp = document.querySelector(".react-flow").getBoundingClientRect();
@@ -49,7 +58,7 @@ const MEASURE = `(() => {
     const p = g.querySelector("path.react-flow__edge-path");
     const len = p.getTotalLength();
     const pts = Array.from({ length: 41 }, (_, i) => p.getPointAtLength((len * i) / 40));
-    return { id: g.getAttribute("data-id") || g.id, pts };
+    return { id: g.getAttribute("data-id") || g.id, pts, dashed: (p.style.strokeDasharray || "none") !== "none" };
   });
   // Screen-space node boxes, to see whether any fall outside the map's viewport.
   const nodes = [...document.querySelectorAll(".react-flow__node")].map((n) => { const b = n.getBoundingClientRect(); return { t: n.textContent.slice(0, 5), x: b.x, y: b.y, r: b.right, b: b.bottom }; });
@@ -57,8 +66,10 @@ const MEASURE = `(() => {
   return { paths, nodes, vp: { x: vp.x, y: vp.y, r: vp.right, b: vp.bottom }, t };
 })()`;
 
-function analyse(m) {
+function analyse(m, name) {
   const problems = [];
+  const dashed = m.paths.filter((p) => p.dashed).length;
+  if (name in DASHED && dashed !== DASHED[name]) problems.push(`${dashed} dashed edges, expected ${DASHED[name]}`);
   const d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   // Heads: an edge's last point. Too close to another head, or to another edge's tail.
   for (let i = 0; i < m.paths.length; i++) {
@@ -97,7 +108,7 @@ await withApp(async (p) => {
         await wait(900);
       }
       const m = await p.eval(MEASURE);
-      const problems = analyse(m);
+      const problems = analyse(m, name);
       console.log(`${name} / ${view}: ${problems.length ? "\n    " + problems.join("\n    ") : "ok"}`);
       if (problems.length) {
         const file = join(

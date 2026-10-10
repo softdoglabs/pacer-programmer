@@ -24,6 +24,8 @@ export interface FlowEdgeData extends Record<string, unknown> {
   targetShift?: number;
   label?: string;
   faded?: boolean;
+  /** One of several places its switch can lead, depending on the way in: a return, or a row of a table. */
+  dashed?: boolean;
   /** The switch and step that carry this route, so clicking it can open the route for editing. */
   controlId?: number;
   stepNumber?: number;
@@ -66,7 +68,10 @@ export function FlowEdge({
             className={
               data.faded
                 ? "pointer-events-none absolute grid size-5 place-items-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground"
-                : "pointer-events-none absolute grid size-6 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground"
+                : data.dashed
+                  ? // Room for the ↩ beside the marking, and an outline to match the dashed line.
+                    "pointer-events-none absolute grid h-6 min-w-6 place-items-center rounded-full border-2 border-dashed border-primary bg-card px-1 text-[11px] font-bold text-primary"
+                  : "pointer-events-none absolute grid size-6 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground"
             }
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
           >

@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
-import { Background, ReactFlow, type Edge, type Node } from "@xyflow/react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Background, ReactFlow, useReactFlow, type Edge, type Node } from "@xyflow/react";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { FlowEdge, type FlowEdgeData } from "./FlowEdge";
 import { RouteDialog, type RouteIntent } from "./RouteDialog";
@@ -49,6 +49,23 @@ const SEPARATION = 26;
 
 type Showing = "designed" | "all";
 
+/**
+ * Fits the view to the map again whenever its layout changes. `fitView` on the flow only runs when
+ * it mounts, so after an edit that moves states (a route added, a preset moved) or a switch to
+ * Everything, the view stayed where it was and the moved states fell outside it. Keyed on where
+ * the states sit, not on what they show, so clicking a state (which marks it current) doesn't
+ * undo the reader's panning.
+ */
+function FitOnLayoutChange({ layout }: { layout: string }) {
+  const { fitView } = useReactFlow();
+  useEffect(() => {
+    // A frame later, so states that have just appeared have been measured.
+    const frame = requestAnimationFrame(() => void fitView({ duration: 200 }));
+    return () => cancelAnimationFrame(frame);
+  }, [layout, fitView]);
+  return null;
+}
+
 export function PresetMap() {
   const [showing, setShowing] = useState<Showing>("designed");
   const [intent, setIntent] = useState<RouteIntent | null>(null);
@@ -83,18 +100,22 @@ export function PresetMap() {
     [jumpToPreset, setUiMode],
   );
 
-  const { nodes, edges, notes } = useMemo(() => {
+  const { nodes, edges, notes, layoutSignature } = useMemo(() => {
     // The same object every other view of this configuration has (see `useMachine`).
-    // Drawn, not merely present: hiding the plain stepping is what leaves a design's own shape, so
-    // the layout reads the same routes the map does. Counting stepping makes every preset entered
-    // from its neighbour, which has no beginning to rank from.
-    const drawnRoute = (t: (typeof machine.states)[number]["transitions"][number]) =>
-      t.to.kind === "state" && (showing === "all" || !t.viaStepping);
+    type Transition = (typeof machine.states)[number]["transitions"][number];
+    const drawnRoute = (t: Transition) => t.to.kind === "state" && (showing === "all" || !t.viaStepping);
+    /*
+     * States are placed by the designed routes alone, in both views. Plain stepping makes every
+     * preset entered from its neighbour, which has no beginning to rank from: unless the stepping
+     * happened to close into a ring, dagre strung all 24 out in one row, wider than the map can
+     * zoom out to show. Laid out without it, Everything only adds its faint edges to the same
+     * picture, and switching views doesn't rearrange the map.
+     */
     const positions = new Map(
       layoutStates(
         machine.states.map((s) => ({
           id: s.id,
-          leadsTo: s.transitions.flatMap((t) => (drawnRoute(t) && t.to.kind === "state" ? [t.to.id] : [])),
+          leadsTo: s.transitions.flatMap((t) => (t.to.kind === "state" && !t.viaStepping ? [t.to.id] : [])),
         })),
       ).map((p) => [p.id, p]),
     );
@@ -148,15 +169,22 @@ export function PresetMap() {
     const offsets = bowOffsets(drawn, 2 * SEPARATION);
     const routed = drawn.map((e) => {
       /*
-       * Which side of each node the route meets. The layout decides the direction it reads in,
-       * so an edge that travels back along it leaves the near side and arrives at the far one,
-       * rather than going out the front and round the houses.
+       * Which side of each node the route meets: the sides that face each other. A state mostly
+       * above or below the other uses top and bottom, one mostly beside it the left and right, so
+       * an edge leaves the near side and arrives at the far one rather than going out the front
+       * and round the houses. (Going by which way the layout reads instead looped every edge
+       * between two states stacked in one column of the ranked part.)
        */
       const from = positions.get(e.source) ?? { x: 0, y: 0 };
       const to = positions.get(e.target) ?? { x: 0, y: 0 };
-      const down = positions.get(e.source)?.facing === "down";
-      const forward = down ? to.y >= from.y : to.x >= from.x;
-      const [out, into]: [Side, Side] = down ? (forward ? ["b", "t"] : ["t", "b"]) : forward ? ["r", "l"] : ["l", "r"];
+      const vertical = Math.abs(to.y - from.y) > Math.abs(to.x - from.x);
+      const [out, into]: [Side, Side] = vertical
+        ? to.y >= from.y
+          ? ["b", "t"]
+          : ["t", "b"]
+        : to.x >= from.x
+          ? ["r", "l"]
+          : ["l", "r"];
       const offset = offsets.get(e.id) ?? 0;
       return { ...e, from, to, out, into, offset };
     });
@@ -209,7 +237,8 @@ export function PresetMap() {
       };
     });
 
-    return { nodes, edges, notes: machine.notes };
+    const layoutSignature = nodes.map((n) => `${n.id}@${n.position.x},${n.position.y}`).join("|");
+    return { nodes, edges, notes: machine.notes, layoutSignature };
   }, [machine, activeIndex, showing, programPreset]);
 
   return (
@@ -292,6 +321,7 @@ export function PresetMap() {
           }}
         >
           <Background />
+          <FitOnLayoutChange layout={layoutSignature} />
         </ReactFlow>
       </div>
       {inspecting !== null && <StateDetails stateId={inspecting} onClose={() => setInspecting(null)} />}

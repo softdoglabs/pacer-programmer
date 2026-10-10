@@ -10,9 +10,10 @@ import dagre from "@dagrejs/dagre";
  * - States no drawn route touches are parked in a grid shaped like the hardware's banks, below the
  *   part that has structure. On a real device most presets are like this — a design occupies a
  *   corner of the 24 — and threading them through the ranking only pushes the design off screen.
- * - A ring with no beginning is laid out entirely as banks. That's the whole factory set with the
- *   next/previous stepping shown: nothing is an entry, so ranking means nothing and dagre strings
- *   all 24 across the screen.
+ * - A ring with no beginning is laid out entirely as banks: nothing is an entry, so ranking means
+ *   nothing and dagre strings every state across the screen. (The map lays out by its designed
+ *   routes only, never the next/previous stepping, which would make every configuration nearly
+ *   one long chain — see `PresetMap`.)
  *
  * Only the nodes are placed. Edges route themselves (see `FlowEdge`), and their labels ride their
  * own curve, so nothing here has to think about labels.
@@ -22,17 +23,11 @@ export interface LayoutNode {
   id: string;
   x: number;
   y: number;
-  /**
-   * Which way its edges should leave and arrive: "right" for the ranked part, where routes run
-   * left to right, "down" for a grid, whose neighbours sit above and below. An edge that leaves
-   * the wrong side has to loop right around the node to get where it's going.
-   */
-  facing: "right" | "down";
 }
 
 export interface LayoutInput {
   id: string;
-  /** Ids this node leads to, as the map is currently drawing them. Unknown targets are ignored. */
+  /** Ids this node leads to by its designed routes. Unknown targets are ignored. */
   leadsTo: string[];
 }
 
@@ -51,7 +46,6 @@ function banks(nodes: LayoutInput[], top: number): LayoutNode[] {
     id: node.id,
     x: Math.floor(i / BANK) * COLUMN,
     y: top + (i % BANK) * ROW,
-    facing: "down" as const,
   }));
 }
 
@@ -85,7 +79,6 @@ export function layoutStates(nodes: LayoutInput[]): LayoutNode[] {
       id: node.id,
       x: (at?.x ?? 0) - NODE_WIDTH / 2,
       y: (at?.y ?? 0) - NODE_HEIGHT / 2,
-      facing: "right" as const,
     };
   });
 

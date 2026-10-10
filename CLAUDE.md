@@ -1070,19 +1070,35 @@ no hover-only UI, for tablets.
     Send. It reroutes presets, so it can't be the one surface with no way
     back. This is what "configuring the state machine is an editing layer
     on the map" means in the plan below — not a fourth mode.
-  - **Layout** (`layout.ts`): the states the drawn routes connect are ranked
-    left to right by dagre; the rest are parked in banks of six below it.
-    On a real device a design is a corner of the 24, so threading the other
-    presets through the ranking pushes it off screen. A ring — every state
-    connected and none of them a beginning, which is the whole factory set
-    with stepping shown — is laid out as banks throughout, since there's no
-    direction to read it in.
-  - **Layout drives the geometry**: it says which way each node faces, and
-    `StateNode` carries a handle on all four sides so an edge meets the
-    side it's travelling towards. React Flow's stock node has one source
-    and one target, so every back edge — which is every return — left the
-    far side and looped around, arriving at a slant with its head under the
-    node.
+  - **Layout** (`layout.ts`): the states the designed routes connect are
+    ranked left to right by dagre; the rest are parked in banks of six below
+    it. On a real device a design is a corner of the 24, so threading the
+    other presets through the ranking pushes it off screen. A ring (every
+    state connected, none a beginning) is laid out as banks throughout.
+    - **Laid out by the designed routes only, in both views.** Next/previous
+      stepping makes every preset entered from its neighbour; unless that
+      closed into a ring, dagre strung all 24 out in one row, wider than
+      the map can zoom out to. Everything now just adds faint edges to the
+      same picture, and switching views doesn't rearrange anything.
+    - **The view re-fits when the layout changes** (`FitOnLayoutChange`):
+      React Flow's `fitView` only runs on mount, so an edit that moved
+      states left them outside the view. Keyed on positions, not on what
+      nodes show, so clicking a state doesn't undo the reader's panning.
+  - **Edge geometry** (`edgePath.ts`). `StateNode` carries a handle on all
+    four sides, and an edge uses the sides that face each other (above or
+    below → top and bottom, beside → left and right). React Flow's stock
+    node has one source and one target, so every back edge looped around.
+    - **Every edge end that shares a side of a node gets its own point on
+      it** (`spreadEnds`), ordered by where the edge goes so they fan out
+      without crossing. Otherwise several routes into one state, or the
+      two halves of a pair, met at one point and their arrowheads stacked:
+      two routes read as one. Edges between the same two states also get
+      their own bows (`bowOffsets`).
+    - **`pnpm check:map`** (`scripts/map-check.mjs`) measures every edge
+      the real app draws across configurations that have broken it before,
+      in both views and after an edit, and fails on stacked heads, edges
+      running together, or states outside the view. Add a configuration
+      whenever the map draws something wrong.
 - **MIDI out** (`src/midi/webMidi.ts`): a thin Web MIDI wrapper, typed
   structurally so tests use fakes (`src/midi/__tests__/fakeMidi.ts`).
   - The header's "Connect MIDI" asks for SysEx access, falling back to

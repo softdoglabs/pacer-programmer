@@ -8,7 +8,13 @@ import {
 } from "../pacer/protocol/constants";
 import { createEmptyPacerConfig, getOrCreateControl, getOrCreatePreset } from "../pacer/protocol/types";
 import type { PacerConfig, Step } from "../pacer/protocol/types";
-import { recoverMachine, type MachineTransition, type StateMachine } from "../pacer/analysis";
+import {
+  dependsOnEntry,
+  recoverMachine,
+  routeFrom,
+  type MachineTransition,
+  type StateMachine,
+} from "../pacer/analysis";
 
 /*
  * Test support: builds the presets a designed machine needs, from nothing.
@@ -46,9 +52,8 @@ export type CompileResult =
 
 const SLOTS = LAST_USER_PRESET_INDEX - FIRST_USER_PRESET_INDEX + 1;
 
-function returns(state: StateMachine["states"][number]): boolean {
-  return state.transitions.some((t) => t.to.kind === "return");
-}
+/** A state whose switches depend on the way in needs a copy per context; any other exists once. */
+const returns = (state: StateMachine["states"][number]): boolean => dependsOnEntry(state);
 
 function navigates(step: Step | undefined): boolean {
   return (
@@ -80,9 +85,14 @@ export function compileMachine(machine: StateMachine): CompileResult {
       }
     }
     for (const t of state.transitions) {
-      if (t.to.kind === "state" && !byId.has(t.to.id)) {
-        return { ok: false, error: `State "${state.id}" leads to "${t.to.id}", which doesn't exist.` };
-      }
+      const ids =
+        t.to.kind === "state"
+          ? [t.to.id]
+          : t.to.kind === "byEntry"
+            ? t.to.routes.flatMap((r) => (r.to.kind === "state" ? [r.to.id] : []))
+            : [];
+      const missing = ids.find((id) => !byId.has(id));
+      if (missing) return { ok: false, error: `State "${state.id}" leads to "${missing}", which doesn't exist.` };
     }
   }
 
@@ -108,14 +118,22 @@ export function compileMachine(machine: StateMachine): CompileResult {
     const state = byId.get(instance.stateId)!;
     const edges: { transition: MachineTransition; targetKey: string }[] = [];
     for (const transition of state.transitions) {
-      if (transition.to.kind === "return") {
+      // Where this switch leads from this copy's way in: a fixed state, or a row of its table.
+      let to = transition.to.kind === "byEntry" ? undefined : transition.to;
+      if (transition.to.kind !== "state") {
         if (instance.returnTo === undefined) {
-          return { ok: false, error: `State "${state.id}" returns, but nothing enters it.` };
+          return { ok: false, error: `State "${state.id}" depends on the way in, but nothing enters it.` };
         }
-        edges.push({ transition, targetKey: instance.returnTo });
+        const from = instances.get(instance.returnTo)!.stateId;
+        to = routeFrom(transition.to, from);
+        if (!to)
+          return { ok: false, error: `State "${state.id}" doesn't say where it leads when entered from "${from}".` };
+      }
+      if (to!.kind === "return") {
+        edges.push({ transition, targetKey: instance.returnTo! });
         continue;
       }
-      const target = byId.get(transition.to.id)!;
+      const target = byId.get(to!.id)!;
       // Only a returning state carries a continuation; giving one to a state that never returns
       // would duplicate it for nothing.
       edges.push({ transition, targetKey: add({ stateId: target.id, returnTo: returns(target) ? key : undefined }) });
@@ -226,7 +244,6 @@ export function whatWontSurvive(machine: StateMachine, config: PacerConfig, slot
   const ownNote = recovered.notes.find((n) => stateOfPreset.has(n.presetIndex));
   if (ownNote) return ownNote.message;
 
-  const slotOfKey = new Map(slots.map((s) => [s.key, s.presetIndex]));
   const presetsOfState = new Map<string, Set<number>>();
   for (const slot of slots) {
     const set = presetsOfState.get(slot.stateId) ?? new Set<number>();
@@ -250,6 +267,46 @@ export function whatWontSurvive(machine: StateMachine, config: PacerConfig, slot
     recoveredOf.set(stateId, state);
   }
 
+  /*
+   * What each authored transition means once compiled: where it leads from each way in that
+   * actually exists. A table row for a state that never enters this one has nothing to compile to,
+   * so it isn't part of the meaning. Normalised the way the recovery reads: every way in going back
+   * is a return, every way in going to one state is a jump — and a state of one copy can only ever
+   * be a jump, since one preset has one destination.
+   */
+  const contextsOf = (stateId: string) =>
+    [
+      ...new Set(
+        slots
+          .filter((s) => s.stateId === stateId && s.returnsTo)
+          .map((s) => slots.find((x) => x.key === s.returnsTo)!.stateId),
+      ),
+    ].sort();
+  const meaning = (stateId: string, t: MachineTransition): string => {
+    if (t.to.kind === "state") return `->${recoveredOf.get(t.to.id)?.id ?? "?"}`;
+    const copies = slots.filter((s) => s.stateId === stateId);
+    const rows = contextsOf(stateId).map((from) => {
+      const to = routeFrom(t.to, from);
+      return {
+        from: recoveredOf.get(from)?.id ?? "?",
+        to: to?.kind === "state" ? (recoveredOf.get(to.id)?.id ?? "?") : "back",
+      };
+    });
+    if (copies.length === 1 && rows.length === 1) return `->${rows[0]!.to === "back" ? rows[0]!.from : rows[0]!.to}`;
+    if (rows.every((r) => r.to === "back")) return "return";
+    const fixed = new Set(rows.map((r) => r.to));
+    if (fixed.size === 1 && !fixed.has("back")) return `->${[...fixed][0]}`;
+    return `by ${rows.map((r) => `${r.from}:${r.to}`).join(",")}`;
+  };
+  const recoveredMeaning = (t: MachineTransition): string => {
+    if (t.to.kind === "state") return `->${t.to.id}`;
+    if (t.to.kind === "return") return "return";
+    return `by ${[...t.to.routes]
+      .sort((a, b) => a.from.localeCompare(b.from))
+      .map((r) => `${r.from}:${r.to.kind === "state" ? r.to.id : "back"}`)
+      .join(",")}`;
+  };
+
   for (const state of machine.states) {
     const back = recoveredOf.get(state.id);
     if (!back) return `"${state.name ?? state.id}" isn't in the presets it compiled to.`;
@@ -263,33 +320,10 @@ export function whatWontSurvive(machine: StateMachine, config: PacerConfig, slot
       if (!match) {
         return `A route from "${state.name ?? state.id}" doesn't come back on the switch it was put on.`;
       }
-      if (match.to.kind !== authoredTransition.to.kind) {
-        /*
-         * One difference is not a loss. A return from a state with a single copy comes back as a
-         * jump to the one place that enters it — and with one origin those are the same machine:
-         * recompiling the recovered model yields the very same presets. The two only part company
-         * once a second origin exists, and then the return is expressible and recovers as one.
-         *
-         * What matters is that the recovered model *means* the same thing, not that it has the
-         * same shape. Anything else here does change the machine.
-         */
-        const copies = slots.filter((s) => s.stateId === state.id);
-        const equivalent =
-          authoredTransition.to.kind === "return" &&
-          match.to.kind === "state" &&
-          copies.length === 1 &&
-          recoveredOf.get(stateOfPreset.get(slotOfKey.get(copies[0]!.returnsTo ?? "") ?? -1) ?? "")?.id === match.to.id;
-        if (!equivalent) {
-          return `The route from "${state.name ?? state.id}" comes back as a ${match.to.kind === "return" ? "return" : "jump"} rather than a ${authoredTransition.to.kind === "return" ? "return" : "jump"}.`;
-        }
-        continue;
-      }
-      if (authoredTransition.to.kind === "state" && match.to.kind === "state") {
-        const target = recoveredOf.get(authoredTransition.to.id);
-        if (!target || target.id !== match.to.id) {
-          const where = (recovered.members[match.to.id] ?? []).map(presetIndexToLabel).join(", ");
-          return `A route from "${state.name ?? state.id}" comes back pointing at ${where || match.to.id}.`;
-        }
+      const meant = meaning(state.id, authoredTransition);
+      const read = recoveredMeaning(match);
+      if (meant !== read) {
+        return `The route from "${state.name ?? state.id}" comes back meaning ${read} rather than ${meant}.`;
       }
     }
   }

@@ -297,18 +297,36 @@ back the design that was meant.
 ### The model and its recovery (`analysis/model.ts`, `analysis/recover.ts`)
 
 A machine is states with a body (controls, minus navigation) and
-transitions. A transition leads to a named state, or **returns** — back to
-whatever entered this state, the action the hardware doesn't have, and the
-reason a state ever needs duplicating. **Only states that return
-multiply**: a tuner reached from everywhere is one preset, because its
-behaviour doesn't depend on where you came from.
+transitions. A transition leads to a named state; or **returns**, back to
+whatever entered this state; or follows a **table** of where it leads from
+each way in (`byEntry`: back to MAIN0 and MAIN1, but from MAIN2 always to
+MAIN0). The last two are what the hardware doesn't have, and the only
+reason a state is ever more than one preset: **a copy is needed exactly
+when one switch has to lead to different places depending on the way in.**
+A tuner reached from everywhere is one preset; so is a looper whose A goes
+to A1 and B to A2. A state needs a preset per distinct set of destinations.
 
 `recoverMachine` reads one out of the presets. A group of look-alike
-presets is a state; a transition is a **return** when every copy leads
-back to whatever entered it, and a fixed jump when every copy leads to the
-same state. Anything it can't express becomes a `note` rather than a wrong
+presets is a state, and each switch is read as a table: from each way into
+each copy, where does it lead? Every way in going to one state is a fixed
+jump; every way in going back is a return; anything else is a `byEntry`
+table. Anything it can't express becomes a `note` rather than a wrong
 answer. Nothing outside the analysis layer calls it — they ask `machineOf`
 (below).
+- **Nested returns are read inside out.** A looper whose tuner returns to
+  it has each looper copy entered twice: by its origin, and by its tuner
+  copy coming back. So the reading repeats, and each round's way-back
+  edges stop counting as ways into where they land, until nothing more is
+  learned. `RecoveredMachine.waysIn` is the result: what really enters
+  each preset.
+- **A jump to a one-preset state is fixed** even where that preset is also
+  a copy's way in (LOOPR's B going to MAIN0 is "always MAIN0", not "back
+  when entered from MAIN0"). A jump to a state of several copies is only
+  fixed when it doesn't go back to the copy that entered.
+- **A copy nothing enters is unused, not a misreading**: the state still
+  reads from the ways in it has. Freeing such copies is the editor's job.
+- Two ways in leading to the same places can share a copy (a hand-built
+  partial return does this) and read back as the same table.
 
 **Two states are the same when they differ in nothing but where their
 navigation leads** — the rule the recovery groups on, and therefore the

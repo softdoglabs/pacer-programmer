@@ -1,7 +1,7 @@
 import { CURRENT_PRESET_INDEX } from "../protocol/constants";
 import type { PacerConfig } from "../protocol/types";
 import type { RecoveredMachine } from "./recover";
-import { isPlainStepping, presetTransitions, type TransitionGraph } from "./transitions";
+import { isPlainStepping, presetTransitions, type TransitionEdge, type TransitionGraph } from "./transitions";
 
 /*
  * What enters a preset, and what it means for a state to come back.
@@ -34,11 +34,19 @@ export function presetEntrants(
   config: PacerConfig,
   presetIndex: number,
   graph: TransitionGraph = presetTransitions(config),
+  /**
+   * Edges known to go back to whatever entered the preset they leave (see `recoverMachine`). A
+   * tuner copy returning to the looper copy that entered it is arriving home, not entering it.
+   */
+  back: ReadonlySet<TransitionEdge> = new Set(),
 ): number[] {
   return [
     ...new Set(
       (graph.into[presetIndex] ?? [])
-        .filter((e) => e.from !== presetIndex && e.from !== CURRENT_PRESET_INDEX && !isPlainStepping(config, e))
+        .filter(
+          (e) =>
+            e.from !== presetIndex && e.from !== CURRENT_PRESET_INDEX && !isPlainStepping(config, e) && !back.has(e),
+        )
         .map((e) => e.from),
     ),
   ];

@@ -262,12 +262,8 @@ describe("routing between states", () => {
     expect(result.error).toMatch(/Preset Select → Current/);
   });
 
-  it("refuses to take away the route a copy comes back along", () => {
-    /*
-     * Nothing stores the fact that LOOPR returns: a copy returns because one preset leads to it
-     * and it leads back. Take that away and it silently becomes a jump to a preset that no longer
-     * sends you there.
-     */
+  it("takes away one way into a state that comes back, which still comes back from the rest", () => {
+    // MAIN0's copy of LOOPR is left with nothing entering it: unused, but LOOPR still returns to MAIN1.
     const config = compiled(looper(2));
     const machine = recoverMachine(config);
     const main = machine.states.find((s) => s.name === "MAIN0")!;
@@ -277,9 +273,10 @@ describe("routing between states", () => {
       controlId: ControlId.StompswitchA,
       stepNumber: 1,
     });
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error).toMatch(/coming back/);
+    if (!result.ok) throw new Error(result.error);
+    expect(recoverMachine(result.config).states.find((s) => s.name === "LOOPR")?.transitions[0]?.to.kind).toBe(
+      "return",
+    );
   });
 
   it("takes away a route that nothing depends on, leaving the step unused", () => {

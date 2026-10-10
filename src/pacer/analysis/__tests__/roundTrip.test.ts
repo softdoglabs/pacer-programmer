@@ -4,8 +4,9 @@ import { decodeSysex } from "../../protocol/decode";
 import { CURRENT_PRESET_INDEX, ControlId, FIRST_USER_PRESET_INDEX, SwitchMessageType } from "../../protocol/constants";
 import type { Preset } from "../../protocol/types";
 import { compileMachine } from "../../../test/compileMachine";
-import type { MachineState, StateMachine } from "../model";
+import type { MachineState, MachineTarget, StateMachine } from "../model";
 import { recoverMachine } from "../recover";
+import { clearPreset, setJump } from "../../editing";
 
 /*
  * The invariant the whole design rests on: whatever can be authored must be recoverable. Nothing
@@ -26,14 +27,21 @@ const body = (controlId: number, msgType: number, data: [number, number, number]
  * *name*, because that's the only identity a dump can carry — ids live in memory and don't
  * survive, which is why the compiler insists names are present and distinct.
  */
+function describeTarget(to: MachineTarget, nameOf: Map<string, string>): string {
+  if (to.kind === "return") return "return";
+  if (to.kind === "state") return nameOf.get(to.id) ?? to.id;
+  return `by(${to.routes
+    .map((r) => `${nameOf.get(r.from)}:${r.to.kind === "return" ? "back" : nameOf.get(r.to.id)}`)
+    .sort()
+    .join(",")})`;
+}
+
 function shape(machine: StateMachine) {
   const nameOf = new Map(machine.states.map((s) => [s.id, s.name ?? s.id]));
   return machine.states
     .map((s) => ({
       name: s.name,
-      transitions: s.transitions
-        .map((t) => `${t.controlId}:${t.stepNumber}->${t.to.kind === "return" ? "return" : nameOf.get(t.to.id)}`)
-        .sort(),
+      transitions: s.transitions.map((t) => `${t.controlId}:${t.stepNumber}->${describeTarget(t.to, nameOf)}`).sort(),
     }))
     .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
 }
@@ -278,5 +286,129 @@ describe("the device's working copy", () => {
     const recovered = recoverMachine(renamed);
     const home = recovered.states.find((s) => (recovered.members[s.id] ?? []).includes(A1))!;
     expect(home.name?.trim()).toBe("HOME");
+  });
+});
+
+/*
+ * Shapes the editor can make and a hand-built configuration can contain, which the map has to be
+ * able to read back: a returning state that leads on to another that returns to it, and a switch
+ * that goes back from some ways in but not others.
+ */
+describe("nested and partial returns", () => {
+  const state = (id: string, note: number, transitions: MachineState["transitions"]): MachineState => ({
+    id,
+    name: id.toUpperCase(),
+    body: body(ControlId.Stompswitch1, SwitchMessageType.Note, [note, 127, 0]),
+    transitions,
+  });
+  const A = ControlId.StompswitchA;
+  const B = ControlId.StompswitchB;
+  const go = (controlId: number, id: string) => ({ controlId, stepNumber: 1, to: { kind: "state" as const, id } });
+  const back = (controlId: number) => ({ controlId, stepNumber: 1, to: { kind: "return" as const } });
+
+  it("reads a returning state inside another: each looper copy has its own tuner copy coming back to it", () => {
+    const machine: StateMachine = {
+      states: [
+        state("main0", 60, [go(A, "loopr")]),
+        state("main1", 61, [go(A, "loopr")]),
+        state("loopr", 70, [back(A), go(B, "tuner")]),
+        state("tuner", 80, [back(A)]),
+      ],
+    };
+    const compiled = compileMachine(machine);
+    if (!compiled.ok) throw new Error(compiled.error);
+    // Two mains, two looper copies, and a tuner copy per looper copy.
+    expect(compiled.slots).toHaveLength(6);
+    const recovered = recoverMachine(compiled.config);
+    expect(recovered.notes).toEqual([]);
+    expect(shape(recovered)).toEqual(shape(machine));
+  });
+
+  it("reads returns nested three deep", () => {
+    const machine: StateMachine = {
+      states: [
+        state("main0", 60, [go(A, "loopr")]),
+        state("main1", 61, [go(A, "loopr")]),
+        state("loopr", 70, [back(A), go(B, "tuner")]),
+        state("tuner", 80, [back(A), go(B, "metro")]),
+        state("metro", 90, [back(A)]),
+      ],
+    };
+    const compiled = compileMachine(machine);
+    if (!compiled.ok) throw new Error(compiled.error);
+    expect(compiled.slots).toHaveLength(8);
+    expect(shape(recoverMachine(compiled.config))).toEqual(shape(machine));
+  });
+
+  const partial: StateMachine = {
+    states: [
+      state("main0", 60, [go(A, "loopr")]),
+      state("main1", 61, [go(A, "loopr")]),
+      state("main2", 62, [go(A, "loopr")]),
+      // Back to MAIN0 and MAIN1, but from MAIN2 always to MAIN0.
+      state("loopr", 70, [
+        {
+          controlId: A,
+          stepNumber: 1,
+          to: {
+            kind: "byEntry",
+            routes: [
+              { from: "main0", to: { kind: "return" } },
+              { from: "main1", to: { kind: "return" } },
+              { from: "main2", to: { kind: "state", id: "main0" } },
+            ],
+          },
+        },
+      ]),
+    ],
+  };
+
+  it("reads a switch that goes back from some ways in and somewhere fixed from others", () => {
+    const compiled = compileMachine(partial);
+    if (!compiled.ok) throw new Error(compiled.error);
+    const recovered = recoverMachine(compiled.config);
+    expect(recovered.notes).toEqual([]);
+    expect(shape(recovered)).toEqual(shape(partial));
+  });
+
+  it("reads the same table when two ways in share a copy, since they lead to the same places", () => {
+    // MAIN2's copy leads where MAIN0's does, so a hand-built configuration can point MAIN2 at
+    // MAIN0's copy and do without one. Same machine, one preset fewer.
+    const compiled = compileMachine(partial);
+    if (!compiled.ok) throw new Error(compiled.error);
+    const slot = (key: string) => compiled.slots.find((s) => s.key === key)!.presetIndex;
+    const main0Copy = compiled.slots.find((s) => s.stateId === "loopr" && s.key.endsWith("main0<"))!.presetIndex;
+    const main2Copy = compiled.slots.find((s) => s.stateId === "loopr" && s.key.endsWith("main2<"))!.presetIndex;
+    let shared = setJump(compiled.config, slot("main2<"), A, 1, main0Copy);
+    shared = clearPreset(shared, main2Copy);
+    const recovered = recoverMachine(shared);
+    expect(recovered.members["LOOPR"]).toHaveLength(2);
+    expect(shape(recovered).filter((s) => s.name !== "EMPTY")).toEqual(shape(partial));
+  });
+
+  it("reads a table with no way back at all: somewhere different from each way in", () => {
+    const machine: StateMachine = {
+      states: [
+        state("main0", 60, [go(A, "loopr")]),
+        state("main1", 61, [go(A, "loopr")]),
+        state("tuner", 80, [go(A, "main0")]),
+        state("loopr", 70, [
+          {
+            controlId: A,
+            stepNumber: 1,
+            to: {
+              kind: "byEntry",
+              routes: [
+                { from: "main0", to: { kind: "state", id: "tuner" } },
+                { from: "main1", to: { kind: "state", id: "main0" } },
+              ],
+            },
+          },
+        ]),
+      ],
+    };
+    const compiled = compileMachine(machine);
+    if (!compiled.ok) throw new Error(compiled.error);
+    expect(shape(recoverMachine(compiled.config))).toEqual(shape(machine));
   });
 });

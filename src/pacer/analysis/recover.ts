@@ -1,18 +1,20 @@
 import { CURRENT_PRESET_INDEX, SwitchMessageType, presetIndexToLabel } from "../protocol/constants";
 import type { PacerConfig, Preset } from "../protocol/types";
-import type { MachineState, MachineTransition, StateMachine } from "./model";
+import type { EntryTarget, MachineState, MachineTransition, StateMachine } from "./model";
 import { presetStates } from "./states";
-import { readsAsReturn } from "./returns";
-import { isPlainStepping, presetTransitions, type TransitionEdge } from "./transitions";
+import { presetEntrants } from "./returns";
+import { isPlainStepping, presetTransitions, type TransitionEdge, type TransitionGraph } from "./transitions";
 
 /*
  * Reading a state machine back out of the presets it compiled to. Nothing else is stored, so this
  * is the only thing standing between a design and oblivion — and the reason the compiler may only
  * emit shapes that land here intact.
  *
- * A group of presets that behave alike is a state (see `presetStates`). What distinguishes a
- * *return* from an ordinary jump is where each copy points: a return leads each copy back to the
- * preset that entered it, while a fixed transition leads every copy to the same state.
+ * A group of presets that behave alike is a state (see `presetStates`). Its copies differ only in
+ * where their jumps lead, and reading those against what enters each copy is reading the state: a
+ * switch that leads every copy to the same state is an ordinary transition, one that leads each copy
+ * back to the preset that entered it is a return, and anything in between is a table of where it
+ * leads from each way in (`byEntry`).
  */
 
 /** One place where the presets say something the model has no way to express. */
@@ -24,6 +26,11 @@ export interface RecoveryNote {
 export interface RecoveredMachine extends StateMachine {
   /** Which presets each state came from, so a compile can be compared against what's on the device. */
   members: Partial<Record<string, number[]>>;
+  /**
+   * The presets that lead into each preset — its ways in — leaving out edges that go back to
+   * whatever entered the preset they leave, which are returns arriving rather than entrances.
+   */
+  waysIn: Partial<Record<number, number[]>>;
   notes: RecoveryNote[];
 }
 
@@ -63,7 +70,6 @@ export function recoverMachine(config: PacerConfig): RecoveredMachine {
     })
     .filter((g) => g.members.length > 0);
   const graph = presetTransitions(config);
-  const notes: RecoveryNote[] = [];
 
   /*
    * A state per group, identified by its name — the only identity a dump can carry. A device
@@ -85,6 +91,50 @@ export function recoverMachine(config: PacerConfig): RecoveredMachine {
     for (const member of group.members) stateOf.set(member, id);
     return id;
   });
+
+  /*
+   * Nested returns are read from the inside out. A looper whose tuner returns to it has each looper
+   * copy entered twice — once from its origin, once by its tuner copy coming back — so the looper's
+   * own way back can't be seen until the tuner's is known: an edge that goes back to whatever
+   * entered its preset isn't a way into the preset it lands on. So the reading repeats, setting
+   * aside each round's way-back edges, until nothing more is learned. A design nested N deep
+   * settles in N rounds; the bound only guards against a configuration that oscillates.
+   */
+  let back = new Set<TransitionEdge>();
+  let reading = readStates(config, graph, groups, ids, stateOf, back);
+  for (let round = 0; round < groups.length && reading.back.size !== back.size; round++) {
+    back = reading.back;
+    reading = readStates(config, graph, groups, ids, stateOf, back);
+  }
+
+  const members: RecoveredMachine["members"] = {};
+  groups.forEach((group, i) => (members[ids[i]!] = group.members));
+  const waysIn: RecoveredMachine["waysIn"] = {};
+  for (const group of groups) {
+    for (const m of group.members) waysIn[m] = presetEntrants(config, m, graph, reading.back);
+  }
+  return { states: reading.states, members, waysIn, notes: reading.notes };
+}
+
+interface Reading {
+  states: MachineState[];
+  notes: RecoveryNote[];
+  /** Edges that go back to whatever entered the preset they leave: not ways into where they land. */
+  back: Set<TransitionEdge>;
+}
+
+function readStates(
+  config: PacerConfig,
+  graph: TransitionGraph,
+  groups: { members: number[]; name?: string }[],
+  ids: string[],
+  stateOf: Map<number, string>,
+  backSoFar: ReadonlySet<TransitionEdge>,
+): Reading {
+  const notes: RecoveryNote[] = [];
+  const back = new Set<TransitionEdge>();
+  const entrants = (m: number) => presetEntrants(config, m, graph, backSoFar);
+  const copiesOf = new Map(groups.map((g, i) => [ids[i]!, g.members.length]));
 
   const states: MachineState[] = groups.map((group, i) => {
     const id = ids[i]!;
@@ -121,20 +171,10 @@ export function recoverMachine(config: PacerConfig): RecoveredMachine {
        */
       if (targets.some((t) => t === undefined)) continue;
 
-      // Every copy going back to whatever entered it is a return; every copy going to the same
-      // state is a fixed transition. With one copy the two are indistinguishable — the presets
-      // simply don't record which was meant — so it reads as the jump it literally is.
-      if (readsAsReturn(config, group.members, targets, graph)) {
-        transitions.push({ controlId, stepNumber, to: { kind: "return" } });
-        continue;
-      }
-
       // Worth being able to put aside when reading a map: it's what C and D do on every preset.
       const stepping = perMember.every((p) => isPlainStepping(config, p.edge!));
-
       const targetStates = new Set(targets.map((t) => stateOf.get(t!)));
-      if (targetStates.size === 1) {
-        const [to] = targetStates;
+      const fixed = (to: string | undefined) => {
         if (to !== undefined) {
           transitions.push({
             controlId,
@@ -143,27 +183,92 @@ export function recoverMachine(config: PacerConfig): RecoveredMachine {
             ...(stepping ? { viaStepping: true } : {}),
           });
         }
+      };
+
+      /*
+       * With one copy, a switch leads to one place, whatever entered it. "Goes back to whatever
+       * entered it" and "goes to A1" are then the same preset, and nothing in the dump says which was
+       * meant — so it reads as the jump it literally is. A second copy is what settles it.
+       */
+      if (group.members.length === 1) {
+        fixed([...targetStates][0]);
         continue;
       }
       /*
        * Copies of a state sit in different slots, so their neighbour walks lead to different
        * presets — B6 from one, D4 from another. That's where a copy happens to live, not something
-       * the state does, so there's nothing to draw and nothing wrong. Saying otherwise made every
-       * multi-copy state on a real device unreadable, since C and D step on nearly all of them.
+       * the state does, so there's nothing to draw and nothing wrong.
        */
-      if (stepping) continue;
-      notes.push({
-        presetIndex: group.members[0]!,
-        message: `The copies of "${id}" lead to different states from the same switch, which no single state can mean.`,
+      if (stepping) {
+        if (targetStates.size === 1) fixed([...targetStates][0]);
+        continue;
+      }
+
+      /*
+       * Every copy leading to one state of one preset is an ordinary jump, even where that preset
+       * is also the way into a copy: LOOPR's B going to MAIN0 is "always MAIN0", not "back, when
+       * entered from MAIN0". A state of several copies is different — "to MAIN" doesn't say which
+       * copy — so a jump to one is only fixed when it doesn't go back to the copy that entered.
+       */
+      const onlyTarget = targetStates.size === 1 ? [...targetStates][0] : undefined;
+      if (onlyTarget !== undefined && (copiesOf.get(onlyTarget) ?? 0) === 1) {
+        fixed(onlyTarget);
+        continue;
+      }
+
+      /*
+       * Where the switch leads from each way in. A copy entered from MAIN0 that leads to MAIN0 goes
+       * back; one entered from MAIN3 that leads to MAIN0 goes to MAIN0. The copies of a state differ
+       * only in these rows, so reading them is reading the state.
+       */
+      const rows = new Map<string, EntryTarget>();
+      let disagree = false;
+      for (const [k, { member, edge }] of perMember.entries()) {
+        const t = targets[k]!;
+        const ways = entrants(member);
+        for (const e of ways) {
+          const from = stateOf.get(e);
+          if (from === undefined) continue;
+          const to: EntryTarget = t === e ? { kind: "return" } : { kind: "state", id: stateOf.get(t)! };
+          const was = rows.get(from);
+          if (was && JSON.stringify(was) !== JSON.stringify(to)) disagree = true;
+          rows.set(from, to);
+        }
+        // Back from every way into this copy: an arrival that isn't a way into where it lands.
+        if (ways.length > 0 && ways.every((e) => e === t)) back.add(edge!);
+      }
+      if (disagree) {
+        notes.push({
+          presetIndex: group.members[0]!,
+          message: `The copies of "${id}" lead to different places from the same way in, which no state can mean.`,
+        });
+        continue;
+      }
+
+      const routes = [...rows.entries()].map(([from, to]) => ({ from, to }));
+      if (routes.length === 0 || routes.every((r) => r.to.kind === "state")) {
+        // Every way in leads the same place (or nothing enters any copy): an ordinary jump.
+        const to = new Set(routes.map((r) => (r.to.kind === "state" ? r.to.id : "")));
+        if (routes.length > 0 ? to.size === 1 : targetStates.size === 1) {
+          fixed(routes.length > 0 ? [...to][0] : [...targetStates][0]);
+          continue;
+        }
+      }
+      if (routes.every((r) => r.to.kind === "return")) {
+        transitions.push({ controlId, stepNumber, to: { kind: "return" } });
+        continue;
+      }
+      transitions.push({
+        controlId,
+        stepNumber,
+        to: { kind: "byEntry", routes: routes.sort((a, b) => a.from.localeCompare(b.from)) },
       });
     }
 
     return { id, ...(group.name !== undefined ? { name: group.name } : {}), body: bodyOf(first), transitions };
   });
 
-  const members: RecoveredMachine["members"] = {};
-  groups.forEach((group, i) => (members[ids[i]!] = group.members));
-  return { states, members, notes };
+  return { states, notes, back };
 }
 
 function targetIndexOf(edge: TransitionEdge): number | undefined {

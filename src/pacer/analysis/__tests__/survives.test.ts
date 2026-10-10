@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clearPreset, copyPreset, setStepType } from "../../editing";
+import { clearPreset, copyPreset, setJump, setStepType } from "../../editing";
 import { ControlId, SwitchMessageType, userPresetIndex } from "../../protocol/constants";
 import type { Preset } from "../../protocol/types";
 import { compileMachine } from "../../../test/compileMachine";
@@ -43,9 +43,18 @@ const A = (n: number) => userPresetIndex(0, n);
 describe("what an edit loses", () => {
   it("reports a return that stops being one", () => {
     const config = looper();
-    // Take away MAIN0's way in: its copy of LOOPR then has nothing to come back to.
-    const edited = setStepType(config, A(1), ControlId.StompswitchA, 1, "switch", SwitchMessageType.Off);
+    // MAIN1 also enters MAIN0's copy of LOOPR (A3): from MAIN1, LOOPR now leads back to MAIN1 from
+    // one copy and to MAIN0 from the other, which no state can mean.
+    const edited = setJump(config, A(2), ControlId.StompswitchB, 1, A(3));
     expect(whatWasLost(config, edited, { kind: "edit", steps: [] })).toMatch(/coming back/);
+  });
+
+  it("doesn't count an unused copy as a loss: the return still reads from the ways in left", () => {
+    const config = looper();
+    // Take away MAIN0's way in: its copy of LOOPR is left with nothing entering it, which wastes a
+    // preset but misreads nothing — LOOPR still comes back to MAIN1.
+    const edited = setStepType(config, A(1), ControlId.StompswitchA, 1, "switch", SwitchMessageType.Off);
+    expect(machineOf(edited).states.find((s) => s.name === "LOOPR")?.transitions[0]?.to.kind).toBe("return");
   });
 
   it("lets a return go when it was on a step the edit set out to change", () => {
@@ -69,10 +78,10 @@ describe("what an edit loses", () => {
     const config = clearPreset(looper(), userPresetIndex(3, 6));
     const D6 = userPresetIndex(3, 6);
 
-    // Copied and cleared, but MAIN0 still jumps to A3 — the part a move exists to get right. It's
-    // caught as the most specific thing it breaks: the copy now at D6 has nothing coming back to it.
+    // Copied and cleared, but MAIN0 still jumps to A3 — the part a move exists to get right. MAIN0
+    // now leads to an empty preset, so the design isn't the same one with a slot renamed.
     const careless = clearPreset(copyPreset(config, A(3), D6), A(3));
-    expect(whatWasLost(config, careless, { kind: "renumbering", moved: { [A(3)]: D6 } })).toMatch(/A3 coming back/);
+    expect(whatWasLost(config, careless, { kind: "renumbering", moved: { [A(3)]: D6 } })).toBeDefined();
 
     // Moving a main without repointing what comes back to it is caught too.
     const plain = clearPreset(looper(), D6);

@@ -82,12 +82,15 @@ export function whatWasLost(before: PacerConfig, after: PacerConfig, intended: I
 
 const key = (ref: StepRef) => `${ref.presetIndex}:${ref.controlId}:${ref.stepNumber}`;
 
-/** Every return, one entry per preset that carries it — which survives states merging or gaining a copy. */
+/**
+ * Every switch that depends on the way in, one entry per preset that carries it — which survives
+ * states merging or gaining a copy. Returns and tables alike: either is a way back nothing stores.
+ */
 function returnsByPreset(machine: RecoveredMachine): Map<string, StepRef> {
   const found = new Map<string, StepRef>();
   for (const state of machine.states) {
     for (const t of state.transitions) {
-      if (t.to.kind !== "return") continue;
+      if (t.to.kind === "state") continue;
       for (const presetIndex of machine.members[state.id] ?? []) {
         const ref = { presetIndex, controlId: t.controlId, stepNumber: t.stepNumber };
         found.set(key(ref), ref);
@@ -117,7 +120,14 @@ function shape(machine: RecoveredMachine, leaveOut: ReadonlySet<number>, slot: (
         .map((t) => ({
           c: t.controlId,
           n: t.stepNumber,
-          to: t.to.kind === "return" ? "return" : presetsOf(t.to.id),
+          to:
+            t.to.kind === "return"
+              ? "return"
+              : t.to.kind === "state"
+                ? presetsOf(t.to.id)
+                : t.to.routes
+                    .map((r) => ({ from: presetsOf(r.from), to: r.to.kind === "return" ? "back" : presetsOf(r.to.id) }))
+                    .sort((a, b) => (a.from[0] ?? 0) - (b.from[0] ?? 0)),
         }))
         .sort((a, b) => a.c - b.c || a.n - b.n),
     }))

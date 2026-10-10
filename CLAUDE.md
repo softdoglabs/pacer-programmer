@@ -282,8 +282,9 @@ if the round trip can't be made to hold.
 **Slot arithmetic is a hard constraint, not a detail.** A state entered
 from twelve origins costs twelve presets on top of the twelve originals —
 the whole device. Every edit is priced before it's written: a route that
-needs another copy says so and asks which preset it may take
-(`planRoute`, below), rather than being refused or half-done.
+needs another copy says so and asks which empty preset it may take, and one
+that leaves copies unneeded frees them (`planRoute`, below), rather than
+being refused or half-done.
 
 **Machines are edited where they are, not compiled from scratch.** There
 was once a whole-machine compiler (`compileMachine`): describe states,
@@ -340,8 +341,8 @@ presentation, not identity.
 same thing, not that it has the same shape.** A return from a state only
 one place enters comes back as a jump to that one place — and with a single
 origin those are the same machine. The two only part company once a second
-origin exists, which is exactly when the editor asks whether the state
-comes back (`RoutePlan.choice`). An earlier version refused a single-origin
+origin exists, which is exactly when the editor's route dialog starts
+offering "goes back" as a choice. An earlier version refused a single-origin
 return on structural grounds, which conflated a harmless restatement with a
 real loss and would have stopped a design being built up one origin at a
 time.
@@ -373,30 +374,24 @@ left undrawn and unremarked. Calling it "copies that lead to different
 states" made every multi-copy state on a real device unreadable the moment
 it was created.
 
-### The rules a machine is read by (`analysis/returns.ts`)
+### What enters a preset (`analysis/returns.ts`)
 
-What enters a preset and what it means for a state to come back, written
-once and used by recovery and authoring alike. They used to be written out
-where each was needed, and two of the bugs found on the owner's device were
-a fix reaching one copy and not the other.
-
-- `presetEntrants` / `soleEntrant`: the presets that lead to one *by name*
-  — not plain stepping, not the Current slot, not itself.
-- `readsAsReturn`: every copy of a state leading back to the one preset that
-  entered it. Never true of a single copy, deliberately.
-- `wayBack`: the switches that carry a state's way back. **Two readings,
-  named as such:** with copies, the returns the recovery found (settled);
-  with one copy, the switches leading to something that enters it — the
-  answer to "if it does come back, by which switch?", which is what lets a
-  second way in *offer* to make it a return without the recovery claiming
-  to know.
+`presetEntrants`: the presets that lead to one *by name* — not plain
+stepping, not the Current slot, not itself, and not an edge already known
+to be a way back (the nested-return fixpoint above). Written once and used
+by recovery and authoring alike: two of the bugs found on the owner's
+device were a fix reaching one copy of this rule and not the other. The
+helpers that used to sit beside it (`soleEntrant`, `readsAsReturn`,
+`wayBack`) answered the old "is this one copy a return?" question and went
+with it.
 
 ### Whether an edit kept the design (`analysis/survives.ts`)
 
-Every edit that changes more than one preset asks `whatWasLost(before,
-after, intended)` before it's written, and is refused with the reason if
-the answer isn't nothing. One check, asked two ways, because edits claim
-two different things:
+`whatWasLost(before, after, intended)` asks whether an edit lost anything
+it didn't mean to, and is refused with the reason if the answer isn't
+nothing. Moving a preset asks it; a route edit checks itself more strictly
+(`realize`, below), because it knows the whole machine it meant. One
+check, asked two ways, because edits claim two different things:
 
 - **An edit** (`kind: "edit"`) says "these steps changed, and these slots
   were written over". It's held to losing nothing else: no return that
@@ -430,52 +425,55 @@ caller the **same object**. Components use `useMachine()` (and
 ### Editing the machine (`src/pacer/authoring/`)
 
 The layer where `analysis` and `editing` meet, which neither may depend
-on the other to reach. `editRoute` points a state's switch at another
-state — on **every copy of it at once**, which is the part that can't be
-done a preset at a time without the copies drifting apart. `switchUses`
-says what each switch already carries, so a route lands somewhere it will
-actually fire.
+on the other to reach. **A route edit is a change to the recovered
+machine, not to presets**: `editRoute` says where one switch of a state
+should lead — a state, back, or a per-way-in table — and `realize` works
+out what presets that machine needs and writes the difference, on **every
+copy at once**, which is the part that can't be done a preset at a time
+without the copies drifting apart.
 
 One file per question:
-- `change.ts` — what a route edit asks for (`RouteChange`), and the result
-  every authoring edit gives back.
+- `change.ts` — what a route edit asks for (`RouteChange`: `to`, plus
+  `entering` for a state this route enters whose switches depend on the way
+  in), and the result every authoring edit gives back.
 - `switches.ts` — what each switch on a state carries, and where a route
   could go (`switchUses`, `firstJump`).
 - `plan.ts` — what a route would cost before anything's written
-  (`planRoute`: copies needed, the "does it come back?" question).
-- `editRoute.ts` — the write itself, checked with `whatWasLost`.
+  (`planRoute`: the copies it needs a preset for, the presets it frees),
+  and which states enter a state (`entrantStates`, from `waysIn`).
+- `editRoute.ts` — builds the machine after the edit and hands it to
+  `realize`.
+- `realize.ts` — from a machine to presets.
 - `movePreset.ts` — renumbering a preset, routes following.
 
-Refusals are checked, not guessed:
-- **Entering a state that returns needs another copy of it**, with its own
-  way back — a preset. That's priced rather than refused: `planRoute` says
-  what a route would cost without writing anything, and `editRoute` takes
-  the slots to put the copies in (`into`). A slot already in use can be
-  chosen, and the presets the route itself runs between can't.
-- **Whether a state comes back is a question only a second way in can
-  settle.** While it's entered from one place, "comes back to wherever it
-  was entered from" and "always goes to A1" are the same preset, and the
-  dump doesn't record which was meant (the equivalence the verifier allows,
-  above). So `RoutePlan.choice` reports the question and `RouteChange.
-  asReturn` answers it: no is free and shares the preset, yes costs one.
-  The answer starts at no, because it's the one that takes nothing.
-- **Saying yes gives every origin its own copy.** A state shared by two
-  presets can only lead back to one of them, so making it come back means a
-  copy per origin: the preset that's there keeps the origin it already
-  leads to, and the ones that have been sharing it get copies and have
-  their own switches repointed (`NeededCopy.repoint`). That's the hand work
-  this project exists to remove, and it's what turns a jump into a state.
-- **One level deep.** A state that comes back *and* leads on to another
-  state that comes back would need copies of that one too. The compiler
-  refuses to write that shape at all — with the outer copies leading to
-  different copies of the inner state, nothing says which of the two
-  switches is the way back — so there's nothing to plan for.
-- **Everything else is judged by recovering the machine before and after.**
-  A return that no longer reads as a return refuses, and so does anything
-  the recovery couldn't read afterwards that it could read before. Returns
-  are what's worth guarding: nothing stores them — a copy returns because
-  one preset leads to it and it leads back — so breaking one is invisible
-  on the hardware.
+How `realize` gets from the machine to presets:
+1. **Expand**: each affected state becomes an instance per context (the way
+   in it was entered from), following byEntry rows and returns.
+2. **Merge**: instances that behave the same are one copy (Moore partition
+   refinement), so ways in that lead to the same places share a preset —
+   a partial return costs a copy per *distinct set of destinations*, not
+   per way in.
+3. **Match** copies to the presets already there, by their ways in, so an
+   unchanged copy stays where it is.
+4. **Ask** for a slot for each copy left over (`CopyNeed`, with the way in
+   it's for), and **free** copies nothing needs any more — clearing them —
+   but only for states that are or were entry-dependent.
+5. **Write** only the jumps that differ, then **check** by recovering the
+   result: every affected switch must read back meaning what was asked
+   (meanings are compared, not shapes — a single-origin return reading as
+   a jump is the same machine), no other preset may start reading as a
+   copy of a state, and nothing new may become unreadable.
+
+What it refuses, and why:
+- **New copies only go into empty presets** (`isSparePreset`, below). Not
+  one the machine already uses, and never a preset with something in it:
+  the dialog used to offer overwriting one, which is a one-click way to
+  lose work for a route.
+- **Nesting is allowed.** A looper that returns and leads to a tuner that
+  returns to the looper copy that entered it multiplies the copies, and is
+  rarely worth it in 24 slots — but it can be built by hand, and a map that
+  can't draw it, or an editor that can't put it back after undoing it, is
+  worse. The recovery reads it (its fixpoint) and `realize` builds it.
 - **Only the first jump on a press happens** (the engine takes it and warns
   about the rest), so a route written after an earlier jumping step would
   never fire. Refused. That's the shape of every factory preset: switch A
@@ -488,8 +486,8 @@ Refusals are checked, not guessed:
   a route could go. It replaces the whole switch rather than one step: a
   route that shares a press with what was there needs a free step, which is
   the case that doesn't need this.
-
-
+- A route can't lead to the state it leaves from: that's a reload, which
+  is Preset Select → Current.
 
 ### Spare slots (`src/pacer/editing/presetSlots.ts`)
 
@@ -1033,24 +1031,31 @@ no hover-only UI, for tablets.
 - **The preset map** (`src/ui/map/`) draws the configuration as the machine
   its author meant: presets that behave alike are one node however many
   copies the hardware needed, and a route that leads each copy back where
-  it came from is drawn as a return on the node it leaves.
+  it came from is drawn as a return.
   - **One toggle**: *Show* (designed routes / everything) hides the plain
     next/previous stepping most presets carry. Routes are always editable —
     drag between states, click a route to change it — because the pencil
     already says which gesture opens a preset, and a mode for it was a
     switch nobody needed.
-  - **`RouteDialog`** is the one form for both: which switch carries the
-    route, where it goes, and taking it away. It describes each switch in
+  - **`RouteDialog`** is the one form for one switch on one state: which
+    switch, where it leads, and taking it away. It describes each switch in
     what it already does ("free", "sends 2 messages", "selects the Track
-    preset", "comes back to where it was entered from") and shows
-    `editRoute`'s refusals rather than writing something that won't survive.
-  - **A route that costs a preset says so and asks which.** When the state
-    being entered comes back, the dialog names the cost and gives a picker
-    per copy, listing the empty presets first and the rest as "in use —
-    would be overwritten". When it's still an open question whether that
-    state comes back (one preset, see the authoring notes), a toggle asks —
-    "Comes back here" against "Always goes to A1" — starting on the free
-    answer. Presets already sharing it are named, since they get copies too.
+    preset", "goes back to where it was entered from", "depends on the way
+    in") and shows `editRoute`'s refusals rather than writing something
+    that won't survive.
+  - **It only asks when the question is real.** A copy is needed for one
+    reason (a switch that leads somewhere different per way in), so drawing
+    a route *into* a state asks nothing. Once a state has two ways in, its
+    switch is one of: always goes to one state; goes back to wherever it
+    was entered from; or depends on the way in (a table, a row per way in).
+    A switch that already leads elsewhere starts with nothing chosen and
+    says so, so nothing is assumed. Entering a state whose switches depend
+    on the way in asks where they lead from the new way in, defaulting to
+    back. The defaults and answers are per switch: picking A after the
+    dialog opened on a free switch has to raise A's question.
+  - **Every answer is priced** by running the edit dry (`planRoute`): a
+    picker per needed copy, "Copy of LOOPR (entered from MAIN1) goes in",
+    offering empty presets only, and the presets it frees.
   - **Replacing what a switch does** is a tick-box in the same dialog, since
     on a real device nearly every switch is busy. It says what it would
     clear ("Replace what A does (selects the Track preset)") and applies to
@@ -1081,6 +1086,18 @@ no hover-only UI, for tablets.
   - Edge labels are the marking alone — "C", "1", "3". The rear-jack
     switches lose the "FS": a badge has room for a character, and a number
     on its own reads as a switch.
+  - **Returns are drawn**, dashed, to each state they can lead back to,
+    badged `A↩`; a byEntry switch draws each of its destinations the same
+    way. The "↩ A returns" note on the node stays too (the owner missed
+    returns with only the note, and an edge alone doesn't say it's one
+    switch), and clicking it opens the route — to stop returning, say,
+    which frees the copies. ↩ carries U+FE0E, or the platform font draws an
+    emoji tile.
+  - **Badges are placed across the whole map** (`labelBoard.ts`): each edge
+    offers spots along itself, and the board places designed routes, then
+    dashed, then stepping, each at its first spot clear of the rest. A
+    return runs back along the route that entered its state, so the two
+    cross near their middles, and midpoint badges hid one another.
   - **Opening a route loads the preset it leaves from**, so the faceplate
     beside you is the one the route is on, and the panel below follows it.
   - **The map carries the editing controls** (`ui/editor/EditingBar`, which
@@ -1115,7 +1132,8 @@ no hover-only UI, for tablets.
     - **`pnpm check:map`** (`scripts/map-check.mjs`) measures every edge
       the real app draws across configurations that have broken it before,
       in both views and after an edit, and fails on stacked heads, edges
-      running together, or states outside the view. Add a configuration
+      running together, overlapping badges, states outside the view, or
+      the wrong number of dashed return edges. Add a configuration
       whenever the map draws something wrong.
 - **MIDI out** (`src/midi/webMidi.ts`): a thin Web MIDI wrapper, typed
   structurally so tests use fakes (`src/midi/__tests__/fakeMidi.ts`).

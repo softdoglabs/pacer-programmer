@@ -5,6 +5,10 @@ where one press fires every active step.
 
 **Bank**: A row of six presets, A–D. The Pacer has four.
 
+**By way in**: A switch that leads somewhere different depending on how you
+entered its state, going back from some ways in and to a fixed state from
+others. Ways in that lead to the same places share a copy.
+
 **Control**: Anything you can program, meaning the ten stompswitches, the four
 external footswitches and the two expression pedals.
 
@@ -12,7 +16,8 @@ external footswitches and the two expression pedals.
 External step).
 
 **Copy**: One of several presets that make up a *state* (below). A state
-that returns has one copy per way in.
+needs a copy for each different set of places its switches lead, which for one
+that returns is a copy per way in.
 
 **Current** (slot 0, `CUR`): The Pacer's working copy of the loaded preset.
 The switches run it; preset slots are only read when a preset is loaded.

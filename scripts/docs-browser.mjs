@@ -344,6 +344,9 @@ export class Page {
   async handle(name, id) {
     return this.eval(`(() => {
       const node = [...document.querySelectorAll(".react-flow__node")].find((n) => n.textContent.includes(${JSON.stringify(name)}));
+      // The whole map, not the node: a drag takes two handles, and scrolling to the second
+      // mustn't move the first. The panel under the map can leave it scrolled out of view.
+      node.closest(".react-flow").scrollIntoView({ block: "nearest", behavior: "instant" });
       const b = node.querySelector('[data-handleid="${id}"]').getBoundingClientRect();
       return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
     })()`);

@@ -17,7 +17,7 @@ The copy needs a preset of its own, and the Pacer doesn't have any empty ones.
 In **Program**, choose **D6** and click **Clear preset…**. D6 is now `EMPTY`,
 and the map will offer it when it needs a slot.
 
-## Draw the Route
+## Draw the Way In
 
 1. Switch to **Preset map**.
 2. Drag from the dot on the right edge of **PRGM2** to **LOOPR**, and let go.
@@ -25,15 +25,30 @@ and the map will offer it when it needs a slot.
 3. For **On switch**, choose **A — selects the Track preset**, and tick
    **Replace what A does**. That way A2's switch A stops selecting Track and
    only goes to the looper.
-4. Now the dialog asks the question tutorial 1 left open: does leaving LOOPR
-   mean going back where you came from, or always going to A1? Choose
-   **Comes back here**.
-5. Coming back costs a preset, so it asks where to put the copy. Choose
-   **D6 EMPTY**.
 
-![The route dialog: switch A, comes back, copy in D6](../images/t2-route.png)
+![The route dialog: PRGM2's switch A goes to LOOPR](../images/t2-route.png)
 
-Click **Add route**.
+Click **Add route**. That one's free. Going *into* a state never needs a copy,
+so PRGM2 now leads to the same C1 that PRGM1 does. If you try it now, A on
+the looper still takes you to A1, whichever way you came in.
+
+## Make A Go Back
+
+Now drag from **LOOPR** to **PRGM2**. The dialog opens on the first free
+switch, and that would be fine if you wanted a second switch for getting back
+to A2. It needs no copy at all. But we want A to do it, so:
+
+1. For **On switch**, choose **A — goes to PRGM1**. The dialog points out that
+   A already goes to PRGM1 and asks what it should do instead.
+2. Choose **Goes back to wherever LOOPR was entered from (PRGM1, PRGM2)**.
+3. A switch that has to lead somewhere different depending on how you got
+   there is the one thing that takes a second copy, so the dialog asks where
+   to put it. It offers empty presets only, starting with **D6 EMPTY**.
+
+![The route dialog: A already goes to PRGM1, so it asks; going back costs a copy in D6](../images/t2-return.png)
+
+Click **Add route**. Clicking the existing A route from LOOPR to PRGM1 gets
+you the same choice, if that's how you'd rather get there.
 
 ## One State, Two Presets
 
@@ -41,7 +56,9 @@ Click **Add route**.
 
 LOOPR is still a single box, labelled **2 presets · one state**, and it's
 marked **↩ A returns**, which means its switch A takes you back to wherever you
-came from. Click it to see what it's made of:
+came from. The dashed lines back to PRGM1 and PRGM2 are that same switch: one
+switch that goes to either, depending on how you got in. Click LOOPR to see
+what it's made of:
 
 ![LOOPR's two presets](../images/t2-details.png)
 
@@ -58,9 +75,13 @@ it takes you back to A1.
 
 Every new way into a state that returns costs one more copy, and so one more
 slot. Twelve main presets that each open the looper would need twelve copies,
-and twelve mains plus twelve copies fills all 24 slots. The map works out the cost before it writes
-anything, asks you for a slot each time, and won't build a design that doesn't
-fit. See [Slot budget](../reference/preset-map.md#slot-budget).
+and twelve mains plus twelve copies fills all 24 slots. The map works out the
+cost before it writes anything, asks you for a slot each time, and won't build
+a design that doesn't fit. See [Slot budget](../reference/preset-map.md#slot-budget).
 
-If a destination really should be fixed, like a tuner that always goes back to
-A1, choose **Always goes to A1** instead and it stays one preset.
+A state that doesn't come back costs nothing extra, however many ways in it
+has. A tuner whose A always goes to A1 stays one preset. So does a looper that
+gets back to each main on its own switch, since each switch only ever goes one
+place. If you change your mind, click **↩ A returns** on LOOPR and choose
+**Always goes to one state**. The copy D6 isn't needed any more, so it's
+cleared and freed.

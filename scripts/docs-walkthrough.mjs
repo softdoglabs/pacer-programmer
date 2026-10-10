@@ -385,7 +385,7 @@ async function tutorial2(r) {
   await r.button("Clear it");
   await r.expect(`s.board.config.presets[24].name.trim()`, "EMPTY", "D6's name");
 
-  r.at("Draw the Route");
+  r.at("Draw the Way In");
   await r.toggle("Mode", "Preset map");
   await wait(800);
   await r.p.drag(await r.p.handle("PRGM2", "s-r"), await r.p.handle("LOOPR", "t-l"));
@@ -395,10 +395,26 @@ async function tutorial2(r) {
     `window.__find.byText("[role=dialog] label", "Replace what A does", { prefix: true })`,
     "the Replace tick-box",
   );
-  await r.expectText("LOOPR is one preset, entered from A1, and it leads to A1.", "the comes-back question");
-  await r.toggle("Leaving it", "Comes back here");
+  await r.button("Add route");
+  await wait(600);
+  // Free, as the tutorial says: still one LOOPR.
+  await r.expect(
+    `(() => { const m = d.analysis.machineOf(s.board.config); return m.members[d.analysis.stateContaining(m, 13).state.id].length; })()`,
+    1,
+    "LOOPR's presets after the way in",
+  );
+
+  r.at("Make A Go Back");
+  await r.p.drag(await r.p.handle("LOOPR", "s-l"), await r.p.handle("PRGM2", "t-r"));
+  await r.expectText("From LOOPR.");
+  await r.choose("On switch", "A — goes to PRGM1", `document.querySelector("[role=dialog]")`);
+  await r.expectText("On LOOPR, A already goes to PRGM1.", "the conflict");
+  await r.click(
+    `window.__find.byText("[role=dialog] label", "Goes back to wherever LOOPR was entered from (PRGM1, PRGM2)")`,
+    "the go-back choice",
+  );
   const slot = await r.p.eval(
-    `window.__find.field("Copy of LOOPR goes in")?.querySelector("button")?.textContent.trim()`,
+    `[...document.querySelectorAll("[role=dialog] span")].find((l) => l.textContent.startsWith("Copy of LOOPR"))?.parentElement.querySelector("button")?.textContent.trim()`,
   );
   if (!slot?.startsWith("D6 EMPTY")) r.fail(`expected the copy to default to D6 EMPTY, got ${slot}`);
   await r.button("Add route");

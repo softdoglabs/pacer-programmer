@@ -14,9 +14,9 @@ first. The [tutorials](../tutorials/README.md) build one step by step.
 |---|---|---|
 | 1 | Show | *Designed routes* leaves out plain next/previous stepping, which almost every preset has and which tells you nothing about your design. *Everything* draws it too, faintly. |
 | 2 | A state | A place your Pacer can be. It shows its name, with the preset it lives in underneath. The state you're on is highlighted. |
-| 3 | A route | A switch that moves you from one state to another, labelled with the switch's marking (`A`, `C`, `3`). Click it to change it. |
+| 3 | A route | A switch that moves you from one state to another, labelled with the switch's marking (`A`, `C`, `3`). Click it to change it. A dashed route is one of several places its switch can go, depending on how you got in, and `A↩` marks a way back. |
 | 4 | Several presets, one state | Presets that behave identically apart from where their switches lead are drawn as a single state. Hover to see which presets. |
-| 5 | ↩ returns | The state has a switch that goes back to wherever you entered it from, switch A in this case. The Pacer can't do that on its own. It takes one preset per way in, which is why LOOPR is two presets. |
+| 5 | ↩ returns | The state has a switch that goes back to wherever you entered it from, switch A in this case, drawn as the dashed routes back. The Pacer can't do that on its own. It takes one preset per way in, which is why LOOPR is two presets. Click it to change where A goes. A switch that goes back from some ways in and somewhere fixed from others says *by way in* instead. |
 | 6 | Pencil | Opens the state in [Program mode](program-mode.md), on the preset you're on if it's one of them. Double-clicking the state does the same. |
 | 7 | A preset nothing routes to | Every preset is a state, even if no switch jumps to it. The factory presets only step between neighbours, so with *Designed routes* they stand alone. |
 
@@ -38,10 +38,20 @@ When you change a state in
 change goes to every copy, so they stay one state.
 
 Returns are worked out from the copies. A state's switch counts as a return
-when the state has more than one copy and each copy leads back to the one
-preset that enters it. With only one copy, there's no telling a return apart
-from a plain jump. See [When the map has to ask](#when-the-map-has-to-ask) for
-how that gets settled.
+when the state has more than one copy and each copy leads back to the preset
+that enters it. With only one copy there's no telling a return apart from a
+plain jump, so the map reads it as a plain jump. It makes no difference until
+there's a second way in, and that's when the dialog
+[asks](#where-a-switch-leads).
+
+A switch can also go back from some ways in and somewhere fixed from others.
+Say a looper goes back to MAIN0 or MAIN1 when you came from one of them, but
+to MAIN0 from anywhere else. Those ways in share a copy, so that's three ways
+in and two presets. The map reads that too, and shows it as *A by way in*.
+Returns can nest as well: a tuner reached from the looper that goes back to
+whichever looper copy you came from. Each level multiplies the copies, so
+it's rarely worth it on a 24-preset device, but if you build one by hand, the
+map draws it instead of giving up.
 
 Stepping doesn't count as a way in. Next and previous name a direction rather
 than a preset, so they never count towards entering a state, and they're left
@@ -63,8 +73,8 @@ Clicking a state lists the presets behind it:
 ![LOOPR's two presets, each with the preset that enters it](../images/state-details.png)
 
 Each row shows the preset's slot and name (the one you're on is highlighted),
-and which presets jump to it. For a state that returns, each copy has exactly
-one, and that's where it returns to.
+and which presets jump to it. For a state that returns, that's where each
+copy goes back to.
 
 **Load** loads the preset in the simulator, and **Program** opens it in
 Program mode. **Move to…** moves it to an empty slot, and everything that
@@ -85,11 +95,12 @@ Clicking a route opens it:
 - **From** is the state the route leaves from. If that's several presets, the
   route is written to all of them.
 - **On switch** is which switch carries it. Each switch says what it does now:
-  *free*, *sends 2 messages*, *goes to LOOPR*, *comes back to where it was
-  entered from*, *selects the Track preset*, and so on. Pick a different switch
-  to move the route there, and the switch it leaves goes back to doing
+  *free*, *sends 2 messages*, *goes to LOOPR*, *goes back to where it was
+  entered from*, *selects the Track preset*, and so on. Pick a different
+  switch to move the route there, and the switch it leaves goes back to doing
   nothing.
-- **Goes to** is the state it leads to.
+- **Goes to** is the state it leads to. When the state has more than one way
+  in, this becomes the [choice below](#where-a-switch-leads).
 - **Replace what the switch does** appears when you pick a switch that's busy.
   If you tick it, the switch is emptied on every preset of the state, and the
   route becomes the only thing it does. If you don't, the route is added as
@@ -101,40 +112,46 @@ Clicking a route opens it:
 Dragging between two states opens the same dialog, with *Goes to* filled in and
 *On switch* set to the first free switch.
 
+### Where a Switch Leads
+
+A copy of a state is only ever needed for one reason: a switch that has to lead
+somewhere different depending on how you got in. So drawing a route *into* a
+state never asks anything and never costs a preset, however many ways in it
+ends up with. The question comes up on the way out. Once a state has more than
+one way in, its switches can do one of three things:
+
+| Choice | Means | Costs |
+|---|---|---|
+| Always goes to one state | The switch leads to the same place whichever way you came in. | Nothing. |
+| Goes back to wherever *LOOPR* was entered from | Each way in gets back to where it came from. | A copy per way in. |
+| Depends on the way in | A row per way in, each going back or to a state you pick. | A copy per different set of destinations. Ways in that go to the same places share one. |
+
+If the switch you pick already leads somewhere else, the dialog says so and
+waits for you to choose. Picking a different switch is often the cheaper
+answer: one switch for each way back needs no copies at all.
+
+![LOOPR's A already goes to MAIN0, so the dialog asks; going back costs a copy](../images/route-choice.png)
+
+Routing into a state whose switches already depend on the way in is the other
+case that asks. The new way in needs to say where those switches lead from
+it. They default to going back, which costs a copy, and you can point them at
+a state instead.
+
 ### When a Route Costs a Preset
 
-A state that returns needs one preset per way in. So routing to it from
-somewhere new needs a new copy, and the dialog tells you that and asks where to
-put it:
+The dialog works out the cost before it writes anything. Each new copy gets a
+picker, **Copy of LOOPR (entered from MAIN1) goes in**, which offers empty
+presets only. A copy never overwrites a preset that has something in it. If
+there aren't any empty ones, the dialog says so, and you can
+[clear one](program-mode.md#clear-preset) in Program mode.
 
-![Adding a second way into LOOPR: settle what it means, then choose a slot for the copy](../images/route-choice.png)
-
-**Copy of LOOPR goes in** is the slot for the new copy. Empty presets are
-offered first. You can pick one that's in use, listed under *In use — would be
-overwritten*, and the dialog warns you that everything in it will be
-replaced. If there are no empty presets, the dialog says so, and you can either
-clear one in [Program mode](program-mode.md#clear-preset) or choose one to
-overwrite.
+It goes the other way too. A change that means a state needs fewer copies, like
+switching *Goes back* to *Always goes to one state*, frees the copies nobody
+reaches any more. The dialog lists them as *Frees D6*, and they're cleared and
+named `EMPTY`.
 
 The Pacer has 24 presets and no spare ones, so a design that returns from lots
 of places can fill them up quickly. See [Slot budget](#slot-budget).
-
-### When the Map Has to Ask
-
-Take a state you can only enter from one place, whose switch leads back
-there. That switch could mean "go back to where I came from," or it could mean
-"always go to that preset." With only one way in, those come out as the same
-preset, so nothing in the configuration says which one you meant. As soon as
-you add a second way in, they're no longer the same, and the dialog asks:
-
-| Leaving it | Means | Costs |
-|---|---|---|
-| Comes back here | Each way in returns to where it came from. | A new copy for the new way in. |
-| Always goes to *A1* | Every way in leads on to the same preset. | Nothing. It stays one preset. |
-
-If other presets were already sharing that single copy, choosing *Comes back
-here* gives them their own copies too, and points their switches at them. The
-dialog lists which ones.
 
 ### When a Route Is Refused
 
@@ -146,8 +163,9 @@ The message tells you why. These are the common ones:
 | *A route can't lead to the state it leaves from.* | That's a reload. | Use Preset Select → Current in Program mode. |
 | *Step 1 on that switch already jumps somewhere…* | A press only takes the first jump. | Tick *Replace*, or pick another switch. |
 | *Every step on A is in use…* | There's nowhere to put the jump. | Tick *Replace*, or pick another switch. |
-| *That would stop A3 coming back to where it was entered from…* | The edit would turn a return into a plain jump. | Usually the fix is to change the route on the state that enters it, rather than on the copy. |
-| *Can't route to "X": it's on the device N times…* | X has several identical copies and none of them returns, so there's no telling which one you mean. | Clear the extra copies, or give each one a way back. |
+| *D6 has something in it. Clear it first, or pick an empty one.* | New copies only go into empty presets. | [Clear a preset](program-mode.md#clear-preset) you don't use. |
+| *…already behaves like "LOOPR" apart from where it leads…* | Another preset is identical to the state's copies, so after the edit it would be read as one of them. | Give the state something of its own, or clear that preset. |
+| *LOOPR's switch A would come back meaning…* | The presets this edit would write wouldn't read back as the design you asked for. | Usually another switch, or a different choice, does it. |
 
 [Troubleshooting](troubleshooting.md) covers the rest.
 
@@ -160,8 +178,9 @@ each time, so you can't end up designing something the Pacer can't hold.
 
 If you need more room, you can [clear a preset](program-mode.md#clear-preset)
 you don't use, which turns it into an empty slot that routes will offer first.
-Or, where you don't actually need to return to the origin, use **Always goes
-to** instead.
+Or, where you don't actually need to go back to the origin, use **Always
+goes to one state**, or give each way back its own switch, which costs
+nothing.
 
 ## Notes the Map Can't Draw
 

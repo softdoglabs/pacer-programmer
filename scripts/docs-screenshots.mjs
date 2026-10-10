@@ -248,8 +248,8 @@ const scenes = {
   },
 
   /**
-   * A second way into a looper that so far has one: whether it comes back is the question the
-   * presets can't answer, and answering "comes back" costs a preset.
+   * Two mains share a looper whose A goes to MAIN0. Pointing A at MAIN1 is a conflict, so the
+   * dialog asks; going back to wherever it was entered from costs a preset.
    */
   async "route-choice"(p) {
     await p.app(`
@@ -258,8 +258,8 @@ const scenes = {
       const note = (n) => ({ [C.Stompswitch1]: { steps: { 1: { channel: 0, msgType: T.Note, data: [n, 127, 0], active: true } }, led: {} } });
       const compiled = d.compile.compileMachine({ states: [
         { id: "m0", name: "MAIN0", body: note(60), transitions: [{ controlId: C.StompswitchA, stepNumber: 1, to: { kind: "state", id: "loop" } }] },
-        { id: "m1", name: "MAIN1", body: note(61), transitions: [] },
-        { id: "loop", name: "LOOPR", body: note(99), transitions: [{ controlId: C.StompswitchA, stepNumber: 1, to: { kind: "return" } }] },
+        { id: "m1", name: "MAIN1", body: note(61), transitions: [{ controlId: C.StompswitchA, stepNumber: 1, to: { kind: "state", id: "loop" } }] },
+        { id: "loop", name: "LOOPR", body: note(99), transitions: [{ controlId: C.StompswitchA, stepNumber: 1, to: { kind: "state", id: "m0" } }] },
       ] });
       if (!compiled.ok) throw new Error(compiled.error);
       const factory = d.factory.loadFactoryDefaults();
@@ -272,8 +272,10 @@ const scenes = {
       s.setUiMode("map");
     `);
     await wait(800);
-    await p.drag(await p.handle("MAIN1", "s-r"), await p.handle("LOOPR", "t-l"));
-    await p.click('[role="radio"]', "Comes back here");
+    await p.drag(await p.handle("LOOPR", "s-l"), await p.handle("MAIN1", "t-r"));
+    await p.click('[role="dialog"] button[aria-haspopup]');
+    await p.click('[role="option"]', "A — goes to MAIN0");
+    await p.click('[role="dialog"] label', "Goes back to wherever LOOPR");
     await p.shot("route-choice", { around: await p.rect('[role="dialog"]'), pad: 8 });
     await p.key("Escape");
   },
@@ -376,7 +378,7 @@ const scenes = {
     await p.shot("t1-map", { around: [looper, prgm], pad: 40 });
   },
 
-  /** Tutorial 2: a second way in, routed on the map — the copy it costs, and the state it makes. */
+  /** Tutorial 2: a second way in, free; then A going back, which costs a copy; and the state it makes. */
   async "tutorial-2"(p) {
     await p.loadLooperTutorial(1);
     await p.app(`
@@ -389,8 +391,15 @@ const scenes = {
     await p.click('[role="dialog"] button[aria-haspopup]'); // the first is On switch
     await p.click('[role="option"]', "A — selects the Track preset");
     await p.click('[role="dialog"] label', "Replace what A does");
-    await p.click('[role="radio"]', "Comes back here");
     await p.shot("t2-route", { around: await p.rect('[role="dialog"]'), pad: 8 });
+    await p.click('[role="dialog"] button', "Add route");
+    await wait(800);
+    // The way back: A already goes to PRGM1, so the dialog asks, and going back costs D6.
+    await p.drag(await p.handle("LOOPR", "s-l"), await p.handle("PRGM2", "t-r"));
+    await p.click('[role="dialog"] button[aria-haspopup]');
+    await p.click('[role="option"]', "A — goes to PRGM1");
+    await p.click('[role="dialog"] label', "Goes back to wherever LOOPR");
+    await p.shot("t2-return", { around: await p.rect('[role="dialog"]'), pad: 8 });
     await p.click('[role="dialog"] button', "Add route");
     await wait(800);
     await p.shot("t2-map", {

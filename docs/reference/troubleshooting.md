@@ -61,15 +61,14 @@ find out on the next load.
 | *Step N on that switch already jumps somewhere…* | A press only takes the first jump, so a later one never fires. | Tick **Replace**, or choose another switch. |
 | *Every step on X is in use…* | No room for a jump. | Tick **Replace**, or choose another switch. |
 | *X already selects the Track preset…* | Switch A or B is the firmware's Track/Transport selector, which would be the first jump. | Tick **Replace**, or choose another switch. |
-| *No empty presets left…* | The route needs a new copy and every slot is in use. | [Clear a preset](program-mode.md#clear-preset), or choose one to overwrite. |
-| *That preset has something in it…* | You chose an occupied slot for a copy. | Fine if you mean it; otherwise pick an empty one. |
-| *X is one of the presets this route runs between…* | A copy can't overwrite the presets it connects. | Choose another slot. |
-| *Can't route to "X": it's on the device N times…* | X has identical copies and none returns, so there's no telling which you mean. | Clear the extra copies, or give each a way back. |
-| *That would stop A3 coming back to where it was entered from…* | The edit would make a return read as an ordinary jump: typically, a second route into one copy of a returning state. | Route into the state from the state that should enter it, so it gets its own copy. |
+| *No empty presets left…* | The route needs a new copy and every slot has something in it. | [Clear a preset](program-mode.md#clear-preset) you don't use. Or choose a cheaper answer: a different switch for each way back costs nothing. |
+| *D6 has something in it. Clear it first, or pick an empty one.* | New copies only go into empty presets, for routes and for **Move to…** alike. | Clear the slot first. |
+| *D6 is one of the presets this machine uses…* | That preset is already part of the design. | Choose another slot. |
+| *…already behaves like "X" apart from where it leads…* | Another preset is identical to X's copies, so after the edit it would be read as one of them. | Give X something of its own to do, or clear that preset. |
+| *X's switch A would come back meaning…* | The presets the edit would write wouldn't read back as the design you asked for. | Try another switch or a different choice. If it keeps happening, report it with the snapshot. |
 | *That would leave something unreadable: …* | The result couldn't be read back as states and routes. The rest of the message says what. | Nothing was written, so there's nothing to undo. Try the change another way. |
 | *…is missing a jump its state has elsewhere.* | One copy of a state lacks a route the others have. | Usually after editing one copy alone; edit the state as a whole, or let the copy leave the state. |
-| *The copies of "X" lead to different states from the same switch…* | Copies disagree about where a switch goes. | Make them agree, on the map or by editing one copy with the *only* choice under *Changes*. |
-| *X has something in it. Clear it first, or pick an empty one.* | **Move to…** only moves into empty presets. | Clear the slot first. |
+| *The copies of "X" lead to different places from the same way in…* | Two copies entered the same way disagree about where a switch goes. | Make them agree, on the map or by editing one copy with the *only* choice under *Changes*. |
 | *Moving A3 to D6 would change what the configuration does…* | The move isn't a pure renumbering. | Please report it as a bug, since moves are meant to always be safe. |
 
 ## In the Output Log

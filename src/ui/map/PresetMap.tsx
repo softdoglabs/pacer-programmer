@@ -6,6 +6,7 @@ import { RouteDialog, type RouteIntent } from "./RouteDialog";
 import { StateDetails } from "./StateDetails";
 import { StateNode, type StateNodeData } from "./StateNode";
 import { MAP_ARROW, MapDefs } from "./MapDefs";
+import { bowDirection, bowOffsets, sideAxis, spreadEnds, type EndRequest, type Side } from "./edgePath";
 import "@xyflow/react/dist/style.css";
 import { presetIndexToLabel } from "@/pacer/protocol/constants";
 import { switchSpecForControl } from "@/pacer/hardware";
@@ -137,33 +138,57 @@ export function PresetMap() {
           : [],
       ),
     );
-    // A pair that leads both ways sits on one line, so each half is bowed the other way.
-    const pairs = new Set(drawn.map((e) => `${e.source}>${e.target}`));
-    const edges: Edge[] = drawn.map((e) => {
-      const reciprocal = pairs.has(`${e.target}>${e.source}`);
-      const faded = e.t.viaStepping === true;
+    /*
+     * Edges between the same two states would sit on one line: a pair leading both ways, or two
+     * switches leading the same way (A1's C wraps round to D6, so when D6 is a copy of the looper
+     * A1 reaches it by A and by C). Each is bowed its own distance, symmetric about the straight
+     * line. The bow's "across" is the pair's, not the edge's (see `bowDirection`), so these offsets
+     * share one frame whichever way each edge runs.
+     */
+    const offsets = bowOffsets(drawn, 2 * SEPARATION);
+    const routed = drawn.map((e) => {
       /*
        * Which side of each node the route meets. The layout decides the direction it reads in,
        * so an edge that travels back along it leaves the near side and arrives at the far one,
        * rather than going out the front and round the houses.
        */
-      const from = positions.get(e.source);
-      const to = positions.get(e.target);
-      const down = from?.facing === "down";
-      const forward = down ? (to?.y ?? 0) >= (from?.y ?? 0) : (to?.x ?? 0) >= (from?.x ?? 0);
-      const [out, into] = down
-        ? forward
-          ? (["b", "t"] as const)
-          : (["t", "b"] as const)
-        : forward
-          ? (["r", "l"] as const)
-          : (["l", "r"] as const);
+      const from = positions.get(e.source) ?? { x: 0, y: 0 };
+      const to = positions.get(e.target) ?? { x: 0, y: 0 };
+      const down = positions.get(e.source)?.facing === "down";
+      const forward = down ? to.y >= from.y : to.x >= from.x;
+      const [out, into]: [Side, Side] = down ? (forward ? ["b", "t"] : ["t", "b"]) : forward ? ["r", "l"] : ["l", "r"];
+      const offset = offsets.get(e.id) ?? 0;
+      return { ...e, from, to, out, into, offset };
+    });
+
+    /*
+     * Every edge meeting the same side of a node gets its own point on it, ordered by where the
+     * edge goes so they fan out without crossing. Without this, the routes into a state entered
+     * from several places, or the two halves of a pair, share one point: they run together into
+     * the node and their arrowheads stack, so two routes read as one. A pair's two ends go to the
+     * same node, so they're ordered by which side each one's curve bows to.
+     */
+    const ends = routed.flatMap((e): EndRequest[] => {
+      const bow = bowDirection(e.from, e.to, e.offset);
+      const at = (side: Side, other: { x: number; y: number }) => {
+        const axis = sideAxis(side);
+        return { toward: other.x * axis.x + other.y * axis.y, tie: bow.x * axis.x + bow.y * axis.y };
+      };
+      return [
+        { key: `${e.id}:s`, node: e.source, side: e.out, ...at(e.out, e.to) },
+        { key: `${e.id}:t`, node: e.target, side: e.into, ...at(e.into, e.from) },
+      ];
+    });
+    const shifts = spreadEnds(ends);
+
+    const edges: Edge[] = routed.map((e) => {
+      const faded = e.t.viaStepping === true;
       return {
         id: e.id,
         source: e.source,
         target: e.target,
-        sourceHandle: `s-${out}`,
-        targetHandle: `t-${into}`,
+        sourceHandle: `s-${e.out}`,
+        targetHandle: `t-${e.into}`,
         type: "flow",
         data: {
           // "C", "1", "FS1" — the marking on the hardware, not a sentence about it.
@@ -171,7 +196,9 @@ export function PresetMap() {
           faded,
           controlId: e.t.controlId,
           stepNumber: e.t.stepNumber,
-          offset: reciprocal ? (e.source < e.target ? SEPARATION : -SEPARATION) : 0,
+          offset: e.offset,
+          sourceShift: shifts.get(`${e.id}:s`) ?? 0,
+          targetShift: shifts.get(`${e.id}:t`) ?? 0,
         } satisfies FlowEdgeData,
         // Stated outright rather than left to the library's default, which is a dark grey that
         // all but disappears on this background. Stepping stays quieter, but still readable.

@@ -12,13 +12,16 @@ import { edgeGeometry } from "./edgePath";
  * aimed straight at a displaced midpoint meets the node at whatever angle that implies, often
  * nearly along the node's own edge — which slides the arrowhead under the node and hides it. This
  * leaves each handle along its normal, the way React Flow's own bezier does, so a head always
- * arrives pointing squarely into the side it touches. The two halves of a pair also meet each node
- * at their own points, or their heads would sit on each other's tails (see `edgePath`).
+ * arrives pointing squarely into the side it touches. Edges that share a side of a node meet it at
+ * their own points, or their heads would stack on each other (see `edgePath`).
  */
 
 export interface FlowEdgeData extends Record<string, unknown> {
   /** Sideways push, in flow units. Opposite signs separate a pair; 0 leaves the plain curve. */
   offset?: number;
+  /** Where along its side the edge leaves and arrives, when it shares the side (see `spreadEnds`). */
+  sourceShift?: number;
+  targetShift?: number;
   label?: string;
   faded?: boolean;
   /** The switch and step that carry this route, so clicking it can open the route for editing. */
@@ -45,6 +48,8 @@ export function FlowEdge({
     sourcePosition,
     targetPosition,
     offset: data?.offset ?? 0,
+    sourceShift: data?.sourceShift ?? 0,
+    targetShift: data?.targetShift ?? 0,
   });
   const path = geometry.path;
   const labelX = geometry.label.x;

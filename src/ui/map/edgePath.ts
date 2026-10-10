@@ -3,20 +3,23 @@ import { Position } from "@xyflow/react";
 /*
  * The geometry of a map edge, kept apart from the component so it can be tested.
  *
- * Two presets that lead to each other produce a line each way. They used to share both ends —
- * each node has one handle per side, and both halves of a pair leave and arrive through it — so
- * however far apart the middles were bowed, the two curves ran together for the last stretch into
- * each node, and each arrowhead sat on top of the other edge's tail. At the zoom the map usually
- * shows, the pair read as a single line with one head. So the halves of a pair meet each node at
- * their own points, spread along the side they arrive on, each on its own side of the bow.
+ * Each node has one handle per side, so every edge that leaves or arrives on that side used to
+ * meet it at the same point. Several routes into one state (a looper entered from two presets)
+ * or a pair leading both ways ran together for the last stretch into the node, and their
+ * arrowheads stacked on each other or on another edge's tail: at the map's usual zoom, two
+ * routes read as one line with one head. So where several edges share a side, each meets it at
+ * its own point (`spreadEnds`), and the curve starts and ends there (`edgeGeometry`).
  */
 
+/** Gap between neighbouring ends on one side of a node, in flow units. */
+export const END_SPACING = 14;
 /**
- * How far each half of a pair moves its ends along the node's side, in flow units. Far enough that
- * the two lines and heads read as two at the map's usual zoom, near enough that the lower head stays
- * clear of the pencil badge on the node's bottom-right corner.
+ * How much of a side the ends may spread over, so they stay on the node: its left and right sides
+ * are short (and the pencil badge sits on the bottom-right corner), its top and bottom long.
  */
-export const END_SPREAD = 8;
+const MAX_SPREAD = { across: 28, along: 120 };
+
+export type Side = "l" | "r" | "t" | "b";
 
 export interface EdgeEnds {
   sourceX: number;
@@ -25,13 +28,16 @@ export interface EdgeEnds {
   targetY: number;
   sourcePosition: Position;
   targetPosition: Position;
-  /** Sideways push, in flow units. Opposite signs separate a pair; 0 leaves the plain curve. */
+  /** Sideways push of the middle, in flow units. Opposite signs separate a pair; 0 leaves the plain curve. */
   offset: number;
+  /** Where along its side the edge leaves and arrives, from `spreadEnds`: +down for left/right, +right for top/bottom. */
+  sourceShift?: number;
+  targetShift?: number;
 }
 
 export interface EdgeGeometry {
   path: string;
-  /** Where the curve actually starts and ends, after a pair's ends are spread apart. */
+  /** Where the curve actually starts and ends, after its ends are spread along their sides. */
   start: { x: number; y: number };
   end: { x: number; y: number };
   label: { x: number; y: number };
@@ -51,6 +57,80 @@ export function normal(position: Position): { x: number; y: number } {
   }
 }
 
+/** The direction along a side: down for the left and right sides, right for the top and bottom. */
+export function sideAxis(side: Side): { x: number; y: number } {
+  return side === "l" || side === "r" ? { x: 0, y: 1 } : { x: 1, y: 0 };
+}
+
+const positionAxis = (position: Position) =>
+  position === Position.Left || position === Position.Right ? { x: 0, y: 1 } : { x: 1, y: 0 };
+
+/**
+ * Which way an edge's middle is pushed, as a unit vector — the same rule `edgeGeometry` bows by, so
+ * callers can put a pair's ends on the side its curve goes. "Across" is worked out from the two
+ * ends in a fixed order, so both halves of a pair agree on it and their opposite offsets separate.
+ */
+export function bowDirection(from: { x: number; y: number }, to: { x: number; y: number }, offset: number) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const span = Math.hypot(dx, dy) || 1;
+  const reversed = from.x > to.x || (from.x === to.x && from.y > to.y);
+  const side = reversed ? -1 : 1;
+  const sign = Math.sign(offset);
+  return { x: (-dy / span) * side * sign, y: (dx / span) * side * sign };
+}
+
+/**
+ * How far to bow each edge, so edges between the same two states don't sit on one line: a pair
+ * leading both ways, or two switches leading the same way. Each group is spread symmetrically about
+ * the straight line, `step` apart; an edge alone between its states stays straight. The offsets are
+ * in the pair's frame (see `bowDirection`), so they mean the same whichever way each edge runs.
+ */
+export function bowOffsets(
+  edges: readonly { id: string; source: string; target: string }[],
+  step: number,
+): Map<string, number> {
+  const between = (e: { source: string; target: string }) => [e.source, e.target].sort().join(">");
+  const groups = new Map<string, string[]>();
+  for (const e of edges) groups.set(between(e), [...(groups.get(between(e)) ?? []), e.id]);
+  const offsets = new Map<string, number>();
+  for (const group of groups.values()) {
+    group.forEach((id, i) => offsets.set(id, (i - (group.length - 1) / 2) * step));
+  }
+  return offsets;
+}
+
+export interface EndRequest {
+  /** Names this end, to look its shift up by. */
+  key: string;
+  node: string;
+  side: Side;
+  /** Where the edge's other end is, along this side's axis: ends are ordered by it, so they don't cross. */
+  toward: number;
+  /** Breaks ties in `toward` (two ends going to the same node): lower first. */
+  tie: number;
+}
+
+/**
+ * Spaces out the ends that share a side of a node, centred on the handle, in the order of where
+ * their edges go. A lone end stays on the handle.
+ */
+export function spreadEnds(ends: readonly EndRequest[]): Map<string, number> {
+  const groups = new Map<string, EndRequest[]>();
+  for (const end of ends) {
+    const key = `${end.node}:${end.side}`;
+    groups.set(key, [...(groups.get(key) ?? []), end]);
+  }
+  const shifts = new Map<string, number>();
+  for (const group of groups.values()) {
+    const sorted = [...group].sort((a, b) => a.toward - b.toward || a.tie - b.tie || a.key.localeCompare(b.key));
+    const limit = sorted[0]!.side === "l" || sorted[0]!.side === "r" ? MAX_SPREAD.across : MAX_SPREAD.along;
+    const gap = sorted.length > 1 ? Math.min(END_SPACING, limit / (sorted.length - 1)) : 0;
+    sorted.forEach((end, i) => shifts.set(end.key, (i - (sorted.length - 1) / 2) * gap));
+  }
+  return shifts;
+}
+
 export function edgeGeometry({
   sourceX,
   sourceY,
@@ -59,9 +139,18 @@ export function edgeGeometry({
   sourcePosition,
   targetPosition,
   offset,
+  sourceShift = 0,
+  targetShift = 0,
 }: EdgeEnds): EdgeGeometry {
-  const dx = targetX - sourceX;
-  const dy = targetY - sourceY;
+  // Ends moved along their sides rather than off them, so each still sits on the node's edge and
+  // its head still points straight in.
+  const sAxis = positionAxis(sourcePosition);
+  const tAxis = positionAxis(targetPosition);
+  const start = { x: sourceX + sAxis.x * sourceShift, y: sourceY + sAxis.y * sourceShift };
+  const end = { x: targetX + tAxis.x * targetShift, y: targetY + tAxis.y * targetShift };
+
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
   const span = Math.hypot(dx, dy) || 1;
   // How far the curve runs straight out of a handle before turning: enough to clear the node,
   // capped so a long edge doesn't balloon.
@@ -73,35 +162,12 @@ export function edgeGeometry({
    * map's 48 edges still met a node square on, and a head arriving at a slant slides under the
    * node and disappears. Here the bow lives entirely in the middle: each end keeps its handle's
    * own normal, so every head arrives pointing into the side it touches.
-   *
-   * "Across" has to mean the same direction for both halves of a pair, or the opposite offsets
-   * they're given cancel out and they land on top of each other again. Deriving it from the
-   * endpoints in a fixed order makes it a property of the pair rather than of the direction.
    */
-  const reversed = sourceX > targetX || (sourceX === targetX && sourceY > targetY);
-  const side = reversed ? -1 : 1;
-  const across = { x: (-dy / span) * side, y: (dx / span) * side };
-  const midX = sourceX + dx / 2 + across.x * offset;
-  const midY = sourceY + dy / 2 + across.y * offset;
+  const bow = bowDirection({ x: sourceX, y: sourceY }, { x: targetX, y: targetY }, offset);
+  const midX = start.x + dx / 2 + bow.x * Math.abs(offset);
+  const midY = start.y + dy / 2 + bow.y * Math.abs(offset);
   const along = { x: dx / span, y: dy / span };
   const glide = Math.min(span * 0.25, 90);
-
-  /*
-   * A pair's ends, spread along the side each one meets, towards the side its curve bows to. Moved
-   * along the side rather than across it, so each end still sits on the node's edge and the head
-   * still points straight in.
-   */
-  const spread = Math.sign(offset) * Math.min(Math.abs(offset), END_SPREAD);
-  const spreadAlong = (position: Position) => {
-    const n = normal(position);
-    const axis = { x: Math.abs(n.y), y: Math.abs(n.x) };
-    const towards = Math.sign(across.x * axis.x + across.y * axis.y) || 1;
-    return { x: axis.x * towards * spread, y: axis.y * towards * spread };
-  };
-  const startShift = spreadAlong(sourcePosition);
-  const endShift = spreadAlong(targetPosition);
-  const start = { x: sourceX + startShift.x, y: sourceY + startShift.y };
-  const end = { x: targetX + endShift.x, y: targetY + endShift.y };
 
   const sourceNormal = normal(sourcePosition);
   const targetNormal = normal(targetPosition);

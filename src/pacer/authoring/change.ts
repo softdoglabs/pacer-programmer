@@ -1,4 +1,5 @@
 import type { PacerConfig } from "../protocol/types";
+import type { EntryTarget, MachineTarget } from "../analysis";
 
 /** What a route edit asks for, and what any authoring edit answers. */
 
@@ -7,14 +8,17 @@ export interface RouteChange {
   fromStateId: string;
   controlId: number;
   stepNumber: number;
-  /** The state the switch should lead to, or undefined to take the route away. */
-  toStateId?: string;
   /**
-   * The state being entered comes back to wherever it was entered from, rather than always to the
-   * one place that enters it today. Only asked when that's still an open question — see
-   * `RoutePlan.choice` — and it's what makes the route cost a preset.
+   * Where the switch should lead: always to one state, back to wherever this state was entered
+   * from, or a table of where it leads from each way in. Undefined takes the route away.
    */
-  asReturn?: boolean;
+  to?: MachineTarget;
+  /**
+   * Where the switches of a state this route enters lead when it's entered from here, for a state
+   * whose switches depend on the way in. Keyed by `"controlId:stepNumber"`. A switch left out goes
+   * back, which is what a return means.
+   */
+  entering?: Record<string, EntryTarget>;
   /**
    * The switch this route is on now, when it's being moved to another one. Cleared as part of the
    * same edit, so the route is never on two switches and never on none.

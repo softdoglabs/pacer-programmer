@@ -238,18 +238,18 @@ export class Page {
         c = e.updateStepLed(c, from, C.StompswitchA, 1, { activeColor: 23 });
       }
       if (${stage} >= 2) {
+        // Drag PRGM2 -> LOOPR on A (free: LOOPR's A still goes to A1), then make LOOPR's A go
+        // back to wherever it was entered from, which takes a copy, in D6.
         c = e.clearPreset(c, 24);
-        const m = d.analysis.machineOf(c);
-        const result = d.authoring.editRoute(c, {
-          fromStateId: d.analysis.stateContaining(m, 2).state.id,
-          controlId: C.StompswitchA,
-          stepNumber: 1,
-          toStateId: d.analysis.stateContaining(m, 13).state.id,
-          asReturn: true,
-          replace: true,
-        }, [24]);
-        if (!result.ok) throw new Error(result.error);
-        c = result.config;
+        const edit = (change, into) => {
+          const result = d.authoring.editRoute(c, change, into);
+          if (!result.ok) throw new Error(result.error);
+          c = result.config;
+        };
+        const id = (slot) => d.analysis.stateContaining(d.analysis.machineOf(c), slot).state.id;
+        edit({ fromStateId: id(2), controlId: C.StompswitchA, stepNumber: 1, to: { kind: "state", id: id(13) }, replace: true });
+        edit({ fromStateId: id(13), controlId: C.StompswitchA, stepNumber: 1, to: { kind: "return" } }, [24]);
+        if (d.analysis.machineOf(c).members[id(13)].length !== 2) throw new Error("stage 2 didn't make a second LOOPR");
       }
       // As on a real device, the working copy (slot 0) is the loaded preset, A1.
       c = { ...c, presets: { ...c.presets, 0: { ...structuredClone(c.presets[1]), index: 0 } } };

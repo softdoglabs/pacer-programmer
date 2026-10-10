@@ -1,12 +1,12 @@
 import { ControlMode, STEPS_PER_CONTROL, SWITCH_CONTROL_IDS, SwitchMessageType } from "../protocol/constants";
 import type { PacerConfig } from "../protocol/types";
-import { machineOf, presetTransitions } from "../analysis";
+import { machineOf, presetTransitions, type MachineTarget } from "../analysis";
 
 /** What a switch already carries on a state, so a route can be put somewhere sensible. */
 export interface SwitchUse {
   controlId: number;
   /** The route it already carries, if any. */
-  route?: { stepNumber: number; toStateId?: string; isReturn: boolean; viaStepping: boolean };
+  route?: { stepNumber: number; to: MachineTarget; toStateId?: string; viaStepping: boolean };
   /**
    * Where a new route would go: the first step that's free on every copy *and* would actually
    * fire. A press in the default mode takes the first jump it finds and drops the rest, so a
@@ -90,8 +90,8 @@ export function switchUses(config: PacerConfig, stateId: string): SwitchUse[] {
         ? {
             route: {
               stepNumber: transition.stepNumber,
+              to: transition.to,
               ...(transition.to.kind === "state" ? { toStateId: transition.to.id } : {}),
-              isReturn: transition.to.kind === "return",
               viaStepping: transition.viaStepping === true,
             },
           }

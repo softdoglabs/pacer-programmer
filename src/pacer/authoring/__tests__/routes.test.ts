@@ -6,7 +6,7 @@ import type { PacerConfig, Preset } from "../../protocol/types";
 import { readFileSync } from "node:fs";
 import { clearPreset, isSparePreset } from "../../editing";
 import { decodeSysex } from "../../protocol/decode";
-import { editRoute, movePreset, planRoute, switchUses } from "..";
+import { editRoute, movePreset, planRoute, switchUses, type RouteChange } from "..";
 
 const body = (note: number): Preset["controls"] => ({
   [ControlId.Stompswitch1]: {
@@ -51,395 +51,353 @@ function jumpTarget(config: PacerConfig, presetIndex: number, controlId: number,
   return presetSelectTargetToIndex(step.data[0]);
 }
 
+const to = (id: string) => ({ kind: "state" as const, id });
+const back = { kind: "return" as const };
+const A = ControlId.StompswitchA;
+const B = ControlId.StompswitchB;
+
+/** MAIN0 enters a single LOOPR preset whose A goes to MAIN0; MAIN1, MAIN2 and MAIN3 stand by. */
+function sharedLooper(): PacerConfig {
+  const result = compileMachine({
+    states: [
+      { id: "m0", name: "MAIN0", body: body(60), transitions: [{ controlId: A, stepNumber: 1, to: to("loop") }] },
+      { id: "m1", name: "MAIN1", body: body(61), transitions: [] },
+      { id: "m2", name: "MAIN2", body: body(62), transitions: [] },
+      { id: "m3", name: "MAIN3", body: body(63), transitions: [] },
+      { id: "loop", name: "LOOPR", body: body(99), transitions: [{ controlId: A, stepNumber: 1, to: to("m0") }] },
+    ],
+  });
+  if (!result.ok) throw new Error(result.error);
+  return result.config;
+}
+
+/** Recovered state by name, with its presets. */
+function find(config: PacerConfig, name: string) {
+  const machine = recoverMachine(config);
+  const state = machine.states.find((s) => s.name?.trim() === name)!;
+  return { state, id: state.id, presets: machine.members[state.id] ?? [], machine };
+}
+
+const spares = (config: PacerConfig, n: number) =>
+  Array.from({ length: 24 }, (_, i) => i + 1)
+    .filter((i) => !config.presets[i] || isSparePreset(config.presets[i]))
+    .slice(0, n);
+
+function applied(config: PacerConfig, change: RouteChange, into: number[] = []) {
+  const result = editRoute(config, change, into);
+  if (!result.ok) throw new Error(result.error);
+  return result;
+}
+
 describe("routing between states", () => {
   it("writes one route into every copy of the state it leaves", () => {
     const config = compiled(looper(2));
-    const before = recoverMachine(config);
-    const loop = before.states.find((s) => s.name === "LOOPR")!;
-    const main = before.states.find((s) => s.name === "MAIN0")!;
-    expect(before.members[loop.id]).toHaveLength(2);
+    const loop = find(config, "LOOPR");
+    const main = find(config, "MAIN0");
+    expect(loop.presets).toHaveLength(2);
 
-    const result = editRoute(config, {
-      fromStateId: loop.id,
-      controlId: ControlId.StompswitchB,
-      stepNumber: 1,
-      toStateId: main.id,
-    });
-    if (!result.ok) throw new Error(result.error);
-
-    const home = before.members[main.id]![0]!;
-    for (const copy of before.members[loop.id]!) {
-      expect(jumpTarget(result.config, copy, ControlId.StompswitchB, 1)).toBe(home);
-    }
-    // One switch on one state, as far as the map is concerned — not two presets that must be
-    // kept in step by hand.
-    const after = recoverMachine(result.config);
-    const stillOne = after.states.find((s) => s.name === "LOOPR")!;
-    expect(after.members[stillOne.id]).toHaveLength(2);
-    expect(stillOne.transitions.some((t) => t.to.kind === "return")).toBe(true);
+    const result = applied(config, { fromStateId: loop.id, controlId: B, stepNumber: 1, to: to(main.id) });
+    for (const copy of loop.presets) expect(jumpTarget(result.config, copy, B, 1)).toBe(main.presets[0]);
+    // One switch on one state, as far as the map is concerned.
+    const after = find(result.config, "LOOPR");
+    expect(after.presets).toHaveLength(2);
+    expect(after.state.transitions.some((t) => t.to.kind === "return")).toBe(true);
   });
 
-  it("prices entering a state that comes back: one preset per place it's entered from", () => {
-    const config = compiled(looper(3));
-    const machine = recoverMachine(config);
-    const loop = machine.states.find((s) => s.name === "LOOPR")!;
-    const spare = machine.states.find((s) => s.name === "MAIN2")!;
-    const change = { fromStateId: spare.id, controlId: ControlId.StompswitchB, stepNumber: 1, toStateId: loop.id };
+  it("enters a state whose exits are fixed without asking or costing anything", () => {
+    // The first half of the user's looper: MAIN1 opens the same LOOPR, whose A still goes to MAIN0.
+    const config = sharedLooper();
+    const change = { fromStateId: find(config, "MAIN1").id, controlId: A, stepNumber: 1, to: to("LOOPR") };
+    expect(planRoute(config, change)).toEqual({ ok: true, needs: [], freed: [] });
+    const result = applied(config, change);
+    const loop = find(result.config, "LOOPR");
+    expect(loop.presets).toHaveLength(1);
+    expect(loop.state.transitions).toEqual([{ controlId: A, stepNumber: 1, to: to("MAIN0") }]);
+  });
 
+  it("makes a switch go back where it came from, with a copy per way in, when asked", () => {
+    let config = applied(sharedLooper(), {
+      fromStateId: "MAIN1",
+      controlId: A,
+      stepNumber: 1,
+      to: to("LOOPR"),
+    }).config;
+    // LOOPR's A already goes to MAIN0; going back instead needs a copy for MAIN1.
+    const change = { fromStateId: "LOOPR", controlId: A, stepNumber: 1, to: back };
     const plan = planRoute(config, change);
     if (!plan.ok) throw new Error(plan.error);
-    expect(plan.copies).toHaveLength(1); // MAIN2 is one preset, so one more copy of LOOPR
-    expect(plan.copies[0]!.name).toBe("LOOPR");
+    expect(plan.needs).toEqual([{ stateId: "LOOPR", enteredFrom: "MAIN1" }]);
     // Without somewhere to put it, it says so rather than picking a preset itself.
     expect(editRoute(config, change).ok).toBe(false);
 
-    const free = userPresetIndex(0, 6); // A6: the compiled machine only used A1-A5
-    const result = editRoute(config, change, [free]);
-    if (!result.ok) throw new Error(result.error);
-
-    const after = recoverMachine(result.config);
-    const nowLoop = after.states.find((s) => s.name === "LOOPR")!;
-    expect(after.members[nowLoop.id]).toHaveLength(3); // the copy joined the state, not a new one
-    expect(nowLoop.transitions.some((t) => t.to.kind === "return")).toBe(true);
-    // The new copy comes back to the preset that now enters it.
-    expect(jumpTarget(result.config, free, ControlId.StompswitchA, 1)).toBe(machine.members[spare.id]![0]);
-    expect(jumpTarget(result.config, machine.members[spare.id]![0]!, ControlId.StompswitchB, 1)).toBe(free);
+    const [slot] = spares(config, 1);
+    config = applied(config, change, [slot!]).config;
+    const loop = find(config, "LOOPR");
+    expect(loop.presets).toHaveLength(2);
+    expect(loop.state.transitions).toEqual([{ controlId: A, stepNumber: 1, to: back }]);
+    const m1 = find(config, "MAIN1").presets[0]!;
+    expect(jumpTarget(config, m1, A, 1)).toBe(slot);
+    expect(jumpTarget(config, slot!, A, 1)).toBe(m1);
   });
 
-  it("asks whether a state entered from one place comes back, since the presets can't say", () => {
-    /*
-     * While a state is entered from one place, "comes back to wherever it was entered from" and
-     * "goes to A1" are the same preset. A second way in is the moment that has an answer, so it's
-     * asked: joining what's there costs nothing, and coming back costs a preset.
-     */
-    const single = compileMachine({
-      states: [
-        {
-          id: "m0",
-          name: "MAIN0",
-          body: body(60),
-          transitions: [{ controlId: ControlId.StompswitchA, stepNumber: 1, to: { kind: "state", id: "loop" } }],
-        },
-        { id: "m1", name: "MAIN1", body: body(61), transitions: [] },
-        {
-          id: "loop",
-          name: "LOOPR",
-          body: body(99),
-          transitions: [{ controlId: ControlId.StompswitchA, stepNumber: 1, to: { kind: "return" } }],
-        },
-      ],
-    });
-    if (!single.ok) throw new Error(single.error);
-
-    const machine = recoverMachine(single.config);
-    const loop = machine.states.find((s) => s.name === "LOOPR")!;
-    const other = machine.states.find((s) => s.name === "MAIN1")!;
-    const change = { fromStateId: other.id, controlId: ControlId.StompswitchB, stepNumber: 1, toStateId: loop.id };
-
-    const asked = planRoute(single.config, change);
-    if (!asked.ok) throw new Error(asked.error);
-    expect(asked.copies).toHaveLength(0);
-    expect(asked.choice?.backTo).toBe(machine.members[machine.states.find((s) => s.name === "MAIN0")!.id]![0]);
-
-    // Said yes: a copy, and MAIN1 gets its own way back.
-    const priced = planRoute(single.config, { ...change, asReturn: true });
-    if (!priced.ok) throw new Error(priced.error);
-    expect(priced.copies).toHaveLength(1);
-
-    const free = userPresetIndex(0, 6);
-    const result = editRoute(single.config, { ...change, asReturn: true }, [free]);
-    if (!result.ok) throw new Error(result.error);
-    const after = recoverMachine(result.config);
-    const nowLoop = after.states.find((s) => s.name === "LOOPR")!;
-    expect(after.members[nowLoop.id]).toHaveLength(2);
-    expect(nowLoop.transitions.some((t) => t.to.kind === "return")).toBe(true); // now it reads as one
-  });
-
-  it("gives every origin its own copy when a shared one is asked to come back", () => {
-    /*
-     * The shape a real device ends up in: two presets both jump to one looper, so its way back can
-     * only lead to one of them. Saying it comes back means a copy per origin — the one that's
-     * there keeps the origin it already leads to, and the preset that was sharing it is pointed at
-     * a copy of its own.
-     */
-    const shared = compileMachine({
-      states: [
-        {
-          id: "m0",
-          name: "MAIN0",
-          body: body(60),
-          transitions: [{ controlId: ControlId.StompswitchA, stepNumber: 1, to: { kind: "state", id: "loop" } }],
-        },
-        { id: "m1", name: "MAIN1", body: body(61), transitions: [] },
-        { id: "m2", name: "MAIN2", body: body(62), transitions: [] },
-        {
-          id: "loop",
-          name: "LOOPR",
-          body: body(99),
-          transitions: [{ controlId: ControlId.StompswitchA, stepNumber: 1, to: { kind: "return" } }],
-        },
-      ],
-    });
-    if (!shared.ok) throw new Error(shared.error);
-    const first = recoverMachine(shared.config);
-    const loopId = first.states.find((s) => s.name === "LOOPR")!.id;
-    const loopSlot = first.members[loopId]![0]!;
-    const m1 = first.members[first.states.find((s) => s.name === "MAIN1")!.id]![0]!;
-
-    // MAIN1 jumps to the same looper preset, by hand, the way a device ends up.
-    const sharing = editRoute(shared.config, {
-      fromStateId: first.states.find((s) => s.name === "MAIN1")!.id,
-      controlId: ControlId.StompswitchB,
+  it("needs no copy when a different switch leads to the other place", () => {
+    const config = applied(sharedLooper(), {
+      fromStateId: "MAIN1",
+      controlId: A,
       stepNumber: 1,
-      toStateId: loopId,
-    });
-    if (!sharing.ok) throw new Error(sharing.error);
+      to: to("LOOPR"),
+    }).config;
+    // A goes to MAIN0, B to MAIN1: two fixed exits, one preset.
+    const change = { fromStateId: "LOOPR", controlId: B, stepNumber: 1, to: to("MAIN1") };
+    expect(planRoute(config, change)).toEqual({ ok: true, needs: [], freed: [] });
+    const loop = find(applied(config, change).config, "LOOPR");
+    expect(loop.presets).toHaveLength(1);
+  });
 
-    const machine = recoverMachine(sharing.config);
-    const loop = machine.states.find((s) => s.name === "LOOPR")!;
-    const m2State = machine.states.find((s) => s.name === "MAIN2")!;
-    expect(machine.members[loop.id]).toHaveLength(1); // still one preset, shared by two origins
-
+  it("goes back from some ways in and somewhere fixed from others, sharing a copy where it can", () => {
+    let config = sharedLooper();
+    for (const main of ["MAIN1", "MAIN2"]) {
+      config = applied(config, { fromStateId: main, controlId: A, stepNumber: 1, to: to("LOOPR") }).config;
+    }
+    // Back to MAIN0 and MAIN1, but from MAIN2 always to MAIN0 — which is where MAIN0's copy leads,
+    // so MAIN2 shares it and only MAIN1 needs a copy.
     const change = {
-      fromStateId: m2State.id,
-      controlId: ControlId.StompswitchB,
+      fromStateId: "LOOPR",
+      controlId: A,
       stepNumber: 1,
-      toStateId: loop.id,
-      asReturn: true,
+      to: {
+        kind: "byEntry" as const,
+        routes: [
+          { from: "MAIN0", to: back },
+          { from: "MAIN1", to: back },
+          { from: "MAIN2", to: to("MAIN0") },
+        ],
+      },
     };
-    const plan = planRoute(sharing.config, change);
+    const plan = planRoute(config, change);
     if (!plan.ok) throw new Error(plan.error);
-    // One for MAIN2's way in, one for MAIN1, which has been sharing; MAIN0 keeps the original.
-    expect(plan.copies.map((c) => c.entryFrom)).toEqual([machine.members[m2State.id]![0], m1]);
-    expect(plan.copies[1]!.repoint).toBeDefined();
-
-    const slots = [userPresetIndex(0, 5), userPresetIndex(0, 6)];
-    const result = editRoute(sharing.config, change, slots);
-    if (!result.ok) throw new Error(result.error);
-
-    const after = recoverMachine(result.config);
-    const nowLoop = after.states.find((s) => s.name === "LOOPR")!;
-    expect(after.members[nowLoop.id]).toHaveLength(3);
-    expect(nowLoop.transitions.some((t) => t.to.kind === "return")).toBe(true);
-    // MAIN1 now goes to its own copy, and that copy comes back to MAIN1.
-    expect(jumpTarget(result.config, m1, ControlId.StompswitchB, 1)).toBe(slots[1]);
-    expect(jumpTarget(result.config, slots[1]!, ControlId.StompswitchA, 1)).toBe(m1);
-    // And the original still serves MAIN0.
-    expect(jumpTarget(result.config, loopSlot, ControlId.StompswitchA, 1)).toBe(
-      first.members[first.states.find((s) => s.name === "MAIN0")!.id]![0],
-    );
+    expect(plan.needs).toEqual([{ stateId: "LOOPR", enteredFrom: "MAIN1" }]);
+    config = applied(config, change, spares(config, 1)).config;
+    const loop = find(config, "LOOPR");
+    expect(loop.presets).toHaveLength(2);
+    expect(loop.state.transitions[0]!.to).toEqual(change.to);
   });
 
-  it("won't let a copy take a preset the route runs between", () => {
-    const config = compiled(looper(3));
-    const machine = recoverMachine(config);
-    const loop = machine.states.find((s) => s.name === "LOOPR")!;
-    const spare = machine.states.find((s) => s.name === "MAIN2")!;
+  it("stops going back, keeping one preset and freeing the rest", () => {
+    const config = compiled(looper(2));
+    const loop = find(config, "LOOPR");
+    const change = { fromStateId: loop.id, controlId: A, stepNumber: 1, to: to("MAIN0") };
+    const plan = planRoute(config, change);
+    if (!plan.ok) throw new Error(plan.error);
+    expect(plan.freed).toHaveLength(1);
+    const result = applied(config, change);
+    const after = find(result.config, "LOOPR");
+    expect(after.presets).toHaveLength(1);
+    expect(isSparePreset(result.config.presets[plan.freed[0]!])).toBe(true);
+    // Both mains now open the one that's left.
+    for (const main of ["MAIN0", "MAIN1"]) {
+      expect(jumpTarget(result.config, find(result.config, main).presets[0]!, A, 1)).toBe(after.presets[0]);
+    }
+  });
 
-    const result = editRoute(
+  it("frees the copy a way in no longer needs when the route is taken away", () => {
+    const config = compiled(looper(2));
+    const result = applied(config, { fromStateId: "MAIN1", controlId: A, stepNumber: 1 });
+    expect(result.freed).toHaveLength(1);
+    const loop = find(result.config, "LOOPR");
+    expect(loop.presets).toHaveLength(1);
+  });
+
+  it("enters a state that goes back with a new copy for the new way in", () => {
+    const config = compiled(looper(3));
+    const change = { fromStateId: "MAIN2", controlId: B, stepNumber: 1, to: to("LOOPR") };
+    const plan = planRoute(config, change);
+    if (!plan.ok) throw new Error(plan.error);
+    expect(plan.needs).toEqual([{ stateId: "LOOPR", enteredFrom: "MAIN2" }]);
+    const [slot] = spares(config, 1);
+    const result = applied(config, change, [slot!]);
+    const m2 = find(result.config, "MAIN2").presets[0]!;
+    expect(find(result.config, "LOOPR").presets).toHaveLength(3);
+    expect(jumpTarget(result.config, m2, B, 1)).toBe(slot);
+    expect(jumpTarget(result.config, slot!, A, 1)).toBe(m2);
+  });
+
+  it("enters a state with a table, sharing an existing copy when told where its switches go from here", () => {
+    let config = sharedLooper();
+    for (const main of ["MAIN1", "MAIN2"]) {
+      config = applied(config, { fromStateId: main, controlId: A, stepNumber: 1, to: to("LOOPR") }).config;
+    }
+    config = applied(
       config,
-      { fromStateId: spare.id, controlId: ControlId.StompswitchB, stepNumber: 1, toStateId: loop.id },
-      [machine.members[spare.id]![0]!],
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.error).toMatch(/presets this route runs between/);
+      {
+        fromStateId: "LOOPR",
+        controlId: A,
+        stepNumber: 1,
+        to: {
+          kind: "byEntry",
+          routes: [
+            { from: "MAIN0", to: back },
+            { from: "MAIN1", to: back },
+            { from: "MAIN2", to: to("MAIN0") },
+          ],
+        },
+      },
+      spares(config, 1),
+    ).config;
+    // MAIN3 comes in, and from MAIN3 LOOPR's A should go to MAIN0, like MAIN2's: no new copy.
+    const change = {
+      fromStateId: "MAIN3",
+      controlId: A,
+      stepNumber: 1,
+      to: to("LOOPR"),
+      entering: { [`${A}:1`]: to("MAIN0") },
+    };
+    expect(planRoute(config, change)).toEqual({ ok: true, needs: [], freed: [] });
+    // Told to go back from MAIN3 instead, it needs one.
+    const backPlan = planRoute(config, { ...change, entering: { [`${A}:1`]: back } });
+    expect(backPlan.ok && backPlan.needs).toEqual([{ stateId: "LOOPR", enteredFrom: "MAIN3" }]);
+  });
+
+  it("nests: a returning state inside another gets a copy per copy of the outer one", () => {
+    // MAIN2 plays a tuner: opened from the looper on B, and going back to whichever looper copy
+    // opened it. Each looper copy then needs its own tuner copy.
+    let config = compiled(looper(3));
+    config = applied(config, { fromStateId: "LOOPR", controlId: B, stepNumber: 1, to: to("MAIN2") }).config;
+    const change = { fromStateId: "MAIN2", controlId: A, stepNumber: 1, to: back };
+    const plan = planRoute(config, change);
+    if (!plan.ok) throw new Error(plan.error);
+    expect(plan.needs).toEqual([{ stateId: "MAIN2", enteredFrom: "LOOPR" }]);
+    config = applied(config, change, spares(config, 1)).config;
+
+    const machine = recoverMachine(config);
+    expect(machine.notes).toEqual([]);
+    const loop = machine.states.find((s) => s.name === "LOOPR")!;
+    const tuner = machine.states.find((s) => s.name === "MAIN2")!;
+    expect(loop.transitions.find((t) => t.controlId === A)?.to).toEqual(back);
+    expect(tuner.transitions.find((t) => t.controlId === A)?.to).toEqual(back);
+    expect(machine.members[tuner.id]).toHaveLength(2);
+
+    // A new way into the looper cascades: a looper copy for it, and a tuner copy for that.
+    const deeper = compileMachine({
+      states: [
+        ...[0, 1, 2].map((i) => ({
+          id: `m${i}`,
+          name: `MAIN${i}`,
+          body: body(60 + i),
+          transitions: i < 2 ? [{ controlId: A, stepNumber: 1, to: to("loop") }] : [],
+        })),
+        {
+          id: "loop",
+          name: "LOOPR",
+          body: body(99),
+          transitions: [
+            { controlId: A, stepNumber: 1, to: back },
+            { controlId: B, stepNumber: 1, to: to("tuner") },
+          ],
+        },
+        { id: "tuner", name: "TUNER", body: body(98), transitions: [{ controlId: A, stepNumber: 1, to: back }] },
+      ],
+    });
+    if (!deeper.ok) throw new Error(deeper.error);
+    const enter = { fromStateId: "MAIN2", controlId: A, stepNumber: 1, to: to("LOOPR") };
+    const cascade = planRoute(deeper.config, enter);
+    expect(cascade.ok && cascade.needs).toEqual([
+      { stateId: "LOOPR", enteredFrom: "MAIN2" },
+      { stateId: "TUNER", enteredFrom: "LOOPR" },
+    ]);
+    const after = recoverMachine(applied(deeper.config, enter, spares(deeper.config, 2)).config);
+    expect(after.notes).toEqual([]);
+    expect(after.members["LOOPR"]).toHaveLength(3);
+    expect(after.members["TUNER"]).toHaveLength(3);
   });
 
   it("refuses a route from a state to itself", () => {
     const config = compiled(looper(2));
-    const machine = recoverMachine(config);
-    const main = machine.states.find((s) => s.name === "MAIN0")!;
-
-    const result = editRoute(config, {
-      fromStateId: main.id,
-      controlId: ControlId.StompswitchB,
-      stepNumber: 1,
-      toStateId: main.id,
-    });
+    const result = editRoute(config, { fromStateId: "MAIN0", controlId: B, stepNumber: 1, to: to("MAIN0") });
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error).toMatch(/Preset Select → Current/);
   });
 
-  it("takes away one way into a state that comes back, which still comes back from the rest", () => {
-    // MAIN0's copy of LOOPR is left with nothing entering it: unused, but LOOPR still returns to MAIN1.
-    const config = compiled(looper(2));
-    const machine = recoverMachine(config);
-    const main = machine.states.find((s) => s.name === "MAIN0")!;
-
-    const result = editRoute(config, {
-      fromStateId: main.id,
-      controlId: ControlId.StompswitchA,
-      stepNumber: 1,
-    });
-    if (!result.ok) throw new Error(result.error);
-    expect(recoverMachine(result.config).states.find((s) => s.name === "LOOPR")?.transitions[0]?.to.kind).toBe(
-      "return",
-    );
+  it("won't let a copy take a preset the machine already uses", () => {
+    const config = compiled(looper(3));
+    const result = editRoute(config, { fromStateId: "MAIN2", controlId: B, stepNumber: 1, to: to("LOOPR") }, [
+      find(config, "MAIN2").presets[0]!,
+    ]);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/presets this machine uses/);
   });
 
   it("takes away a route that nothing depends on, leaving the step unused", () => {
-    const machine: StateMachine = {
-      states: [
-        {
-          id: "a",
-          name: "A",
-          body: body(60),
-          transitions: [{ controlId: ControlId.StompswitchA, stepNumber: 2, to: { kind: "state", id: "b" } }],
-        },
-        { id: "b", name: "B", body: body(61), transitions: [] },
-      ],
-    };
-    const config = compiled(machine);
-    const before = recoverMachine(config);
-    const a = before.states.find((s) => s.name === "A")!;
-
-    const result = editRoute(config, { fromStateId: a.id, controlId: ControlId.StompswitchA, stepNumber: 2 });
-    if (!result.ok) throw new Error(result.error);
-
-    const slot = before.members[a.id]![0]!;
-    const step = result.config.presets[slot]?.controls[ControlId.StompswitchA]?.steps[2];
-    expect(step?.msgType).toBe(SwitchMessageType.Off);
-    expect(step?.active).toBe(false);
-    const after = recoverMachine(result.config);
-    expect(after.states.flatMap((s) => s.transitions)).toHaveLength(0);
+    const config = compiled(looper(2));
+    const loop = find(config, "LOOPR");
+    const added = applied(config, { fromStateId: loop.id, controlId: B, stepNumber: 1, to: to("MAIN0") }).config;
+    const result = applied(added, { fromStateId: loop.id, controlId: B, stepNumber: 1 });
+    for (const copy of loop.presets) {
+      const step = result.config.presets[copy]?.controls[B]?.steps[1];
+      expect(step?.msgType).toBe(SwitchMessageType.Off);
+    }
+    expect(find(result.config, "LOOPR").state.transitions.some((t) => t.controlId === B)).toBe(false);
   });
 
   it("refuses a route that would sit behind an earlier jump and never fire", () => {
-    // The shape every factory preset has: switch A already selects the firmware's Track preset,
-    // which the map can't show because it isn't a state of the configuration.
     const config = compiled(looper(2));
-    const machine = recoverMachine(config);
-    const a = machine.states.find((s) => s.name === "MAIN0")!;
-    const b = machine.states.find((s) => s.name === "MAIN1")!;
-
-    const result = editRoute(config, {
-      fromStateId: a.id,
-      controlId: ControlId.StompswitchA, // already jumps to the looper on step 1
-      stepNumber: 2,
-      toStateId: b.id,
-    });
+    const result = editRoute(config, { fromStateId: "MAIN0", controlId: A, stepNumber: 2, to: to("MAIN1") });
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error).toMatch(/only takes the first jump/);
   });
 
   it("empties a switch when asked, so a route can take one that's already busy", () => {
-    /*
-     * The usual case on a real device: switch A already selects the firmware's Track preset, so
-     * nothing could be routed onto it. Saying "replace what's on it" clears the switch on every
-     * preset the state is, and the route becomes all it does.
-     */
-    const design = looper(2);
-    // The looper's A also sends a note, so there's something on the switch besides the way back.
-    design.states.find((s) => s.id === "loop")!.body[ControlId.StompswitchA] = {
-      steps: { 2: { channel: 0, msgType: SwitchMessageType.Note, data: [40, 127, 0], active: true } },
-      led: {},
-    };
-    const config = compiled(design);
-    const machine = recoverMachine(config);
-    const loop = machine.states.find((s) => s.name === "LOOPR")!;
-    const main = machine.states.find((s) => s.name === "MAIN0")!;
-    const busy = { fromStateId: loop.id, controlId: ControlId.StompswitchA, stepNumber: 2, toStateId: main.id };
-
-    expect(editRoute(config, busy).ok).toBe(false); // step 1 already jumps: a route on 2 never fires
-
-    const result = editRoute(config, { ...busy, stepNumber: 1, replace: true });
-    if (!result.ok) throw new Error(result.error);
-    const home = machine.members[main.id]![0]!;
-    for (const copy of machine.members[loop.id]!) {
-      expect(jumpTarget(result.config, copy, ControlId.StompswitchA, 1)).toBe(home);
-      // What used to be there is gone, not left behind on a later step.
-      expect(result.config.presets[copy]?.controls[ControlId.StompswitchA]?.steps[2]?.msgType).toBe(
-        SwitchMessageType.Off,
-      );
+    const config = compiled(looper(2));
+    const loop = find(config, "LOOPR");
+    // Stomp 1 sends a note on every copy; replacing it leaves only the route.
+    const result = applied(config, {
+      fromStateId: loop.id,
+      controlId: ControlId.Stompswitch1,
+      stepNumber: 1,
+      to: to("MAIN0"),
+      replace: true,
+    });
+    for (const copy of loop.presets) {
+      expect(jumpTarget(result.config, copy, ControlId.Stompswitch1, 1)).toBe(find(config, "MAIN0").presets[0]);
     }
   });
 
   it("says what each switch already carries, so a route can be put somewhere free", () => {
     const config = compiled(looper(2));
-    const machine = recoverMachine(config);
-    const loop = machine.states.find((s) => s.name === "LOOPR")!;
-
-    const uses = switchUses(config, loop.id);
-    const a = uses.find((u) => u.controlId === ControlId.StompswitchA)!;
-    expect(a.route?.isReturn).toBe(true);
-    expect(a.route?.stepNumber).toBe(1);
-    // Nowhere to put a second route: a press fires every step but takes only the first jump, so
-    // anything after the return on step 1 would sit there and never happen.
-    expect(a.freeStep).toBeUndefined();
-
-    const one = uses.find((u) => u.controlId === ControlId.Stompswitch1)!;
-    expect(one.route).toBeUndefined();
-    expect(one.sends).toBe(1); // the state's body: a note on stomp 1
-    expect(one.freeStep).toBe(2);
+    const uses = switchUses(config, "MAIN0");
+    const a = uses.find((u) => u.controlId === A)!;
+    expect(a.route?.toStateId).toBe("LOOPR");
+    const b = uses.find((u) => u.controlId === B)!;
+    expect(b.route).toBeUndefined();
+    expect(b.freeStep).toBe(1);
   });
 
   it("moves a route from one switch to another in one edit", () => {
     const config = compiled(looper(2));
-    const machine = recoverMachine(config);
-    const main = machine.states.find((s) => s.name === "MAIN0")!;
-    const loop = machine.states.find((s) => s.name === "LOOPR")!;
-    const home = machine.members[main.id]![0]!;
-
-    // A carries the route today; B takes it over, and A is left doing nothing.
-    const result = editRoute(config, {
-      fromStateId: main.id,
-      controlId: ControlId.StompswitchB,
+    const home = find(config, "MAIN0").presets[0]!;
+    const result = applied(config, {
+      fromStateId: "MAIN0",
+      controlId: B,
       stepNumber: 1,
-      toStateId: loop.id,
-      moveFrom: { controlId: ControlId.StompswitchA, stepNumber: 1 },
+      to: to("LOOPR"),
+      moveFrom: { controlId: A, stepNumber: 1 },
     });
-    if (!result.ok) throw new Error(result.error);
-
-    expect(jumpTarget(result.config, home, ControlId.StompswitchB, 1)).toBe(machine.members[loop.id]![0]);
-    expect(result.config.presets[home]?.controls[ControlId.StompswitchA]?.steps[1]?.msgType).toBe(
-      SwitchMessageType.Off,
-    );
-    // Still one route to the looper, on the switch it was moved to.
-    const after = recoverMachine(result.config);
-    const moved = after.states.find((s) => (after.members[s.id] ?? []).includes(home))!;
-    expect(moved.transitions.map((t) => t.controlId)).toEqual([ControlId.StompswitchB]);
-  });
-
-  it("moves a route into a state that comes back, keeping each way in on its own copy", () => {
-    // MAIN1 enters the looper's second copy; moving its route must not aim it at the first.
-    const config = compiled(looper(2));
-    const machine = recoverMachine(config);
-    const main = machine.states.find((s) => s.name === "MAIN1")!;
-    const loop = machine.states.find((s) => s.name === "LOOPR")!;
-    const home = machine.members[main.id]![0]!;
-    const own = jumpTarget(config, home, ControlId.StompswitchA, 1);
-
-    const result = editRoute(config, {
-      fromStateId: main.id,
-      controlId: ControlId.StompswitchB,
-      stepNumber: 1,
-      toStateId: loop.id,
-      moveFrom: { controlId: ControlId.StompswitchA, stepNumber: 1 },
-    });
-    if (!result.ok) throw new Error(result.error);
-    expect(jumpTarget(result.config, home, ControlId.StompswitchB, 1)).toBe(own);
+    expect(result.config.presets[home]?.controls[A]?.steps[1]?.msgType).toBe(SwitchMessageType.Off);
+    // Still MAIN0's own copy, which still comes back to it.
+    const copy = jumpTarget(result.config, home, B, 1)!;
+    expect(jumpTarget(result.config, copy, A, 1)).toBe(home);
+    expect(find(result.config, "LOOPR").presets).toHaveLength(2);
   });
 
   it("costs nothing to keep a route as it is, even into a state that comes back", () => {
-    // Opening a route and confirming it unchanged isn't a new way in.
     const config = compiled(looper(2));
-    const machine = recoverMachine(config);
-    const loop = machine.states.find((s) => s.name === "LOOPR")!;
-    for (const name of ["MAIN0", "MAIN1"]) {
-      const main = machine.states.find((s) => s.name === name)!;
-      const change = {
-        fromStateId: main.id,
-        controlId: ControlId.StompswitchA,
-        stepNumber: 1,
-        toStateId: loop.id,
-      };
-      expect(planRoute(config, change)).toEqual({ ok: true, copies: [] });
-      const result = editRoute(config, change);
-      if (!result.ok) throw new Error(result.error);
-      expect(result.config.presets).toEqual(config.presets);
+    for (const main of ["MAIN0", "MAIN1"]) {
+      const change = { fromStateId: main, controlId: A, stepNumber: 1, to: to("LOOPR") };
+      expect(planRoute(config, change)).toEqual({ ok: true, needs: [], freed: [] });
+      expect(applied(config, change).config.presets).toEqual(config.presets);
     }
   });
 

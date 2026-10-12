@@ -1,5 +1,6 @@
 import { machineOf, stateContaining } from "../pacer/analysis";
 import { movePreset } from "../pacer/authoring";
+import { clearPreset } from "../pacer/editing";
 import type { PacerConfig } from "../pacer/protocol/types";
 import type { PacerStore } from "./pacerStore";
 
@@ -55,8 +56,10 @@ export interface EditingSlice {
   /**
    * Moves a preset to an empty slot, taking every route that named it along (see `movePreset`).
    * Returns why it couldn't, or undefined when it did — a refusal has to reach whoever asked.
+   * `clearFirst` empties the slot it moves into as part of the same undo step, for a device with
+   * no empty preset; it's for the caller to have asked first.
    */
-  movePresetToSlot: (from: number, to: number) => string | undefined;
+  movePresetToSlot: (from: number, to: number, options?: { clearFirst?: boolean }) => string | undefined;
   undo: () => void;
   redo: () => void;
 }
@@ -96,9 +99,9 @@ export function createEditingSlice(set: Set, get: Get): EditingSlice {
     editScope: "state",
     setEditScope: (editScope) => set({ editScope }),
 
-    movePresetToSlot: (from, to) => {
+    movePresetToSlot: (from, to, options) => {
       const { board, applyEdit } = get();
-      const result = movePreset(board.config, from, to);
+      const result = movePreset(options?.clearFirst ? clearPreset(board.config, to) : board.config, from, to);
       if (!result.ok) return result.error;
       applyEdit(() => result.config);
       /*

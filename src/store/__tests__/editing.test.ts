@@ -183,4 +183,20 @@ describe("editing", () => {
     expect(refused).toMatch(/Clear it first/);
     expect(store().board.config).toBe(before);
   });
+
+  it("moves onto a preset in use when told to clear it first, as one undo step", () => {
+    // The factory set fills all 24, so without this a preset on a new device can't be moved at all.
+    const D6 = userPresetIndex(3, 6);
+    const name = store().board.config.presets[A1]?.name;
+    const was = store().board.config.presets[D6]?.name;
+    const steps = store().editHistory.past.length;
+
+    expect(store().movePresetToSlot(A1, D6, { clearFirst: true })).toBeUndefined();
+    expect(store().board.config.presets[D6]?.name).toBe(name);
+    expect(store().editHistory.past.length).toBe(steps + 1);
+
+    store().undo();
+    expect(store().board.config.presets[D6]?.name).toBe(was);
+    expect(store().board.config.presets[A1]?.name).toBe(name);
+  });
 });

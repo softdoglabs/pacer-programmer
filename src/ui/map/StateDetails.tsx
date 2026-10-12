@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import { ModalDialog } from "@/components/ui/dialog";
+import { Select, type SelectGroup } from "@/components/ui/select";
 import { dependsOnEntry, presetEntrants } from "@/pacer/analysis";
+import { clearablePresets } from "@/pacer/authoring";
 import { isSparePreset } from "@/pacer/editing";
 import { FIRST_USER_PRESET_INDEX, LAST_USER_PRESET_INDEX, presetIndexToLabel } from "@/pacer/protocol/constants";
 import { usePacerStore } from "../../store/pacerStore";
@@ -27,6 +29,8 @@ export function StateDetails({ stateId, onClose }: { stateId: string; onClose: (
   const movePresetToSlot = usePacerStore((s) => s.movePresetToSlot);
   // A move that's refused says why, here, rather than doing nothing where you were looking.
   const [refused, setRefused] = useState<string | undefined>();
+  // A move into a preset that's in use, waiting to be agreed to: it clears that preset.
+  const [clearing, setClearing] = useState<{ from: number; to: number } | undefined>();
 
   const machine = useMachine();
   const { name, members, comesBack } = useMemo(() => {
@@ -45,9 +49,17 @@ export function StateDetails({ stateId, onClose }: { stateId: string; onClose: (
     }
     return free;
   }, [config]);
+  // With no empty preset — every device, until one's cleared — a move can clear one the machine
+  // doesn't use, once that's agreed to (the same rule the route dialog offers copies by).
+  const clearable = useMemo(() => clearablePresets(config, machine, [stateId]), [config, machine, stateId]);
 
   if (members.length === 0) return null;
   const label = (slot: number) => `${presetIndexToLabel(slot)} ${config.presets[slot]?.name?.trim() ?? ""}`.trim();
+  const destinations = (slot: number): SelectGroup[] =>
+    [
+      { title: "Empty", options: spare.filter((o) => Number(o.id) !== slot) },
+      { title: "In use — would be cleared", options: clearable.map((i) => ({ id: String(i), label: label(i) })) },
+    ].filter((g) => g.options.length > 0);
 
   return (
     <section aria-label={`${name}: the presets it is`} className="space-y-2 rounded-lg border bg-card p-3">
@@ -97,20 +109,23 @@ export function StateDetails({ stateId, onClose }: { stateId: string; onClose: (
                 >
                   Program
                 </Button>
-                {/* Only empty slots: moving onto a preset in use would be a delete in disguise. */}
+                {/* Onto a preset in use is a delete, so it's listed apart and asked about first. */}
                 <Select
                   label={`Move ${presetIndexToLabel(slot)} to`}
                   labelVisible={false}
                   placeholder="Move to…"
                   title={
-                    spare.length === 0
-                      ? "No empty presets to move into — clear one in Program mode"
-                      : "Move this preset to an empty slot, taking the routes that lead to it with it"
+                    destinations(slot).length === 0
+                      ? "No empty presets to move into, and every other preset is part of a route — clear one in Program mode"
+                      : "Move this preset to another slot, taking the routes that lead to it with it"
                   }
                   value={undefined}
-                  options={spare.filter((o) => Number(o.id) !== slot)}
+                  options={destinations(slot)}
                   onChange={(id) => {
-                    if (id !== undefined) setRefused(movePresetToSlot(slot, Number(id)));
+                    if (id === undefined) return;
+                    const to = Number(id);
+                    if (isSparePreset(config.presets[to])) setRefused(movePresetToSlot(slot, to));
+                    else setClearing({ from: slot, to });
                   }}
                 />
               </div>
@@ -118,6 +133,40 @@ export function StateDetails({ stateId, onClose }: { stateId: string; onClose: (
           );
         })}
       </ul>
+      <ModalDialog
+        isOpen={clearing !== undefined}
+        onOpenChange={(open) => !open && setClearing(undefined)}
+        title={
+          clearing
+            ? `Clear ${presetIndexToLabel(clearing.to)} and move ${presetIndexToLabel(clearing.from)} there?`
+            : ""
+        }
+      >
+        {clearing && (
+          <>
+            <p className="text-sm">
+              {label(clearing.to)} has something in it. Moving {label(clearing.from)} there clears it first: everything
+              on {presetIndexToLabel(clearing.to)} is lost, and {presetIndexToLabel(clearing.from)} is left empty.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Nothing reaches the Pacer until you send it, and one undo brings both back.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onPress={() => setClearing(undefined)}>
+                Cancel
+              </Button>
+              <Button
+                onPress={() => {
+                  setRefused(movePresetToSlot(clearing.from, clearing.to, { clearFirst: true }));
+                  setClearing(undefined);
+                }}
+              >
+                Clear {presetIndexToLabel(clearing.to)} and move
+              </Button>
+            </div>
+          </>
+        )}
+      </ModalDialog>
       {refused && (
         <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">
           {refused}

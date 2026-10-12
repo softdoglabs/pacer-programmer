@@ -53,5 +53,7 @@ a different design, so the app never makes that choice for you.
 
 Copies land wherever there was room. If you'd like them together, say with the
 whole looper in bank D, click LOOPR on the map and use **Move to…** on a copy.
-The switches that lead to it follow it to its new slot. Only empty presets are
-offered, so you may need to clear one first.
+The switches that lead to it follow it to its new slot. Empty presets are
+offered first. There aren't any here, so choose **D5 MMC** under **In use —
+would be cleared**, and confirm with **Clear D5 and move**. C1 is left empty,
+ready for the next copy that needs a slot.

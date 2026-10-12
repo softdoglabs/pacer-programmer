@@ -495,17 +495,16 @@ async function tutorial3(r) {
   if (back !== 1) r.fail(`expected undo to make LOOPR one state again, got ${back}`);
 
   r.at("Tidy Up the Slots");
-  await r.preset("D5");
-  await r.button("Clear preset…");
-  await r.button("Clear it");
   await r.toggle("Mode", "Preset map");
   await wait(800);
   await r.click(
     `window.__find.all(".react-flow__node").find((n) => n.textContent.includes("LOOPR"))`,
     "the LOOPR state",
   );
-  await r.choose("Move C1 to", "D5");
+  await r.choose("Move C1 to", "D5 MMC");
+  await r.button("Clear D5 and move");
   await r.expect(`s.board.config.presets[23].name.trim()`, "LOOPR", "D5 after the move");
+  await r.expect(`s.board.config.presets[13].name.trim()`, "EMPTY", "C1 after the move");
   await r.expect(
     `d.constants.presetSelectTargetToIndex(s.board.config.presets[1].controls[d.constants.ControlId.StompswitchA].steps[1].data[0])`,
     23,

@@ -77,11 +77,11 @@ and which presets jump to it. For a state that returns, that's where each
 copy goes back to.
 
 **Load** loads the preset in the simulator, and **Program** opens it in
-Program mode. **Move to…** moves it to an empty slot, and everything that
-jumped to it follows. Only empty presets are offered, because moving onto a
-preset that's in use would delete it, so you may need to
-[clear one](program-mode.md#clear-preset) first. This is handy for tidying a
-state's copies into one bank, say.
+Program mode. **Move to…** moves it to another slot, and everything that
+jumped to it follows. Empty presets are offered first. Presets no route leads
+to or from come after, under **In use — would be cleared**, and choosing one
+asks before it clears it, because moving onto a preset deletes what was there.
+This is handy for tidying a state's copies into one bank, say.
 
 If a move would change what the configuration does, rather than just where a
 preset sits, it's refused and the reason shows up here.

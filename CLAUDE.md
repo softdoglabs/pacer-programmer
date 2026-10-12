@@ -1096,9 +1096,13 @@ no hover-only UI, for tablets.
     wherever states are listed (the route dialog's target picker).
   - **`StateDetails`** is where those slots are on show: clicking a state
     lists its presets under the map, each with the presets that enter it,
-    and buttons to load it, program it, or **move it to an empty slot**.
+    and buttons to load it, program it, or **move it to another slot**.
     Moving takes the routes with it (`movePreset`), which is the part that
-    can't be done by hand without missing one.
+    can't be done by hand without missing one. Empty slots come first; the
+    presets `clearablePresets` allows come after, and choosing one opens a
+    confirm before it's cleared and moved onto as one undo step
+    (`movePresetToSlot`'s `clearFirst`; `movePreset` itself still refuses a
+    preset with something in it).
   - Edge labels are the marking alone — "C", "1", "3". The rear-jack
     switches lose the "FS": a badge has room for a character, and a number
     on its own reads as a switch.

@@ -141,9 +141,14 @@ a state instead.
 
 The dialog works out the cost before it writes anything. Each new copy gets a
 picker, **Copy of LOOPR (entered from MAIN1) goes in**, which offers empty
-presets only. A copy never overwrites a preset that has something in it. If
-there aren't any empty ones, the dialog says so, and you can
-[clear one](program-mode.md#clear-preset) in Program mode.
+presets first. If there aren't any, which is how a Pacer starts out, it lists
+the presets no route leads to or from under **In use — would be cleared**.
+Choose one of those and the dialog asks you to tick a box naming the preset
+before it'll go ahead. The preset is cleared as part of the same edit, so one
+undo brings it back. A preset that's part of a route is never offered. To give
+one of those up, [clear it](program-mode.md#clear-preset) in Program mode.
+
+![The route dialog with no empty preset: D6 SEQNC is chosen, and a tick-box asks before clearing it](../images/route-clear.png)
 
 It goes the other way too. A change that means a state needs fewer copies, like
 switching *Goes back* to *Always goes to one state*, frees the copies nobody
@@ -163,7 +168,6 @@ The message tells you why. These are the common ones:
 | *A route can't lead to the state it leaves from.* | That's a reload. | Use Preset Select → Current in Program mode. |
 | *Step 1 on that switch already jumps somewhere…* | A press only takes the first jump. | Tick *Replace*, or pick another switch. |
 | *Every step on A is in use…* | There's nowhere to put the jump. | Tick *Replace*, or pick another switch. |
-| *D6 has something in it. Clear it first, or pick an empty one.* | New copies only go into empty presets. | [Clear a preset](program-mode.md#clear-preset) you don't use. |
 | *…already behaves like "LOOPR" apart from where it leads…* | Another preset is identical to the state's copies, so after the edit it would be read as one of them. | Give the state something of its own, or clear that preset. |
 | *LOOPR's switch A would come back meaning…* | The presets this edit would write wouldn't read back as the design you asked for. | Usually another switch, or a different choice, does it. |
 

@@ -15,7 +15,8 @@ This picks up where [tutorial 1](1-a-looper-preset.md) left off.
 
 The copy needs a preset of its own, and the Pacer doesn't have any empty ones.
 In **Program**, choose **D6** and click **Clear preset…**. D6 is now `EMPTY`,
-and the map will offer it when it needs a slot.
+and the map will offer it when it needs a slot. (If you skip this, the route
+dialog lets you pick a preset to clear when it gets there.)
 
 ## Draw the Way In
 
@@ -43,7 +44,7 @@ to A2. It needs no copy at all. But we want A to do it, so:
 2. Choose **Goes back to wherever LOOPR was entered from (PRGM1, PRGM2)**.
 3. A switch that has to lead somewhere different depending on how you got
    there is the one thing that takes a second copy, so the dialog asks where
-   to put it. It offers empty presets only, starting with **D6 EMPTY**.
+   to put it. It offers empty presets first, starting with **D6 EMPTY**.
 
 ![The route dialog: A already goes to PRGM1, so it asks; going back costs a copy in D6](../images/t2-return.png)
 

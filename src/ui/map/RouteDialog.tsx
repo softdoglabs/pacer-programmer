@@ -2,10 +2,18 @@ import { useMemo, useState } from "react";
 import { Checkbox, Label, Radio, RadioGroup } from "react-aria-components";
 import { Button } from "@/components/ui/button";
 import { ModalDialog } from "@/components/ui/dialog";
-import { Select } from "@/components/ui/select";
-import { editRoute, entrantStates, planRoute, switchUses, type RouteChange, type SwitchUse } from "@/pacer/authoring";
+import { Select, type SelectGroup } from "@/components/ui/select";
+import {
+  clearablePresets,
+  editRoute,
+  entrantStates,
+  planRoute,
+  switchUses,
+  type RouteChange,
+  type SwitchUse,
+} from "@/pacer/authoring";
 import { dependsOnEntry, type EntryTarget, type MachineTarget } from "@/pacer/analysis";
-import { isSparePreset } from "@/pacer/editing";
+import { clearPreset, isSparePreset } from "@/pacer/editing";
 import { switchSpecForControl } from "@/pacer/hardware";
 import { FIRST_USER_PRESET_INDEX, LAST_USER_PRESET_INDEX, presetIndexToLabel } from "@/pacer/protocol/constants";
 import { controlLabel } from "@/pacer/simulator";
@@ -235,10 +243,31 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
   const [into, setInto] = useState<(number | undefined)[]>([]);
   const slots = needs.map((_, i) => into[i] ?? spare.filter((s) => !into.includes(s))[i]);
 
+  /*
+   * A device has no empty preset until one's been cleared, so a copy may also take a preset that's
+   * in use — but only one the machine doesn't use, and only once that's been agreed to here: it's
+   * cleared as part of the same edit, and one undo brings it back.
+   */
+  const clearable = clearablePresets(config, machine, [
+    intent.fromStateId,
+    ...(to?.kind === "state" ? [to.id] : []),
+    ...(to?.kind === "byEntry" ? to.routes.flatMap((r) => (r.to.kind === "state" ? [r.to.id] : [])) : []),
+  ]);
+  const toClear = slots.filter((s): s is number => s !== undefined && !isSparePreset(config.presets[s]));
+  // Agreed for exactly these presets: choosing another asks again.
+  const [agreedToClear, setAgreedToClear] = useState("");
+  const clearingAgreed = toClear.length === 0 || agreedToClear === toClear.join(",");
+  const slotLabel = (i: number) => `${presetIndexToLabel(i)} ${config.presets[i]?.name?.trim() ?? ""}`.trim();
+  const slotOptions: SelectGroup[] = [
+    { title: "Empty", options: spare.map((i) => ({ id: String(i), label: slotLabel(i) })) },
+    { title: "In use — would be cleared", options: clearable.map((i) => ({ id: String(i), label: slotLabel(i) })) },
+  ].filter((g) => g.options.length > 0);
+
   const commit = (target: MachineTarget | undefined) => {
     if (!change) return;
+    const cleared = target ? toClear.reduce((c, slot) => clearPreset(c, slot), config) : config;
     const result = editRoute(
-      config,
+      cleared,
       { ...change, ...(target ? { to: target } : { to: undefined }) },
       target ? slots.filter((s): s is number => s !== undefined) : [],
     );
@@ -370,7 +399,7 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
           <p className="text-xs text-muted-foreground">
             A switch that leads somewhere different depending on the way in needs a preset for each distinct set of
             destinations, so this needs {needs.length === 1 ? "another preset" : `${needs.length} more presets`}. The
-            Pacer has 24 and no spare ones of its own — clearing a preset in Program mode is what frees one.
+            Pacer has 24 and no spare ones of its own, so it takes an empty one, or one you choose to clear.
           </p>
           {needs.map((need, i) => (
             <Select
@@ -382,23 +411,31 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
               onChange={(id) => {
                 setInto((prev) => {
                   const next = [...prev];
-                  next[i] = id === undefined || id === "none" ? undefined : Number(id);
+                  next[i] = id === undefined ? undefined : Number(id);
                   return next;
                 });
                 setError(undefined);
               }}
-              options={
-                spare.length > 0
-                  ? spare.map((i) => ({
-                      id: String(i),
-                      label: `${presetIndexToLabel(i)} ${config.presets[i]?.name?.trim() ?? ""}`.trim(),
-                    }))
-                  : [{ id: "none", label: "— none —" }]
-              }
+              placeholder="Choose a preset"
+              options={slotOptions}
             />
           ))}
           {slots.some((slot) => slot === undefined) && (
-            <p className="text-xs text-destructive">No empty presets left. Clear one in Program mode first.</p>
+            <p className="text-xs text-destructive">
+              {slotOptions.length === 0
+                ? "No empty presets left, and every other preset is part of a route. Clear one in Program mode first."
+                : spare.length === 0
+                  ? "No empty presets left. Choose one to clear."
+                  : "Choose a preset for each copy."}
+            </p>
+          )}
+          {toClear.length > 0 && (
+            <Tick isSelected={clearingAgreed} onChange={(on) => setAgreedToClear(on ? toClear.join(",") : "")}>
+              <span className="text-destructive">
+                Clear {toClear.map(slotLabel).join(" and ")} to make room — everything on{" "}
+                {toClear.length === 1 ? "it" : "them"} is lost. Undo brings {toClear.length === 1 ? "it" : "them"} back.
+              </span>
+            </Tick>
           )}
         </div>
       )}
@@ -422,25 +459,18 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
                 : `Every step on ${marking(use.controlId)} is in use, so there's nowhere to put a route.`}
             </p>
           )}
-          <Checkbox
+          <Tick
             isSelected={replacing}
             onChange={(on) => {
               setReplace(on);
               setError(undefined);
             }}
-            className="group flex items-start gap-2 text-xs"
           >
-            <span
-              aria-hidden
-              className="flex size-5 shrink-0 items-center justify-center rounded border bg-card group-data-[selected]:bg-primary group-data-[selected]:text-primary-foreground"
-            >
-              {replacing ? "✓" : ""}
-            </span>
             <span className="text-muted-foreground">
               Replace what {marking(use.controlId)} does ({describe(use, nameOf)}) — the route becomes all it does, on{" "}
               {members.length > 1 ? `all ${members.length} presets` : "this preset"}.
             </span>
-          </Checkbox>
+          </Tick>
         </div>
       )}
       {error && <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">{error}</p>}
@@ -455,7 +485,7 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
           </Button>
         )}
         <Button
-          isDisabled={!change || !to || !plan?.ok || slots.some((slot) => slot === undefined)}
+          isDisabled={!change || !to || !plan?.ok || slots.some((slot) => slot === undefined) || !clearingAgreed}
           onPress={() => commit(to)}
         >
           {intent.kind === "add" ? "Add route" : "Change route"}
@@ -468,6 +498,28 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
 /** A state's presets, worded as the map words them: the slot when it's one, a count when it's many. */
 const statePresets = (members: number[]) =>
   members.length === 1 ? presetIndexToLabel(members[0]!) : `${members.length} presets`;
+
+function Tick({
+  isSelected,
+  onChange,
+  children,
+}: {
+  isSelected: boolean;
+  onChange: (on: boolean) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Checkbox isSelected={isSelected} onChange={onChange} className="group flex items-start gap-2 text-xs">
+      <span
+        aria-hidden
+        className="flex size-5 shrink-0 items-center justify-center rounded border bg-card group-data-[selected]:bg-primary group-data-[selected]:text-primary-foreground"
+      >
+        {isSelected ? "✓" : ""}
+      </span>
+      {children}
+    </Checkbox>
+  );
+}
 
 function Choice({ value, children }: { value: Mode; children: React.ReactNode }) {
   return (

@@ -61,8 +61,8 @@ find out on the next load.
 | *Step N on that switch already jumps somewhere…* | A press only takes the first jump, so a later one never fires. | Tick **Replace**, or choose another switch. |
 | *Every step on X is in use…* | No room for a jump. | Tick **Replace**, or choose another switch. |
 | *X already selects the Track preset…* | Switch A or B is the firmware's Track/Transport selector, which would be the first jump. | Tick **Replace**, or choose another switch. |
-| *No empty presets left…* | The route needs a new copy and every slot has something in it. | [Clear a preset](program-mode.md#clear-preset) you don't use. Or choose a cheaper answer: a different switch for each way back costs nothing. |
-| *D6 has something in it. Clear it first, or pick an empty one.* | New copies only go into empty presets, for routes and for **Move to…** alike. | Clear the slot first. |
+| *No empty presets left. Choose one to clear.* | The route needs a new copy and every slot has something in it. | Choose a preset under **In use — would be cleared** and tick the box that confirms clearing it. Or choose a cheaper answer: a different switch for each way back costs nothing. |
+| *No empty presets left, and every other preset is part of a route…* | The only presets a copy may clear are ones no route leads to or from, and there aren't any. | [Clear a preset](program-mode.md#clear-preset) yourself, after rerouting what leads to it. |
 | *D6 is one of the presets this machine uses…* | That preset is already part of the design. | Choose another slot. |
 | *…already behaves like "X" apart from where it leads…* | Another preset is identical to X's copies, so after the edit it would be read as one of them. | Give X something of its own to do, or clear that preset. |
 | *X's switch A would come back meaning…* | The presets the edit would write wouldn't read back as the design you asked for. | Try another switch or a different choice. If it keeps happening, report it with the snapshot. |

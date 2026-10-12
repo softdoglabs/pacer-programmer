@@ -6,7 +6,7 @@ import type { PacerConfig, Preset } from "../../protocol/types";
 import { readFileSync } from "node:fs";
 import { clearPreset, isSparePreset } from "../../editing";
 import { decodeSysex } from "../../protocol/decode";
-import { editRoute, movePreset, planRoute, switchUses, type RouteChange } from "..";
+import { clearablePresets, editRoute, movePreset, planRoute, switchUses, type RouteChange } from "..";
 
 const body = (note: number): Preset["controls"] => ({
   [ControlId.Stompswitch1]: {
@@ -327,6 +327,23 @@ describe("routing between states", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error).toMatch(/presets this machine uses/);
+  });
+
+  it("offers presets to clear for a copy, but only ones the machine doesn't use", () => {
+    /*
+     * A device has no empty preset until one's been cleared — the factory set fills all 24 — so
+     * a copy has to be able to take one that's in use. Not one a route leads to or from, though:
+     * clearing that would change the machine the route was priced on.
+     */
+    const factory = decodeSysex(new Uint8Array(readFileSync("fixtures/factory-presets.syx")));
+    expect(spares(factory, 24)).toEqual([]);
+    expect(clearablePresets(factory, recoverMachine(factory)).length).toBeGreaterThan(0);
+
+    const config = sharedLooper();
+    const { machine } = find(config, "MAIN0");
+    const offered = clearablePresets(config, machine, [find(config, "MAIN2").id]);
+    // MAIN0 has a route and LOOPR is entered; MAIN2 is the state the route is about; the rest are empty.
+    expect(offered).toEqual([...find(config, "MAIN1").presets, ...find(config, "MAIN3").presets]);
   });
 
   it("takes away a route that nothing depends on, leaving the step unused", () => {

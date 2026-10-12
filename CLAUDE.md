@@ -440,7 +440,8 @@ One file per question:
   could go (`switchUses`, `firstJump`).
 - `plan.ts` — what a route would cost before anything's written
   (`planRoute`: the copies it needs a preset for, the presets it frees),
-  and which states enter a state (`entrantStates`, from `waysIn`).
+  which states enter a state (`entrantStates`, from `waysIn`), and which
+  presets in use a copy may clear (`clearablePresets`).
 - `editRoute.ts` — builds the machine after the edit and hands it to
   `realize`.
 - `realize.ts` — from a machine to presets.
@@ -469,6 +470,20 @@ What it refuses, and why:
   one the machine already uses, and never a preset with something in it:
   the dialog used to offer overwriting one, which is a one-click way to
   lose work for a route.
+  - **But the dialog can clear one first, when asked twice.** A real device
+    has no empty preset until something's cleared (the factory set fills all
+    24), and "empty only" left the picker with a single "— none —" entry:
+    a return couldn't be set up without leaving the dialog. So the picker
+    also lists presets *in use* that the machine doesn't use
+    (`clearablePresets` in `plan.ts`: a state by itself, nothing leads to it
+    by name, no designed route of its own), under their own heading. Choosing
+    one needs a tick-box naming the preset before the button enables; it's
+    cleared and the route written as one undo step. `realize` is unchanged
+    and still refuses a preset with something in it.
+  - Found by the owner on a full device. No test had one: every dialog test
+    started from `compileMachine`, which leaves most slots empty, and the
+    tutorial clears D6 before it draws a route. **Test UI that allocates
+    slots against a full 24 as well.**
 - **Nesting is allowed.** A looper that returns and leads to a tuner that
   returns to the looper copy that entered it multiplies the copies, and is
   rarely worth it in 24 slots — but it can be built by hand, and a map that
@@ -1055,7 +1070,8 @@ no hover-only UI, for tablets.
     dialog opened on a free switch has to raise A's question.
   - **Every answer is priced** by running the edit dry (`planRoute`): a
     picker per needed copy, "Copy of LOOPR (entered from MAIN1) goes in",
-    offering empty presets only, and the presets it frees.
+    offering empty presets first and then ones it may clear (see "What it
+    refuses"), and the presets it frees.
   - **Replacing what a switch does** is a tick-box in the same dialog, since
     on a real device nearly every switch is busy. It says what it would
     clear ("Replace what A does (selects the Track preset)") and applies to

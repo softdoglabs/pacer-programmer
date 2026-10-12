@@ -9,6 +9,7 @@ import {
   presetSelectTargetToIndex,
   userPresetIndex,
 } from "../../../pacer/protocol/constants";
+import { isSparePreset } from "../../../pacer/editing";
 import type { Preset } from "../../../pacer/protocol/types";
 import { usePacerStore } from "../../../store/pacerStore";
 import { RouteDialog } from "../RouteDialog";
@@ -125,6 +126,60 @@ describe("editing a route from the map", () => {
     const loop = after.states.find((s) => s.name === "LOOPR")!;
     expect(after.members[loop.id]).toHaveLength(3);
     expect(loop.transitions.some((t) => t.to.kind === "return")).toBe(true);
+  });
+
+  it("lets a copy take a preset that's in use when none is empty, once clearing it is agreed to", () => {
+    /*
+     * What a real device looks like: all 24 presets hold something, so there's no empty one to
+     * offer. The dialog used to offer "— none —" and nothing else, which made a return impossible
+     * to set up without leaving it. Every other test here starts from a compiled machine, which
+     * is mostly empty presets — so this one fills them first.
+     */
+    const machine = load(3);
+    const presets = { ...store().board.config.presets };
+    for (let i = 1; i <= 24; i++) {
+      if (!isSparePreset(presets[i])) continue;
+      presets[i] = { ...presets[i], index: i, name: `FULL${i % 10}`, controls: body(i), midiSettings: {} };
+    }
+    act(() => store().loadConfig({ ...store().board.config, presets }, "Full"));
+
+    const onClose = vi.fn();
+    const { container } = render(
+      <RouteDialog
+        intent={{ kind: "add", fromStateId: machine.id("MAIN2"), toStateId: machine.id("LOOPR") }}
+        onClose={onClose}
+      />,
+    );
+    const add = () => screen.getByRole<HTMLButtonElement>("button", { name: "Add route" });
+    expect(screen.getByText(/No empty presets left. Choose one to clear/)).toBeTruthy();
+    expect(add().disabled).toBe(true);
+
+    // Nothing the machine uses is on offer: not the mains with routes, not LOOPR's copies.
+    const slot = userPresetIndex(3, 6);
+    // React Aria mirrors each picker in a hidden <select>; the slot picker is the one listing presets.
+    const select = Array.from(container.ownerDocument.querySelectorAll<HTMLSelectElement>("select")).find((el) =>
+      Array.from(el.options).some((o) => o.text.startsWith("D6 ")),
+    )!;
+    const offered = Array.from(select.options)
+      .map((o) => o.value)
+      .filter(Boolean);
+    expect(offered).toContain(String(slot));
+    for (const used of [...machine.members("MAIN0"), ...machine.members("MAIN2"), ...machine.members("LOOPR")]) {
+      expect(offered).not.toContain(String(used));
+    }
+
+    fireEvent.change(select, { target: { value: String(slot) } });
+    // Chosen isn't agreed: the preset has something in it, and losing it takes a second, explicit yes.
+    expect(add().disabled).toBe(true);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Clear D6 FULL4 to make room/ }));
+    fireEvent.click(add());
+    expect(onClose).toHaveBeenCalled();
+
+    const config = store().board.config;
+    expect(config.presets[slot]?.name?.trim()).toBe("LOOPR");
+    const after = recoverMachine(config);
+    expect(after.members[after.states.find((s) => s.name === "LOOPR")!.id]).toHaveLength(3);
+    expect(store().editHistory.past.length).toBe(1); // clearing and routing undo together
   });
 
   it("offers to clear a switch that's already busy, and does it on every copy", () => {

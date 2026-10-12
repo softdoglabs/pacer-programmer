@@ -1286,6 +1286,9 @@ so the link resolves for the owner only until it's published.
   the simulator screenshot, so each still makes sense on its own, including
   the guide built and hosted away from GitHub. Edit all three together (only
   the relative paths differ).
+- **So does the "Not Affiliated with Nektar" section**, word for word, at
+  the end of the same three pages and for the same reason: a page hosted on
+  its own still has to say it. Edit all three together.
 - **Screenshots are generated**, never hand-made: `pnpm docs:screenshots
   [scene]` drives the real app in headless Chrome
   (`scripts/docs-screenshots.mjs`). MIDI is staged with the test suite's

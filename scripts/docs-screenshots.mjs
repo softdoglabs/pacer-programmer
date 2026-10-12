@@ -381,11 +381,7 @@ const scenes = {
   /** Tutorial 2: a second way in, free; then A going back, which costs a copy; and the state it makes. */
   async "tutorial-2"(p) {
     await p.loadLooperTutorial(1);
-    await p.app(`
-      const s = d.store.getState();
-      s.applyEdit((c) => d.editing.clearPreset(c, 24));
-      s.setUiMode("map");
-    `);
+    await p.app(`d.store.getState().setUiMode("map");`);
     await wait(800);
     await p.drag(await p.handle("PRGM2", "s-r"), await p.handle("LOOPR", "t-l"));
     await p.click('[role="dialog"] button[aria-haspopup]'); // the first is On switch
@@ -394,11 +390,16 @@ const scenes = {
     await p.shot("t2-route", { around: await p.rect('[role="dialog"]'), pad: 8 });
     await p.click('[role="dialog"] button', "Add route");
     await wait(800);
-    // The way back: A already goes to PRGM1, so the dialog asks, and going back costs D6.
+    // The way back: A already goes to PRGM1, so the dialog asks, and going back costs a preset.
+    // None is empty, as on every Pacer until one's cleared, so it's D6 and a tick to agree.
     await p.drag(await p.handle("LOOPR", "s-l"), await p.handle("PRGM2", "t-r"));
     await p.click('[role="dialog"] button[aria-haspopup]');
     await p.click('[role="option"]', "A — goes to PRGM1");
     await p.click('[role="dialog"] label', "Goes back to wherever LOOPR");
+    await p.click('[role="dialog"] button', "Choose a preset");
+    await p.click('[role="option"]', "D6 SEQNC");
+    await p.shot("route-clear", { around: await p.rect('[role="dialog"]'), pad: 8 }); // the reference's, unticked
+    await p.click('[role="dialog"] label', "Clear D6 SEQNC to make room");
     await p.shot("t2-return", { around: await p.rect('[role="dialog"]'), pad: 8 });
     await p.click('[role="dialog"] button', "Add route");
     await wait(800);
@@ -410,35 +411,6 @@ const scenes = {
     });
     await p.click(".react-flow__node", "LOOPR");
     await p.shot("t2-details", { around: await p.rect('section[aria-label^="LOOPR"]'), pad: 8 });
-  },
-
-  /**
-   * The same return on a device with no empty preset, which is how every Pacer starts: the picker
-   * offers presets to clear, and asks for a tick before it will.
-   */
-  async "route-clear"(p) {
-    await p.loadLooperTutorial(1);
-    await p.app(`d.store.getState().setUiMode("map");`);
-    await wait(800);
-    await p.drag(await p.handle("PRGM2", "s-r"), await p.handle("LOOPR", "t-l"));
-    await p.click('[role="dialog"] button[aria-haspopup]');
-    await p.click('[role="option"]', "A — selects the Track preset");
-    await p.click('[role="dialog"] label', "Replace what A does");
-    await p.click('[role="dialog"] button', "Add route");
-    await wait(800);
-    await p.drag(await p.handle("LOOPR", "s-l"), await p.handle("PRGM2", "t-r"));
-    await p.click('[role="dialog"] button[aria-haspopup]');
-    await p.click('[role="option"]', "A — goes to PRGM1");
-    await p.click('[role="dialog"] label', "Goes back to wherever LOOPR");
-    await p.click('[role="dialog"] button', "Choose a preset");
-    await p.click('[role="option"]', "D6 SEQNC");
-    await p.shot("route-clear", { around: await p.rect('[role="dialog"]'), pad: 8 });
-    // Not part of the picture: the edit has to go through once the clearing is agreed to.
-    await p.click('[role="dialog"] label', "Clear D6 SEQNC to make room");
-    await p.click('[role="dialog"] button', "Add route");
-    await wait(800);
-    const copy = await p.app(`return d.store.getState().board.config.presets[24].name.trim();`);
-    if (copy !== "LOOPR") throw new Error(`route-clear: expected D6 to become a copy of LOOPR, got ${copy}`);
   },
 
   /** Tutorial 3: editing the looper once, and both copies following. */

@@ -482,8 +482,10 @@ What it refuses, and why:
     and still refuses a preset with something in it.
   - Found by the owner on a full device. No test had one: every dialog test
     started from `compileMachine`, which leaves most slots empty, and the
-    tutorial clears D6 before it draws a route. **Test UI that allocates
-    slots against a full 24 as well.**
+    tutorial cleared D6 before it drew a route. **Test UI that allocates
+    slots against a full 24 as well.** Tutorial 2 now clears D6 from the
+    dialog and tutorial 3 moves onto D5 MMC, so the walkthrough takes the
+    full-device path in both.
 - **Nesting is allowed.** A looper that returns and leads to a tuner that
   returns to the looper copy that entered it multiplies the copies, and is
   rarely worth it in 24 slots — but it can be built by hand, and a map that

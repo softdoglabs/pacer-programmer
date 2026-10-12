@@ -378,13 +378,6 @@ async function looperPairOnTheMap(r) {
 }
 
 async function tutorial2(r) {
-  r.at("Free Up a Slot");
-  await r.toggle("Mode", "Program");
-  await r.preset("D6");
-  await r.button("Clear preset…");
-  await r.button("Clear it");
-  await r.expect(`s.board.config.presets[24].name.trim()`, "EMPTY", "D6's name");
-
   r.at("Draw the Way In");
   await r.toggle("Mode", "Preset map");
   await wait(800);
@@ -413,10 +406,15 @@ async function tutorial2(r) {
     `window.__find.byText("[role=dialog] label", "Goes back to wherever LOOPR was entered from (PRGM1, PRGM2)")`,
     "the go-back choice",
   );
-  const slot = await r.p.eval(
-    `[...document.querySelectorAll("[role=dialog] span")].find((l) => l.textContent.startsWith("Copy of LOOPR"))?.parentElement.querySelector("button")?.textContent.trim()`,
+  await r.expectText("No empty presets left. Choose one to clear.");
+  await r.choose("Copy of LOOPR (entered from PRGM2) goes in", "D6 SEQNC", `document.querySelector("[role=dialog]")`);
+  // Chosen isn't agreed: the button waits for the tick.
+  const waiting = await r.p.eval(`window.__find.byText("[role=dialog] button", "Add route")?.disabled`);
+  if (waiting !== true) r.fail("expected Add route to wait until clearing D6 is ticked");
+  await r.click(
+    `window.__find.byText("[role=dialog] label", "Clear D6 SEQNC to make room", { prefix: true })`,
+    "the Clear D6 tick-box",
   );
-  if (!slot?.startsWith("D6 EMPTY")) r.fail(`expected the copy to default to D6 EMPTY, got ${slot}`);
   await r.button("Add route");
   await wait(600);
 

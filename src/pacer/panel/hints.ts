@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { SPECIAL_PRESETS, type DeviceMode } from "../device";
 import { bankSelectedBy, numberSelectedBy, type SwitchSpec } from "../hardware";
 import { presetIndexToLabel, userPresetIndex } from "../protocol/constants";

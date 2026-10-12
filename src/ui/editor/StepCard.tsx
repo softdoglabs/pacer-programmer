@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { NumberField } from "@/components/ui/number-field";
 import { Select, type SelectGroup } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";

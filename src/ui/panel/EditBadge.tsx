@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { LayoutGrid, Pencil, PencilOff } from "lucide-react";
 import { Button } from "react-aria-components";
 import { cn } from "@/lib/utils";

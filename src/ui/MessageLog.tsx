@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { usePacerStore, type LogEntry } from "../store/pacerStore";

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 /**
  * Pacer LED color codes, as stored in a step's LED active/inactive color fields.
  * 0x01-0x18 are 12 hues, each as a bright "A" code (odd) and a dim "B" code (even). The

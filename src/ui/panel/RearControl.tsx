@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { cn } from "@/lib/utils";
 import { switchSpecForControl } from "../../pacer/hardware";
 import { controlKindOf, controlLabel, getControlDisplayState, summarizeControl } from "../../pacer/simulator";

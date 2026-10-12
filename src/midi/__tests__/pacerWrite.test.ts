@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PACER_WRITE_SETTLE_MS, SendError, sendPaced } from "../pacerWrite";
 import { MidiConnection } from "../webMidi";

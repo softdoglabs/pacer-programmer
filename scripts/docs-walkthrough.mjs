@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 /*
  * Follows the tutorials in docs/tutorials click by click, in the real app, and checks that each
  * step does what the page says it does.

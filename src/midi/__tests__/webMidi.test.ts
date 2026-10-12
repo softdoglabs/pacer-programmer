@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { describe, expect, it, vi } from "vitest";
 import { connectMidi, MidiConnection } from "../webMidi";
 import { FakeMidiAccess, FakeOutput } from "./fakeMidi";

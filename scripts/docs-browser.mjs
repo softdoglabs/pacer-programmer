@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 /*
  * Drives the app in headless Chrome, for the scripts that work from the docs: the screenshots
  * (docs-screenshots.mjs) and the walkthrough that follows the tutorials click by click

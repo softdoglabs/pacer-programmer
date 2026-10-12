@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { PresetMidiMessageType } from "../protocol/constants";
 import { globalMidiChannel, wireChannel } from "../protocol/globalSettings";
 import type { PacerConfig, PresetMidiSetting } from "../protocol/types";

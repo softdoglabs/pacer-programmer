@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { Fragment } from "react";
 import { Badge } from "@/components/ui/badge";
 import { usePacerStore } from "./store/pacerStore";

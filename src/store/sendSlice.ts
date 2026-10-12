@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { DumpError, pullFullDump } from "../midi/pacerDump";
 import { queryLoadedPreset } from "../midi/pacerState";
 import { SendError, sendPaced } from "../midi/pacerWrite";

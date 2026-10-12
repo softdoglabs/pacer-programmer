@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import factoryPresetsDataUrl from "../../fixtures/factory-presets.syx?inline";
 import { decodeSysex } from "./protocol/decode";
 import type { PacerConfig } from "./protocol/types";

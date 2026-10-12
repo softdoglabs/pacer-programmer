@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 /*
  * Plays the AI in tutorial 4: builds the looper from the factory dump using nothing but
  * docs/reference/programming-the-pacer.md, and writes fixtures/ai-looper.syx.

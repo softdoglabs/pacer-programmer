@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { CURRENT_PRESET_INDEX, SwitchMessageType, presetIndexToLabel } from "../protocol/constants";
 import type { PacerConfig, Preset } from "../protocol/types";
 import type { EntryTarget, MachineState, MachineTransition, StateMachine } from "./model";

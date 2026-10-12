@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { usePress } from "react-aria";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { panelRow, type SwitchSpec } from "@/pacer/hardware";

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createActor } from "xstate";
 import { ControlId, userPresetIndex } from "../../protocol/constants";

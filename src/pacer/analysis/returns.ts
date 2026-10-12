@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { CURRENT_PRESET_INDEX } from "../protocol/constants";
 import type { PacerConfig } from "../protocol/types";
 import { isPlainStepping, presetTransitions, type TransitionEdge, type TransitionGraph } from "./transitions";

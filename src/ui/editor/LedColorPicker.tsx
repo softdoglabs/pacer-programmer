@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { useState } from "react";
 import { Button, Dialog, DialogTrigger, Popover, Radio, RadioGroup } from "react-aria-components";
 import { Titled } from "@/components/ui/titled";

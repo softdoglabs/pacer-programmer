@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { isUserPresetIndex } from "../pacer/protocol/constants";
 import type { DeviceIdentity } from "../pacer/protocol/identity";
 import { decodeSysex } from "../pacer/protocol/decode";

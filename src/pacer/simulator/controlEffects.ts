@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { ControlMode } from "../protocol/constants";
 import { DEFAULT_GLOBAL_CHANNEL, wireChannel } from "../protocol/globalSettings";
 import type { SwitchControl } from "../protocol/types";

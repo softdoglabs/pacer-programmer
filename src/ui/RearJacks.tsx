@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { rearControls } from "../pacer/hardware";
 import { RearControl } from "./panel/RearControl";
 

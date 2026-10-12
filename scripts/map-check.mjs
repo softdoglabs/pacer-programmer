@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 /*
  * Checks the preset map's drawing, in the real app, across the shapes that have broken it before.
  *

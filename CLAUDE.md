@@ -1434,6 +1434,11 @@ preset chooser, then the analysis views.
 
 - **License: GPL-3.0-only** (`LICENSE`, the FSF's text; the notice is
   in the top-level `README.md`, and `package.json` carries the SPDX id).
+  Version 3 only, not "or later" (owner's choice). The copyright holder is
+  Soft Dog Labs, LLC. Every file under `src/` and `scripts/` opens with
+  `SPDX-License-Identifier: GPL-3.0-only` and the copyright line, after a
+  shebang or `@vitest-environment` line where there is one;
+  `src/test/licenseHeaders.test.ts` fails on a file without them.
   Chosen because the protocol was first learned from the GPLv3
   `pacer-editor`, and because the app is a promotional tool rather than a
   product. The source will be published on GitHub

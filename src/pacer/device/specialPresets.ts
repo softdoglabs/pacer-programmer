@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import type { DawCommand } from "../hardware";
 import { ControlId } from "../protocol/constants";
 import type { SpecialPresetName } from "../simulator/types";

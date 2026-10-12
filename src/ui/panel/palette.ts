@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import type { InkColor, IndicatorSpec } from "@/pacer/hardware";
 import type { LightState } from "@/pacer/panel";
 import { decodeLedColor, type PacerHue } from "@/pacer/protocol/ledColors";

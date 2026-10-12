@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { indicatorForLedNum, type IndicatorSpec, type SwitchSpec } from "../hardware";
 import { ControlMode } from "../protocol/constants";
 import type { PacerHue } from "../protocol/ledColors";

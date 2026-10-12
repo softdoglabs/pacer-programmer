@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { assign, raise, setup } from "xstate";
 import { bankSelectedBy, numberSelectedBy } from "../hardware";
 import { userPresetIndex } from "../protocol/constants";

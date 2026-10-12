@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { ConfigLibrary, LibraryFullError, type LibraryEntry, type KeyValueStorage } from "../library/configLibrary";
 import { DumpError, findPacerPorts, pullFullDump, type PacerPorts } from "../midi/pacerDump";
 import { queryDeviceIdentity, type IdentityResult } from "../midi/deviceIdentity";

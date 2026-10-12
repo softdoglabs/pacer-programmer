@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { BaseEdge, EdgeLabelRenderer, type EdgeProps } from "@xyflow/react";
 import { edgeGeometry } from "./edgePath";
 import { LABEL_SPOTS, useLabelSpot } from "./labelBoard";

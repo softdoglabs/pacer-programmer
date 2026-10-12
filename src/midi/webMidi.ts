@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 /*
  * A thin wrapper over the Web MIDI API (browser-only).
  * Typed against minimal structural interfaces rather than the DOM's MIDIAccess types, so tests

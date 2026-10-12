@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import type { MidiAccessLike, MidiInputPortLike, MidiMessageEventLike, MidiOutputPortLike } from "../webMidi";
 
 export class FakeOutput implements MidiOutputPortLike {

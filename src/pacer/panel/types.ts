@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import type { IndicatorId, PhysicalSwitchId } from "../hardware";
 import type { PacerHue } from "../protocol/ledColors";
 

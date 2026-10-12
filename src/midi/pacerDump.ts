@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { EXPECTED_FULL_DUMP_MESSAGES, buildFullDumpRequest, isPacerDataMessage } from "../pacer/protocol/requests";
 import type { MidiConnection, MidiPortInfo } from "./webMidi";
 

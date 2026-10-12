@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import type { UiMode } from "../store/editingSlice";
 import { usePacerStore } from "../store/pacerStore";

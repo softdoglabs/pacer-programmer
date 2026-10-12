@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 /**
  * The Pacer's SysEx checksum: a 7-bit value (MIDI data bytes can't use bit 7)
  * such that `sum(coveredBytes) + checksum` is a multiple of 128. Covers the

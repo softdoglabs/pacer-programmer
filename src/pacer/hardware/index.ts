@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import type { ControlId } from "../protocol/constants";
 import { PACER_HARDWARE } from "./pacerHardware";
 import type { IndicatorId, IndicatorSpec, LedNum, PhysicalSwitchId, SwitchSpec } from "./types";

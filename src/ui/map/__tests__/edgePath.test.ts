@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { Position } from "@xyflow/react";
 import { describe, expect, it } from "vitest";
 import { END_SPACING, bowDirection, bowOffsets, edgeGeometry, spreadEnds, type EndRequest } from "../edgePath";

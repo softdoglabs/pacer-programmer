@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import type { CSSProperties, DOMAttributes } from "react";
 import type { IndicatorSpec, SwitchSpec } from "@/pacer/hardware";
 import type { SwitchPanelState } from "@/pacer/panel";

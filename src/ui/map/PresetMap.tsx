@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Background, ReactFlow, useReactFlow, type Edge, type Node } from "@xyflow/react";
 import { ToggleGroup } from "@/components/ui/toggle-group";

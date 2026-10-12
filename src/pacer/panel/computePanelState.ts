@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import type { DeviceMode } from "../device";
 import { PACER_HARDWARE, type PhysicalSwitchId, type SwitchSpec } from "../hardware";
 import { globalMidiChannel } from "../protocol/globalSettings";

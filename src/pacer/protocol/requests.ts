@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { computeChecksum } from "./checksum";
 import { Command, DEVICE_ID, MANUFACTURER_ID, SYSEX_END, SYSEX_START, Target } from "./constants";
 

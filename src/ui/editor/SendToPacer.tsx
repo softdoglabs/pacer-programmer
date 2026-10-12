@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { useMemo, useState } from "react";
 import { Checkbox } from "react-aria-components";
 import { Button } from "@/components/ui/button";

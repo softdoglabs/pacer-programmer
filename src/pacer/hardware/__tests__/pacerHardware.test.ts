@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { describe, expect, it } from "vitest";
 import { ControlId, EXPRESSION_PEDAL_CONTROL_IDS, SWITCH_CONTROL_IDS } from "../../protocol/constants";
 import {

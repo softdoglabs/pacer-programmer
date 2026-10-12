@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 /**
  * The SVG filters the panel's lights glow with. Referenced by id from every switch's own SVG
  * (`SwitchView`) and the display, so they're rendered once wherever a switch appears — including

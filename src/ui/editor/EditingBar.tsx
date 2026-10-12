@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+
 import { Redo2, Undo2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Input, Label, TextField } from "react-aria-components";

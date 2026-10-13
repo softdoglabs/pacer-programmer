@@ -2,10 +2,11 @@
 // Copyright (C) 2026 Soft Dog Labs, LLC
 
 import { useMemo, useState } from "react";
-import { Checkbox, Label, Radio, RadioGroup } from "react-aria-components";
+import { Label, Radio, RadioGroup } from "react-aria-components";
 import { Button } from "@/components/ui/button";
 import { ModalDialog } from "@/components/ui/dialog";
 import { Select, type SelectGroup } from "@/components/ui/select";
+import { Tick } from "@/components/ui/tick";
 import {
   editRoute,
   entrantStates,
@@ -495,28 +496,6 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
 /** A state's presets, worded as the map words them: the slot when it's one, a count when it's many. */
 const statePresets = (members: number[]) =>
   members.length === 1 ? presetIndexToLabel(members[0]!) : `${members.length} presets`;
-
-function Tick({
-  isSelected,
-  onChange,
-  children,
-}: {
-  isSelected: boolean;
-  onChange: (on: boolean) => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Checkbox isSelected={isSelected} onChange={onChange} className="group flex items-start gap-2 text-xs">
-      <span
-        aria-hidden
-        className="flex size-5 shrink-0 items-center justify-center rounded border bg-card group-data-[selected]:bg-primary group-data-[selected]:text-primary-foreground"
-      >
-        {isSelected ? "✓" : ""}
-      </span>
-      {children}
-    </Checkbox>
-  );
-}
 
 function Choice({ value, children }: { value: Mode; children: React.ReactNode }) {
   return (

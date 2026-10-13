@@ -11,15 +11,31 @@ where you check what it did.
 2. Ask an assistant to build LOOPR in C1 and route A1 to it, using the prompt
    in [Working with an AI](../guide/working-with-ai.md#example-a-looper-preset-for-the-quad-cortex).
    It points the AI at the format reference.
-3. Import the file it gives you, and check it. Play the looper in the
-   simulator against your gear, read through each switch in Program
-   mode, and look at the map. It should look like the end of
-   [tutorial 1](1-a-looper-preset.md#on-the-map).
-4. Add the second way in on the map, as in
+3. Bring in the presets it changed. In the device drawer, click **Import
+   presets…** and pick the file it gave you. The presets that differ from what
+   you have open are listed first and already ticked, which here means A1 and
+   C1. Click **Bring in 2 presets**.
+
+   ![Import presets: A1 and C1 are ticked, and the other 22 are the same as the open ones](../images/import-presets.png)
+
+   Your configuration is still the one you had open, with those two presets
+   changed, and one undo takes them back out. Nothing you didn't tick is
+   touched. If you edited a preset while the AI was working, a whole dump
+   still has its old version, so it's listed as differing too, with a note.
+   Untick it to keep your edit.
+
+   The assistant might hand back only the messages it changed and not the
+   whole dump. That's fine, and it's a much smaller file. Pick it with
+   **Import .syx** or **Import presets…** and you get the same list, with just
+   those two presets in it.
+4. Check it. Play the looper in the simulator against your gear, read through
+   each switch in Program mode, and look at the map. It should look like the
+   end of [tutorial 1](1-a-looper-preset.md#on-the-map).
+5. Add the second way in on the map, as in
    [tutorial 2](2-a-second-way-in.md). It's better to do this part here than to ask
    the AI: the map knows which copy each origin needs, works out the slots,
    and refuses anything it couldn't read back.
-5. Save, and send it to the Pacer.
+6. Save, and send it to the Pacer.
 
 A split that works well is this. The AI does the bulk
 programming, which mostly means reading your gear's manual. The app handles

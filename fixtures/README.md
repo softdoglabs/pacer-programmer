@@ -46,3 +46,12 @@ so it's the check that the format page is enough on its own to write a dump the
 app reads as intended. Regenerate it with `node scripts/docs-ai-example.mjs`.
 It's derived from `factory-presets.syx`, so the licensing note above applies
 to it too.
+
+## `ai-looper-presets.syx`
+
+The same looper as only the 66 messages the script changed, in A1 and C1: a
+file that isn't a whole dump, which is what an assistant asked for one preset
+often hands back. The walkthrough brings it into the factory defaults and
+checks that it comes to the same two presets as `ai-looper.syx`, so it's the
+check that a partial file is read the way the Pacer would read it. Written by
+the same script.

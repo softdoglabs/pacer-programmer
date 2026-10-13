@@ -4,7 +4,8 @@
 
 /*
  * Plays the AI in tutorial 4: builds the looper from the factory dump using nothing but
- * docs/reference/programming-the-pacer.md, and writes fixtures/ai-looper.syx.
+ * docs/reference/programming-the-pacer.md, and writes fixtures/ai-looper.syx (the whole dump) and
+ * fixtures/ai-looper-presets.syx (only the messages it changed).
  *
  *   node scripts/docs-ai-example.mjs
  *
@@ -29,6 +30,9 @@ import { fileURLToPath } from "node:url";
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const SOURCE = `${ROOT}fixtures/factory-presets.syx`;
 const TARGET = `${ROOT}fixtures/ai-looper.syx`;
+// The same work as only the messages that changed, which is as valid a file: see "Writing a dump
+// safely" on the page. The app brings it into an open configuration rather than opening it.
+const TARGET_PRESETS = `${ROOT}fixtures/ai-looper-presets.syx`;
 
 function split(bytes) {
   const out = [];
@@ -146,3 +150,7 @@ if (out.length !== messages.length) throw new Error(`${out.length} messages, exp
 
 writeFileSync(TARGET, Buffer.concat(out));
 console.log(`${out.length} messages, ${replace.size} replaced → fixtures/ai-looper.syx`);
+// In dump order, so the two files differ only in what the second leaves out.
+const changed = out.filter((m, i) => m !== messages[i]);
+writeFileSync(TARGET_PRESETS, Buffer.concat(changed));
+console.log(`${changed.length} messages → fixtures/ai-looper-presets.syx`);

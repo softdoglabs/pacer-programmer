@@ -7,7 +7,7 @@ import { ControlId, SwitchMessageType, userPresetIndex } from "../../protocol/co
 import { decodeSysex } from "../../protocol/decode";
 import { encodePresetMessages, encodeSysex } from "../../protocol/encode";
 import type { PacerConfig } from "../../protocol/types";
-import { changedPresets } from "../diff";
+import { changedPresets, mismatchedPresets } from "../diff";
 import { renamePreset, updateStep } from "../edits";
 import { mergePresets, presetsMergeWouldChange, readPresetFile } from "../mergePresets";
 
@@ -69,6 +69,22 @@ describe("bringing presets in from a file", () => {
     const merged = mergePresets(factory(), file.config, [C1]);
     expect(changedPresets(factory(), merged)).toEqual([C1]);
     expect(merged.presets[D6]?.name).toBe(factory().presets[D6]?.name);
+  });
+
+  it("comes to the same presets from the AI example's whole dump and from only the messages it changed", () => {
+    // Both are written by scripts/docs-ai-example.mjs from the format page alone. The second is
+    // 66 messages across A1 and C1, so it sets some of each preset and has to leave the rest.
+    const read = (name: string) => readPresetFile(new Uint8Array(readFileSync(`fixtures/${name}`)));
+    const whole = read("ai-looper.syx");
+    const part = read("ai-looper-presets.syx");
+    const A1 = userPresetIndex(0, 1);
+    expect(part.presets).toEqual([A1, C1]);
+    expect(part.whole).toBe(false);
+    expect(presetsMergeWouldChange(factory(), whole.config, whole.presets)).toEqual([A1, C1]);
+
+    const fromPart = mergePresets(factory(), part.config, part.presets);
+    expect(mismatchedPresets(whole.config, fromPart, [A1, C1])).toEqual([]);
+    expect(changedPresets(factory(), fromPart)).toEqual([A1, C1]);
   });
 
   it("never brings in the Current slot", () => {

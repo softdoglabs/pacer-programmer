@@ -1259,6 +1259,10 @@ no hover-only UI, for tablets.
     loses work.
   - The `import-presets` screenshot scene runs it in the real app on
     `fixtures/ai-looper.syx` and fails unless exactly A1 and C1 change.
+  - **Tutorial 4 works this way**, and the walkthrough follows it with both
+    of the AI example's files: the whole dump through Import presets…, and
+    `fixtures/ai-looper-presets.syx` (only the 66 messages the example
+    changed) through Import .syx. Both must come to the same A1 and C1.
 - **Expression pedals are swept, not pressed**: a `BoardEvent` carries a
   `position` (0 = heel, 1 = toe) and a "move" phase, and where each pedal
   sits is device state (`BoardState.pedals`), not component state — a

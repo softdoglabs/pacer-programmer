@@ -530,15 +530,51 @@ async function tutorial4(r) {
   if (!exported.equals(factory)) r.fail("the exported factory defaults aren't the factory dump byte for byte");
   await r.key("Escape");
 
-  r.at("Import the file it gives you");
+  r.at("Bring in the presets it changed");
   // The assistant's part, done from the format page alone: scripts/docs-ai-example.mjs. Then
-  // Import .syx in the drawer, whose file picker is a file input.
-  await r.click(`document.querySelector('[title^="Open configurations"] button')`, "the configuration's name");
-  const { root } = await r.p.cdp.send("DOM.getDocument");
-  const { nodeId } = await r.p.cdp.send("DOM.querySelector", { nodeId: root.nodeId, selector: 'input[type="file"]' });
-  await r.p.cdp.send("DOM.setFileInputFiles", { nodeId, files: [join(ROOT, "fixtures", "ai-looper.syx")] });
-  await wait(600);
-  await r.expect(`s.configSource`, "ai-looper", "the open configuration");
+  // Import presets… in the drawer, whose file picker is a file input.
+  const pick = async (input, fixture) => {
+    await r.click(`document.querySelector('[title^="Open configurations"] button')`, "the configuration's name");
+    const { root } = await r.p.cdp.send("DOM.getDocument");
+    const { nodeId } = await r.p.cdp.send("DOM.querySelector", {
+      nodeId: root.nodeId,
+      selector: `[aria-label="${input}"]`,
+    });
+    await r.p.cdp.send("DOM.setFileInputFiles", { nodeId, files: [join(ROOT, "fixtures", fixture)] });
+    await wait(600);
+  };
+  const ticked = () =>
+    r.p.eval(
+      `[...document.querySelectorAll('ul[aria-label="Presets in the file"] li')].filter((li) => li.querySelector("input").checked).map((li) => li.textContent.match(/[A-D][1-6]/)[0])`,
+    );
+  const changed = `d.editing.changedPresets(d.factory.loadFactoryDefaults(), s.board.config)`;
+
+  // "The assistant might hand back only the messages it changed": the same list, just those two.
+  await pick("File to import", "ai-looper-presets.syx");
+  await r.expectText("holds 2 of the Pacer's 24 presets");
+  if (JSON.stringify(await ticked()) !== '["A1","C1"]') r.fail("expected A1 and C1 ticked for the partial file");
+  await r.button("Bring in 2 presets");
+  await wait(400);
+  await r.expect(changed, [1, 13], "the presets the partial file changed");
+  await r.p.app(`window.__fromPartial = d.store.getState().board.config;`);
+  // "one undo takes them back out"
+  await r.p.app(`d.store.getState().undo();`);
+  await r.expect(changed, [], "the presets changed after undo");
+
+  // The whole dump: 24 presets listed, the two that differ first and ticked.
+  await pick("File to import presets from", "ai-looper.syx");
+  await r.expectText("ai-looper.syx is a whole configuration");
+  if (JSON.stringify(await ticked()) !== '["A1","C1"]') r.fail("expected A1 and C1 ticked for the whole dump");
+  await r.button("Bring in 2 presets");
+  await wait(400);
+  await r.expect(changed, [1, 13], "the presets the dump changed");
+  await r.expect(`s.configSource`, "Factory defaults", "the open configuration, still");
+  // Either file comes to the same two presets: a message sets what it addresses and nothing else.
+  await r.expect(
+    `d.editing.mismatchedPresets(window.__fromPartial, s.board.config, [1, 13])`,
+    [],
+    "presets that differ between the partial file's result and the dump's",
+  );
   await r.toggle("Mode", "Preset map");
   await wait(600);
   await looperPairOnTheMap(r);

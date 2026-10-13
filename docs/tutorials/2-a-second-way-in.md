@@ -39,7 +39,7 @@ to A2. It needs no copy at all. But we want A to do it, so:
    there is the one thing that takes a second copy, and the copy needs a
    preset of its own. The Pacer doesn't have any empty ones, so the dialog
    says **No empty presets left. Choose one to clear.**
-4. For **Copy of LOOPR (entered from PRGM2) goes in**, choose **D6 SEQNC**.
+4. For **Copy of LOOPR for PRGM2**, choose **D6 SEQNC**.
    It's listed under **In use — would be cleared**, along with every other
    preset that no route leads to or from.
 5. Tick **Clear D6 SEQNC to make room**. Everything on D6 goes, so the dialog

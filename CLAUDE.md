@@ -1073,7 +1073,7 @@ no hover-only UI, for tablets.
     back. The defaults and answers are per switch: picking A after the
     dialog opened on a free switch has to raise A's question.
   - **Every answer is priced** by running the edit dry (`planRoute`): a
-    picker per needed copy, "Copy of LOOPR (entered from MAIN1) goes in",
+    picker per needed copy, "Copy of LOOPR for MAIN1",
     offering empty presets first and then ones it may clear (see "What it
     refuses"), and the presets it frees.
   - **Replacing what a switch does** is a tick-box in the same dialog, since

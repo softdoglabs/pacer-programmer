@@ -410,7 +410,7 @@ async function tutorial2(r) {
     "the go-back choice",
   );
   await r.expectText("No empty presets left. Choose one to clear.");
-  await r.choose("Copy of LOOPR (entered from PRGM2) goes in", "D6 SEQNC", `document.querySelector("[role=dialog]")`);
+  await r.choose("Copy of LOOPR for PRGM2", "D6 SEQNC", `document.querySelector("[role=dialog]")`);
   // Chosen isn't agreed: the button waits for the tick.
   const waiting = await r.p.eval(`window.__find.byText("[role=dialog] button", "Add route")?.disabled`);
   if (waiting !== true) r.fail("expected Add route to wait until clearing D6 is ticked");

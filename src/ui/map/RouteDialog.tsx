@@ -409,7 +409,7 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
               key={i}
               // The label wraps rather than the slot shrinking: "D6 EM…" doesn't say which preset.
               className="[&>button]:shrink-0"
-              label={`Copy of ${nameOf(need.stateId)}${need.enteredFrom ? ` (entered from ${nameOf(need.enteredFrom)})` : ""} goes in`}
+              label={`Copy of ${nameOf(need.stateId)}${need.enteredFrom ? ` for ${nameOf(need.enteredFrom)}` : ""}`}
               value={slots[i] === undefined ? undefined : String(slots[i])}
               onChange={(id) => {
                 setInto((prev) => {

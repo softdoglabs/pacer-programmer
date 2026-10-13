@@ -140,7 +140,7 @@ a state instead.
 ### When a Route Costs a Preset
 
 The dialog works out the cost before it writes anything. Each new copy gets a
-picker, **Copy of LOOPR (entered from MAIN1) goes in**, which offers empty
+picker, **Copy of LOOPR for MAIN1** (the copy LOOPR needs for when it's entered from MAIN1), which offers empty
 presets first. If there aren't any, which is how a Pacer starts out, it lists
 the presets no route leads to or from under **In use — would be cleared**.
 Choose one of those and the dialog asks you to tick a box naming the preset

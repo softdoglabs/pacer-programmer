@@ -112,7 +112,7 @@ describe("editing a route from the map", () => {
       />,
     );
     expect(screen.getByText(/needs another preset/)).toBeTruthy();
-    expect(screen.getByLabelText("Copy of LOOPR (entered from MAIN2) goes in")).toBeTruthy();
+    expect(screen.getByLabelText("Copy of LOOPR for MAIN2")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Add route" }));
     expect(onClose).toHaveBeenCalled();

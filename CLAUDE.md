@@ -293,7 +293,9 @@ editing the presets already on the device, which works the same on a
 fresh dump as on an empty one — so it now lives in `src/test/` as a
 fixture builder and the engine of the round-trip property test
 (`analysis/__tests__/roundTrip.test.ts`), which checks that recovery reads
-back the design that was meant.
+back the design that was meant. Like `realize`, it gives ways in that lead to
+the same places one preset between them, so a fixture has the presets the
+app would have made.
 
 ### The model and its recovery (`analysis/model.ts`, `analysis/recover.ts`)
 

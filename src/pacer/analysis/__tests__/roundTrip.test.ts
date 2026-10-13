@@ -9,7 +9,6 @@ import type { Preset } from "../../protocol/types";
 import { compileMachine } from "../../../test/compileMachine";
 import type { MachineState, MachineTarget, StateMachine } from "../model";
 import { recoverMachine } from "../recover";
-import { clearPreset, setJump } from "../../editing";
 
 /*
  * The invariant the whole design rests on: whatever can be authored must be recoverable. Nothing
@@ -375,18 +374,17 @@ describe("nested and partial returns", () => {
   });
 
   it("reads the same table when two ways in share a copy, since they lead to the same places", () => {
-    // MAIN2's copy leads where MAIN0's does, so a hand-built configuration can point MAIN2 at
-    // MAIN0's copy and do without one. Same machine, one preset fewer.
+    // MAIN2's copy would lead where MAIN0's does, so they're one preset — as they are when the app
+    // builds this (`realize`). Same machine, one preset fewer than a copy per way in.
     const compiled = compileMachine(partial);
     if (!compiled.ok) throw new Error(compiled.error);
-    const slot = (key: string) => compiled.slots.find((s) => s.key === key)!.presetIndex;
-    const main0Copy = compiled.slots.find((s) => s.stateId === "loopr" && s.key.endsWith("main0<"))!.presetIndex;
-    const main2Copy = compiled.slots.find((s) => s.stateId === "loopr" && s.key.endsWith("main2<"))!.presetIndex;
-    let shared = setJump(compiled.config, slot("main2<"), A, 1, main0Copy);
-    shared = clearPreset(shared, main2Copy);
-    const recovered = recoverMachine(shared);
+    const copyFor = (main: string) =>
+      compiled.slots.find((s) => s.stateId === "loopr" && s.key.endsWith(`${main}<`))!.presetIndex;
+    expect(copyFor("main2")).toBe(copyFor("main0"));
+    expect(copyFor("main1")).not.toBe(copyFor("main0"));
+    const recovered = recoverMachine(compiled.config);
     expect(recovered.members["LOOPR"]).toHaveLength(2);
-    expect(shape(recovered).filter((s) => s.name !== "EMPTY")).toEqual(shape(partial));
+    expect(shape(recovered)).toEqual(shape(partial));
   });
 
   it("reads a table with no way back at all: somewhere different from each way in", () => {

@@ -50,6 +50,7 @@ interface Instance {
 const instanceKey = (i: Instance): string => `${i.stateId}<${i.returnTo ?? ""}`;
 
 export type CompileResult =
+  /** `slots` has a row per way into each state; ways in that lead to the same places share a preset. */
   | { ok: true; config: PacerConfig; slots: { key: string; stateId: string; presetIndex: number }[] }
   | { ok: false; error: string; needed?: number };
 
@@ -142,16 +143,47 @@ export function compileMachine(machine: StateMachine): CompileResult {
       edges.push({ transition, targetKey: add({ stateId: target.id, returnTo: returns(target) ? key : undefined }) });
     }
     resolved.set(key, edges);
-    if (instances.size > SLOTS) {
+    // Far past anything that could fit, and before a design that multiplies without end runs away.
+    if (instances.size > SLOTS * SLOTS) {
       return { ok: false, error: `This design needs more than the Pacer's ${SLOTS} presets.`, needed: instances.size };
     }
   }
 
   if (instances.size === 0) return { ok: false, error: "A machine needs at least one state that doesn't return." };
 
+  /*
+   * Copies that behave the same are one preset, as they are when the app builds them (`realize`):
+   * a looper that goes back to MAIN0 when entered from there, and always to MAIN0 when entered
+   * from MAIN2, leads to the same places either way, so those two ways in share a copy. Found by
+   * refinement: start with every copy of a state together, and split wherever two lead to copies
+   * that have themselves been split, until nothing more comes apart.
+   */
+  let classOf = new Map([...instances].map(([key, i]) => [key, i.stateId]));
+  for (let count = 0; ;) {
+    const next = new Map(
+      [...instances].map(([key, i]) => [
+        key,
+        `${i.stateId}|${(resolved.get(key) ?? []).map((e) => classOf.get(e.targetKey)).join("|")}`,
+      ]),
+    );
+    const classes = new Set(next.values()).size;
+    classOf = next;
+    if (classes === count) break;
+    count = classes;
+  }
+
   // Deterministic slots, so compiling the same machine twice puts everything in the same place.
   const keys = [...instances.keys()];
-  const slotOf = new Map(keys.map((key, i) => [key, FIRST_USER_PRESET_INDEX + i]));
+  const slotOfClass = new Map<string, number>();
+  for (const key of keys) {
+    const cls = classOf.get(key)!;
+    if (!slotOfClass.has(cls)) slotOfClass.set(cls, FIRST_USER_PRESET_INDEX + slotOfClass.size);
+  }
+  const slotOf = new Map(keys.map((key) => [key, slotOfClass.get(classOf.get(key)!)!]));
+
+  if (slotOfClass.size > SLOTS) {
+    return { ok: false, error: `This design needs more than the Pacer's ${SLOTS} presets.`, needed: slotOfClass.size };
+  }
 
   const config = createEmptyPacerConfig();
   for (const key of keys) {
@@ -287,7 +319,7 @@ export function whatWontSurvive(machine: StateMachine, config: PacerConfig, slot
     ].sort();
   const meaning = (stateId: string, t: MachineTransition): string => {
     if (t.to.kind === "state") return `->${recoveredOf.get(t.to.id)?.id ?? "?"}`;
-    const copies = slots.filter((s) => s.stateId === stateId);
+    const copies = [...new Set(slots.filter((s) => s.stateId === stateId).map((s) => s.presetIndex))];
     const rows = contextsOf(stateId).map((from) => {
       const to = routeFrom(t.to, from);
       return {

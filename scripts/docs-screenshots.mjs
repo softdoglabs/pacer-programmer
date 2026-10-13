@@ -19,7 +19,8 @@
  */
 
 import { mkdir } from "node:fs/promises";
-import { OUT, union, wait, withApp } from "./docs-browser.mjs";
+import { join } from "node:path";
+import { OUT, ROOT, union, wait, withApp } from "./docs-browser.mjs";
 
 // ---------------------------------------------------------------------------------------------
 // Scenes. Each one starts from `reset()` and leaves whatever it likes behind.
@@ -283,6 +284,38 @@ const scenes = {
     await p.key("Escape");
   },
 
+  /**
+   * Import presets… given the AI example's dump while the factory defaults are open: a whole file,
+   * of which the two presets that differ are ticked. Then brought in, which has to change exactly
+   * those two.
+   */
+  async "import-presets"(p) {
+    await p.app(`d.store.getState().setDeviceDrawerOpen(true);`);
+    await wait(600);
+    const { root } = await p.cdp.send("DOM.getDocument");
+    const { nodeId } = await p.cdp.send("DOM.querySelector", {
+      nodeId: root.nodeId,
+      selector: '[aria-label="File to import presets from"]',
+    });
+    await p.cdp.send("DOM.setFileInputFiles", { nodeId, files: [join(ROOT, "fixtures", "ai-looper.syx")] });
+    await wait(600);
+    const heading = await p.rect('[role="dialog"] h2, [role="dialog"] [slot="title"]', "Bring presets in from");
+    const button = await p.rect('[role="dialog"] button', "Bring in 2 presets");
+    const list = await p.rect('ul[aria-label="Presets in the file"]');
+    await p.shot("import-presets", {
+      around: { x: list.x, y: heading.y, width: list.width, height: button.y + button.height - heading.y },
+      pad: 24,
+    });
+    await p.click('[role="dialog"] button', "Bring in 2 presets");
+    await wait(400);
+    const changed = await p.app(`
+      const s = d.store.getState();
+      return d.editing.changedPresets(d.factory.loadFactoryDefaults(), s.board.config);
+    `);
+    if (JSON.stringify(changed) !== "[1,13]")
+      throw new Error(`import-presets: expected A1 and C1 to change, got ${changed}`);
+  },
+
   /** The device drawer with a few snapshots in it, and the Save and Send dialogs. */
   async devices(p) {
     await p.stageMidi();
@@ -302,16 +335,17 @@ const scenes = {
       callouts: [
         { n: 1, box: await p.rect("button", "Pull from Pacer"), at: "corner" },
         { n: 2, box: await p.rect("button", "Import .syx"), at: "corner" },
+        { n: 3, box: await p.rect("button", "Import presets…"), at: "corner" },
         {
-          n: 3,
+          n: 4,
           box: union(await p.rects('[role="dialog"] [aria-label^="Pacer"], [role="dialog"] button[aria-haspopup]')),
           at: "right",
         },
-        { n: 4, box: await p.rect("span", "Firmware"), at: "right" },
-        { n: 5, box: await p.rect("li", "Factory defaults"), at: "corner" },
-        { n: 6, box: await p.rect("li", "looper-from-claude"), at: "corner" },
+        { n: 5, box: await p.rect("span", "Firmware"), at: "right" },
+        { n: 6, box: await p.rect("li", "Factory defaults"), at: "corner" },
+        { n: 7, box: await p.rect("li", "looper-from-claude"), at: "corner" },
         {
-          n: 7,
+          n: 8,
           box: union(await p.rects('ul[aria-label="Saved configurations"] li:last-child > div button')),
           at: "below",
         },

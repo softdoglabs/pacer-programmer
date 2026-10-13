@@ -7,7 +7,10 @@ import { ModalDialog } from "@/components/ui/dialog";
 import { hasUnsavedEdits } from "../store/editingSlice";
 import { isSendingToPacer } from "../store/configurationsSlice";
 import { usePacerStore } from "../store/pacerStore";
+import { readPresetFile } from "../pacer/editing";
+import { goBack } from "./appHistory";
 import { PullControls } from "./configurations/DeviceControls";
+import { ImportPresetsDialog, type PresetFileChoice } from "./configurations/ImportPresetsDialog";
 import { factoryDefaultBytes } from "../pacer/factoryDefaults";
 import { EntryRow, ExportButton, OpenArea, rowClass, type Guard } from "./configurations/EntryRow";
 
@@ -28,13 +31,48 @@ export function ConfigurationsPanel() {
   const configSource = usePacerStore((s) => s.configSource);
   const [pending, setPending] = useState<() => void>();
   const guard: Guard = (action) => (unsaved ? setPending(() => action) : action());
+  const presetsInputRef = useRef<HTMLInputElement>(null);
+  const setDrawerOpen = usePacerStore((s) => s.setDeviceDrawerOpen);
+  // A file whose presets are being brought into the open configuration, and why one couldn't be.
+  const [presetFile, setPresetFile] = useState<PresetFileChoice>();
+  const [presetFileError, setPresetFileError] = useState<string>();
 
-  async function handleFile(event: ChangeEvent<HTMLInputElement>) {
+  async function chosenFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
-    if (!file) return;
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    guard(() => importSyxFile(file.name, bytes));
+    setPresetFileError(undefined);
+    if (!file) return undefined;
+    return { name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) };
+  }
+
+  async function handleFile(event: ChangeEvent<HTMLInputElement>) {
+    const chosen = await chosenFile(event);
+    if (!chosen) return;
+    /*
+     * A file that isn't a whole configuration can't be opened as one: the presets it leaves out
+     * would simply not be there. It's brought into the open configuration instead, which is what
+     * the Pacer would do with it. A file that can't be read at all goes the usual way, so the
+     * refusal is reported where import failures always are.
+     */
+    try {
+      const file = readPresetFile(chosen.bytes);
+      if (!file.whole && file.presets.length > 0) return setPresetFile({ fileName: chosen.name, file });
+    } catch {
+      // Reported by the import below.
+    }
+    guard(() => importSyxFile(chosen.name, chosen.bytes));
+  }
+
+  async function handlePresetsFile(event: ChangeEvent<HTMLInputElement>) {
+    const chosen = await chosenFile(event);
+    if (!chosen) return;
+    try {
+      const file = readPresetFile(chosen.bytes);
+      if (file.presets.length === 0) return setPresetFileError(`${chosen.name} has no presets in it.`);
+      setPresetFile({ fileName: chosen.name, file });
+    } catch (err) {
+      setPresetFileError(`Couldn't read ${chosen.name}: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   return (
@@ -55,14 +93,38 @@ export function ConfigurationsPanel() {
         <Button
           size="sm"
           variant="outline"
-          title="Open a .syx dump from a file as a new snapshot"
+          title="Open a .syx dump from a file as a new snapshot. A file with only some presets is brought into the open configuration instead."
           onPress={() => fileInputRef.current?.click()}
         >
           Import .syx
         </Button>
-        <input ref={fileInputRef} type="file" accept=".syx" className="hidden" onChange={handleFile} />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".syx"
+          className="hidden"
+          aria-label="File to import"
+          onChange={handleFile}
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          title="Bring some or all of a .syx file's presets into the open configuration, keeping the rest of it"
+          onPress={() => presetsInputRef.current?.click()}
+        >
+          Import presets…
+        </Button>
+        <input
+          ref={presetsInputRef}
+          type="file"
+          accept=".syx"
+          className="hidden"
+          aria-label="File to import presets from"
+          onChange={handlePresetsFile}
+        />
       </div>
       <PullControls />
+      {presetFileError && <p className="text-xs text-destructive">{presetFileError}</p>}
       {library.error && <p className="text-xs text-destructive">{library.error}</p>}
       {!library.persistent && (
         <p className="text-xs text-warning">
@@ -84,6 +146,15 @@ export function ConfigurationsPanel() {
           <EntryRow key={entry.id} entry={entry} guard={guard} />
         ))}
       </ul>
+      <ImportPresetsDialog
+        choice={presetFile}
+        onClose={() => setPresetFile(undefined)}
+        onDone={() => {
+          setPresetFile(undefined);
+          // Back to the faceplate, where what was brought in can be seen.
+          goBack(() => setDrawerOpen(false));
+        }}
+      />
       <ModalDialog
         isOpen={pending !== undefined}
         onOpenChange={(open) => !open && setPending(undefined)}

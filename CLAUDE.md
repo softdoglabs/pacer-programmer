@@ -739,7 +739,7 @@ with `editing` and `analysis` alongside, both depending on `protocol` only.
 The simulator UI (`src/App.tsx`, `src/ui/`, `src/store/pacerStore.ts`) is
 built on Tailwind v4 + React Aria Components (dark-only theme, `@/` path
 alias). Small Tailwind-styled wrappers over RAC live in
-`src/components/ui/` (Button, Tabs, Select, plus a static Badge). There's
+`src/components/ui/` (Button, Tabs, Select, Tick, plus a static Badge). There's
 no hover-only UI, for tablets.
 - **The faceplate** (`src/ui/panel/Faceplate.tsx`) contains no per-switch
   or per-mode logic. It lays out `PACER_HARDWARE` and paints
@@ -1232,6 +1232,33 @@ no hover-only UI, for tablets.
     5 MB (~25 dumps).
   - Edits are saved as new snapshots or over the open one (see Save
     above); sending to the device is separate (see Send to Pacer).
+- **Bringing presets in from a file** (`editing/mergePresets.ts`,
+  `ui/configurations/ImportPresetsDialog.tsx`): a `.syx` needn't be a whole
+  dump — an AI asked for one preset writes one preset — and opening such a
+  file as a configuration would leave it 23 presets short.
+  - **Read the way the Pacer reads it: a message sets what it addresses and
+    nothing else.** `mergePresets` writes each chosen preset over the one in
+    the same slot, field by field, so a preset the file doesn't mention is
+    left alone and so is a step or light that a mentioned preset's messages
+    don't cover. Sending the file to a Pacer holding the configuration and
+    bringing it in here come to the same thing.
+  - **It's an edit, not a load**: one `applyEdit`, so it's undoable, unsaved
+    until saved, and the presets it changed are what the chooser's dots and
+    Send's "Changed" show. No new snapshot, no new session.
+  - Only the 24 user presets. Current (idx 0) and global settings in the file
+    are left out, as Send leaves them out.
+  - Two ways in. **Import presets…** takes any file. **Import .syx** given a
+    file that doesn't address all 24 presets (`PresetFile.whole`) opens the
+    same dialog rather than a broken configuration.
+  - **The dialog ticks the presets that would actually change**
+    (`presetsMergeWouldChange`) and lists them first, so a whole dump an AI
+    changed two presets of offers those two without anyone naming them. It
+    can't know which the AI *meant* to change — there's no base to compare
+    with — so a preset edited here since opening also differs and is ticked;
+    the row says so, since that's the one case where bringing a preset in
+    loses work.
+  - The `import-presets` screenshot scene runs it in the real app on
+    `fixtures/ai-looper.syx` and fails unless exactly A1 and C1 change.
 - **Expression pedals are swept, not pressed**: a `BoardEvent` carries a
   `position` (0 = heel, 1 = toe) and a "move" phase, and where each pedal
   sits is device state (`BoardState.pedals`), not component state — a

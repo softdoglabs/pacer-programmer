@@ -89,6 +89,13 @@ presets share it.
    you. It opens as a new snapshot, and your original is left alone. If the
    import is refused, the message says which message is broken (a bad
    checksum, say, or an unterminated message). Paste that back to the AI.
+
+   If you'd rather keep working in the configuration you have open, use
+   **Import presets…** instead. It lists the presets in the file with the
+   ones that differ already ticked, and brings just those in, as an edit you
+   can undo. It also takes a file that only has the changed presets in it,
+   so you can ask the AI for just those. See
+   [Importing some of a file's presets](../reference/devices-and-files.md#importing-some-of-a-files-presets).
 2. Open the presets you asked it to change, and check its table of changes
    against them. Program mode spells out each switch's steps.
 3. Choose your gear as the [simulated MIDI output](the-simulator.md), and play

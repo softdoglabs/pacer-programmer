@@ -16,6 +16,7 @@
 export * from "./change";
 export * from "./switches";
 export * from "./plan";
+export * from "./slots";
 export * from "./editRoute";
 export * from "./realize";
 export * from "./movePreset";

@@ -1,22 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Soft Dog Labs, LLC
 
-import { SwitchMessageType } from "../protocol/constants";
+import { SwitchMessageType, presetIndexToLabel } from "../protocol/constants";
 import type { PacerConfig } from "../protocol/types";
 import {
   dependsOnEntry,
   machineOf,
+  stateContaining,
   type EntryRoute,
+  type EntryTarget,
   type MachineState,
   type MachineTarget,
   type MachineTransition,
   type RecoveredMachine,
   type StateMachine,
 } from "../analysis";
-import { clearControl, setStepType, updateStep } from "../editing";
+import { clearControl, clearPreset, setStepType, updateStep } from "../editing";
 import type { RouteChange } from "./change";
 import { entrantStates } from "./plan";
 import { realize, type CopyNeed } from "./realize";
+import { clearablePresets } from "./slots";
 import { firstJump } from "./switches";
 
 /**
@@ -24,6 +27,9 @@ import { firstJump } from "./switches";
  * once, or takes the route away. The change is made to the machine, and `realize` works out which
  * presets that machine needs: copies added where a switch now depends on the way in (into the slots
  * in `into`, in the order `planRoute` lists them), copies freed where it no longer does.
+ *
+ * `clearing` names presets in use to empty first, so a copy can take one on a device with none
+ * empty. Only presets the machine doesn't use (`clearablePresets`); asking is the caller's job.
  */
 export type RouteOutcome =
   | { ok: true; config: PacerConfig; added: number[]; freed: number[] }
@@ -33,8 +39,13 @@ export function editRoute(
   config: PacerConfig,
   change: RouteChange,
   into: readonly number[] = [],
-  { dryRun = false }: { dryRun?: boolean } = {},
+  { dryRun = false, clearing = [] }: { dryRun?: boolean; clearing?: readonly number[] } = {},
 ): RouteOutcome {
+  if (clearing.length > 0) {
+    const cleared = clearFirst(config, change, clearing);
+    if ("error" in cleared) return { ok: false, error: cleared.error };
+    ({ config, change } = cleared);
+  }
   const before = machineOf(config);
   const from = before.states.find((s) => s.id === change.fromStateId);
   const members = before.members[change.fromStateId] ?? [];
@@ -121,6 +132,48 @@ export function editRoute(
   if (!result.ok) return result;
   if (dryRun) return { ok: true, config, added: [], freed: result.freed };
   return result;
+}
+
+/**
+ * Empties the presets a copy is about to take, and restates the change in the ids the states have
+ * afterwards. An id is a state's name, qualified by its slot only while another state shares the
+ * name — so clearing a preset can rename a state the change refers to, and the change would then
+ * name a state that isn't there. States are followed by the presets they are, which don't move.
+ */
+function clearFirst(
+  config: PacerConfig,
+  change: RouteChange,
+  clearing: readonly number[],
+): { config: PacerConfig; change: RouteChange } | { error: string } {
+  const before = machineOf(config);
+  const involved = [change.fromStateId, ...(change.to ? targetStates(change.to) : [])];
+  const allowed = clearablePresets(config, before, involved);
+  const refused = clearing.find((slot) => !allowed.includes(slot));
+  if (refused !== undefined) {
+    return { error: `${presetIndexToLabel(refused)} is part of a route, so it can't be cleared to make room.` };
+  }
+  const cleared = clearing.reduce((c, slot) => clearPreset(c, slot), config);
+  const after = machineOf(cleared);
+  const idNow = (id: string): string => {
+    const preset = (before.members[id] ?? [])[0];
+    return (preset === undefined ? undefined : stateContaining(after, preset)?.state.id) ?? id;
+  };
+  const entry = <T extends EntryTarget>(to: T): T => (to.kind === "state" ? { ...to, id: idNow(to.id) } : to);
+  const target = (to: MachineTarget): MachineTarget =>
+    to.kind === "byEntry"
+      ? { kind: "byEntry", routes: to.routes.map((r) => ({ from: idNow(r.from), to: entry(r.to) })) }
+      : entry(to);
+  return {
+    config: cleared,
+    change: {
+      ...change,
+      fromStateId: idNow(change.fromStateId),
+      ...(change.to ? { to: target(change.to) } : {}),
+      ...(change.entering
+        ? { entering: Object.fromEntries(Object.entries(change.entering).map(([k, v]) => [k, entry(v)])) }
+        : {}),
+    },
+  };
 }
 
 /** Every state a target can lead to. */

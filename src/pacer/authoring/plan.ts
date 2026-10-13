@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Soft Dog Labs, LLC
 
-import { isSparePreset } from "../editing";
-import { FIRST_USER_PRESET_INDEX, LAST_USER_PRESET_INDEX } from "../protocol/constants";
 import type { PacerConfig } from "../protocol/types";
 import type { RecoveredMachine } from "../analysis";
 import type { RouteChange } from "./change";
@@ -35,30 +33,4 @@ export function entrantStates(machine: RecoveredMachine, stateId: string): strin
     }
   }
   return [...found].sort();
-}
-
-/**
- * The presets with something in them that a copy could still take once cleared, for a device with
- * no empty preset left — which is every device until something's been cleared. Only presets the
- * machine doesn't use: one that's a state by itself, that nothing leads to by name and that has no
- * designed route of its own. Clearing any other would change the machine the route was priced on.
- * `except` names states the route itself involves, which have no way in yet but are about to.
- */
-export function clearablePresets(
-  config: PacerConfig,
-  machine: RecoveredMachine,
-  except: readonly string[] = [],
-): number[] {
-  const found: number[] = [];
-  for (const state of machine.states) {
-    const members = machine.members[state.id] ?? [];
-    if (members.length !== 1 || except.includes(state.id)) continue;
-    const preset = members[0]!;
-    if (preset < FIRST_USER_PRESET_INDEX || preset > LAST_USER_PRESET_INDEX) continue;
-    if (isSparePreset(config.presets[preset])) continue;
-    if ((machine.waysIn[preset] ?? []).length > 0) continue;
-    if (state.transitions.some((t) => !t.viaStepping)) continue;
-    found.push(preset);
-  }
-  return found.sort((a, b) => a - b);
 }

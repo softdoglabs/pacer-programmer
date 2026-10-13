@@ -7,18 +7,18 @@ import { Button } from "@/components/ui/button";
 import { ModalDialog } from "@/components/ui/dialog";
 import { Select, type SelectGroup } from "@/components/ui/select";
 import {
-  clearablePresets,
   editRoute,
   entrantStates,
   planRoute,
+  slotChoices,
   switchUses,
   type RouteChange,
   type SwitchUse,
 } from "@/pacer/authoring";
 import { dependsOnEntry, type EntryTarget, type MachineTarget } from "@/pacer/analysis";
-import { clearPreset, isSparePreset } from "@/pacer/editing";
+import { isSparePreset } from "@/pacer/editing";
 import { switchSpecForControl } from "@/pacer/hardware";
-import { FIRST_USER_PRESET_INDEX, LAST_USER_PRESET_INDEX, presetIndexToLabel } from "@/pacer/protocol/constants";
+import { presetIndexToLabel } from "@/pacer/protocol/constants";
 import { controlLabel } from "@/pacer/simulator";
 import { usePacerStore } from "../../store/pacerStore";
 import { useMachine } from "../useMachine";
@@ -235,13 +235,12 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
   const needs = plan?.ok ? plan.needs : [];
   const freed = plan?.ok ? plan.freed : [];
 
-  const spare = useMemo(() => {
-    const free: number[] = [];
-    for (let i = FIRST_USER_PRESET_INDEX; i <= LAST_USER_PRESET_INDEX; i++) {
-      if (isSparePreset(config.presets[i])) free.push(i);
-    }
-    return free;
-  }, [config]);
+  const involved = [
+    intent.fromStateId,
+    ...(to?.kind === "state" ? [to.id] : []),
+    ...(to?.kind === "byEntry" ? to.routes.flatMap((r) => (r.to.kind === "state" ? [r.to.id] : [])) : []),
+  ];
+  const { empty: spare, clearable } = slotChoices(config, machine, involved);
   // One empty preset per copy, defaulting to the empty ones in order.
   const [into, setInto] = useState<(number | undefined)[]>([]);
   const slots = needs.map((_, i) => into[i] ?? spare.filter((s) => !into.includes(s))[i]);
@@ -251,11 +250,6 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
    * in use — but only one the machine doesn't use, and only once that's been agreed to here: it's
    * cleared as part of the same edit, and one undo brings it back.
    */
-  const clearable = clearablePresets(config, machine, [
-    intent.fromStateId,
-    ...(to?.kind === "state" ? [to.id] : []),
-    ...(to?.kind === "byEntry" ? to.routes.flatMap((r) => (r.to.kind === "state" ? [r.to.id] : [])) : []),
-  ]);
   const toClear = slots.filter((s): s is number => s !== undefined && !isSparePreset(config.presets[s]));
   // Agreed for exactly these presets: choosing another asks again.
   const [agreedToClear, setAgreedToClear] = useState("");
@@ -268,11 +262,11 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
 
   const commit = (target: MachineTarget | undefined) => {
     if (!change) return;
-    const cleared = target ? toClear.reduce((c, slot) => clearPreset(c, slot), config) : config;
     const result = editRoute(
-      cleared,
+      config,
       { ...change, ...(target ? { to: target } : { to: undefined }) },
       target ? slots.filter((s): s is number => s !== undefined) : [],
+      { clearing: target ? toClear : [] },
     );
     if (!result.ok) {
       setError(result.error);

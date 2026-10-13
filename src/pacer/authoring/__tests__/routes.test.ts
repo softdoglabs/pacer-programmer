@@ -349,6 +349,32 @@ describe("routing between states", () => {
     expect(offered).toEqual([...find(config, "MAIN1").presets, ...find(config, "MAIN3").presets]);
   });
 
+  it("clears a preset for a copy even when that renames the state the route leaves", () => {
+    /*
+     * An id is the state's name, qualified by its slot only while another state shares the name.
+     * D6 here is a second, different "MAIN2", so the one in the route is "MAIN2 (A3)" until D6 is
+     * cleared and plain "MAIN2" after. The route has to follow the state, not the spelling.
+     */
+    const base = compiled(looper(3));
+    const D6 = userPresetIndex(3, 6);
+    const config: PacerConfig = {
+      ...base,
+      presets: { ...base.presets, [D6]: { index: D6, name: "MAIN2", controls: body(70), midiSettings: {} } },
+    };
+    const from = recoverMachine(config).states.find((s) => s.id.startsWith("MAIN2 (") && !s.id.includes("D6"))!;
+    const change: RouteChange = { fromStateId: from.id, controlId: B, stepNumber: 1, to: to("LOOPR") };
+
+    const result = editRoute(config, change, [D6], { clearing: [D6] });
+    if (!result.ok) throw new Error(result.error);
+    expect(find(result.config, "LOOPR").presets).toContain(D6);
+    expect(find(result.config, "MAIN2").presets).toHaveLength(1);
+
+    // And never a preset a route leads to or from, whoever asks.
+    const refused = editRoute(config, change, [D6], { clearing: [find(config, "MAIN0").presets[0]!] });
+    expect(refused.ok).toBe(false);
+    if (!refused.ok) expect(refused.error).toMatch(/part of a route/);
+  });
+
   it("takes away a route that nothing depends on, leaving the step unused", () => {
     const config = compiled(looper(2));
     const loop = find(config, "LOOPR");

@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { ModalDialog } from "@/components/ui/dialog";
 import { Select, type SelectGroup } from "@/components/ui/select";
 import { dependsOnEntry, presetEntrants } from "@/pacer/analysis";
-import { clearablePresets } from "@/pacer/authoring";
+import { slotChoices } from "@/pacer/authoring";
 import { isSparePreset } from "@/pacer/editing";
-import { FIRST_USER_PRESET_INDEX, LAST_USER_PRESET_INDEX, presetIndexToLabel } from "@/pacer/protocol/constants";
+import { presetIndexToLabel } from "@/pacer/protocol/constants";
 import { usePacerStore } from "../../store/pacerStore";
 import { useMachine } from "../useMachine";
 
@@ -45,22 +45,18 @@ export function StateDetails({ stateId, onClose }: { stateId: string; onClose: (
     };
   }, [machine, stateId]);
 
-  const spare = useMemo(() => {
-    const free = [];
-    for (let i = FIRST_USER_PRESET_INDEX; i <= LAST_USER_PRESET_INDEX; i++) {
-      if (isSparePreset(config.presets[i])) free.push({ id: String(i), label: presetIndexToLabel(i) });
-    }
-    return free;
-  }, [config]);
-  // With no empty preset — every device, until one's cleared — a move can clear one the machine
-  // doesn't use, once that's agreed to (the same rule the route dialog offers copies by).
-  const clearable = useMemo(() => clearablePresets(config, machine, [stateId]), [config, machine, stateId]);
+  // Empty presets, and — since a device has none until one's cleared — ones that may be cleared
+  // for the move once that's agreed to. The same rule the route dialog offers copies by.
+  const { empty, clearable } = useMemo(() => slotChoices(config, machine, [stateId]), [config, machine, stateId]);
 
   if (members.length === 0) return null;
   const label = (slot: number) => `${presetIndexToLabel(slot)} ${config.presets[slot]?.name?.trim() ?? ""}`.trim();
   const destinations = (slot: number): SelectGroup[] =>
     [
-      { title: "Empty", options: spare.filter((o) => Number(o.id) !== slot) },
+      {
+        title: "Empty",
+        options: empty.filter((i) => i !== slot).map((i) => ({ id: String(i), label: presetIndexToLabel(i) })),
+      },
       { title: "In use — would be cleared", options: clearable.map((i) => ({ id: String(i), label: label(i) })) },
     ].filter((g) => g.options.length > 0);
 

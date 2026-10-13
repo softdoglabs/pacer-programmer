@@ -442,8 +442,11 @@ One file per question:
   could go (`switchUses`, `firstJump`).
 - `plan.ts` — what a route would cost before anything's written
   (`planRoute`: the copies it needs a preset for, the presets it frees),
-  which states enter a state (`entrantStates`, from `waysIn`), and which
-  presets in use a copy may clear (`clearablePresets`).
+  and which states enter a state (`entrantStates`, from `waysIn`).
+- `slots.ts` — where something new may go (`slotChoices`: the empty presets,
+  and the ones in use that may be cleared for it, `clearablePresets`). One
+  rule, asked by the route dialog and Move to… alike; each used to work out
+  its own list.
 - `editRoute.ts` — builds the machine after the edit and hands it to
   `realize`.
 - `realize.ts` — from a machine to presets.
@@ -480,8 +483,14 @@ What it refuses, and why:
     (`clearablePresets` in `plan.ts`: a state by itself, nothing leads to it
     by name, no designed route of its own), under their own heading. Choosing
     one needs a tick-box naming the preset before the button enables; it's
-    cleared and the route written as one undo step. `realize` is unchanged
-    and still refuses a preset with something in it.
+    cleared and the route written as one undo step (`editRoute`'s `clearing`
+    option, which refuses any preset `clearablePresets` wouldn't offer).
+    `realize` is unchanged and still refuses a preset with something in it.
+  - **Clearing can rename a state.** An id is the state's name, qualified by
+    its slot only while another state shares the name, so emptying a preset
+    called the same as the route's state changes that state's id. `editRoute`
+    restates the change in the ids the states have after clearing, following
+    each state by the presets it is.
   - Found by the owner on a full device. No test had one: every dialog test
     started from `compileMachine`, which leaves most slots empty, and the
     tutorial cleared D6 before it drew a route. **Test UI that allocates

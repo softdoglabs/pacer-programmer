@@ -11,7 +11,7 @@ import { Titled } from "@/components/ui/titled";
  */
 
 /** Where the repository lives. Every docs address is built from this, so a move is one edit. */
-export const REPOSITORY_URL = "https://github.com/mvachhar/pacer-programmer";
+export const REPOSITORY_URL = "https://github.com/softdoglabs/pacer-programmer";
 
 /** The docs' front page, as GitHub renders it. */
 export const DOCS_URL = `${REPOSITORY_URL}/blob/main/docs/README.md`;

@@ -1315,8 +1315,8 @@ so the link resolves for the owner only until it's published.
 - **The address is written in two places**: `REPOSITORY_URL` in the app, and
   the raw-file URL of `reference/programming-the-pacer.md` in
   `guide/working-with-ai.md`'s prompt (an AI fetches it from there, so it has
-  to be absolute). The repository may move to an organization before it's
-  published; update both when it does.
+  to be absolute). Both point at `github.com/softdoglabs/pacer-programmer`;
+  if the repository moves again, update both.
 - **Layout**: `reference/` is the manual (one page per part of the app, each
   led by an annotated screenshot, plus troubleshooting and a glossary),
   `guide/` is short task pages, `tutorials/` builds the looper from factory
@@ -1487,7 +1487,7 @@ preset chooser, then the analysis views.
   Chosen because the protocol was first learned from the GPLv3
   `pacer-editor`, and because the app is a promotional tool rather than a
   product. The source will be published on GitHub
-  (`github.com/mvachhar/pacer-programmer`; private for now).
+  (`github.com/softdoglabs/pacer-programmer`; private for now).
 - Whether v1 needs to cover **global config** and **NP-1/expression
   pedal/relay** settings, or start scoped to the 24 built-in presets only.
 - Framing/checksum/field layout is now verified against a real factory

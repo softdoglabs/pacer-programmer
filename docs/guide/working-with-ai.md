@@ -47,7 +47,7 @@ I've attached a configuration dump (.syx) from a Nektar Pacer MIDI foot
 controller. The file format is documented here. Read the whole page before
 you change anything, and follow its "Writing a dump safely" section:
 
-https://raw.githubusercontent.com/mvachhar/pacer-programmer/main/docs/reference/programming-the-pacer.md
+https://raw.githubusercontent.com/softdoglabs/pacer-programmer/main/docs/reference/programming-the-pacer.md
 
 Please change the dump as follows:
 

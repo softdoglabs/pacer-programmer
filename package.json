@@ -17,7 +17,8 @@
     "format:check": "prettier --check .",
     "docs:screenshots": "node scripts/docs-screenshots.mjs",
     "docs:walkthrough": "node scripts/docs-walkthrough.mjs",
-    "check:map": "node scripts/map-check.mjs"
+    "check:map": "node scripts/map-check.mjs",
+    "deploy:app": "pnpm build && wrangler deploy"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -38,7 +39,8 @@
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.70.0",
     "vite": "^8.3.0",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "wrangler": "4.150.0"
   },
   "dependencies": {
     "@dagrejs/dagre": "^3.1.1",

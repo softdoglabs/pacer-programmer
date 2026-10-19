@@ -1397,6 +1397,30 @@ would be incomplete and go stale. The simulator works with no hardware
 attached; connecting a real Pacer over USB enables live send/receive against
 the device.
 
+### Deploying
+
+The build is static files (`pnpm build` → `dist/`), served at
+`pacer-programmer.softdoglabs.com` by a Cloudflare Worker that only serves those
+files and runs no code of its own (`wrangler.jsonc`, `pnpm deploy:app`). Static
+asset requests are free on Cloudflare's free plan.
+- **One address only**: `workers_dev` and `preview_urls` are off. Saved
+  snapshots live in localStorage, which belongs to one origin, so a second
+  address (as Pages' `*.pages.dev` always is) would hold a second, separate
+  library. Chosen over Pages for exactly this.
+- **Response headers are in `public/_headers`**, which Vite copies into `dist/`
+  and Cloudflare reads rather than serves. Its content security policy allows
+  only the app's own origin, plus `data:` for the assets Vite inlines and the
+  inline styles libraries set. Checked by loading the built app under `wrangler
+  dev` in headless Chrome with no violations; check again after adding anything
+  loaded from elsewhere. `/assets/*` is cached for a day (content-hashed
+  names; to become a year once it's confirmed whether a deploy keeps the
+  previous one's files reachable); `index.html` is always revalidated.
+- Node and pnpm are pinned (`.node-version`, `packageManager`), so CI builds what
+  builds locally. pnpm refuses packages published within about a day (its
+  minimum release age policy), which is why `wrangler` sits a release behind.
+- Planned, not built: deploying from GitHub Actions after the checks pass, and
+  the docs as a second Worker on `softdoglabs.com/docs/pacer-programmer/`.
+
 ## Planned UI reorganization (agreed, not built)
 
 The current shell — a Play/Edit toggle in the header and a tab strip of

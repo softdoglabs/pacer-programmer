@@ -1,0 +1,8 @@
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<!-- Copyright (C) 2026 Soft Dog Labs, LLC -->
+<!-- The neutral build's tab icon: a footswitch with its light bar. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect x="2" y="2" width="28" height="28" rx="6" fill="#1f2328"/>
+  <rect x="7" y="8" width="18" height="3" rx="1.5" fill="#38bdf8"/>
+  <rect x="7" y="14" width="18" height="12" rx="3" fill="#4b5563"/>
+</svg>

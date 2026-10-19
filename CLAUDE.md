@@ -1459,6 +1459,27 @@ asset requests are free on Cloudflare's free plan.
   - Not yet confirmed: that the route wins over the main site's Pages custom
     domain for that path. Test it on the first deploy.
 
+### Branding (`src/brand/vitePlugin.ts`, `TRADEMARKS.md`)
+
+The code is GPL; the Soft Dog Labs brand isn't, and is kept out of the
+repository so no fork receives a copy of it. `TRADEMARKS.md` says so, and the
+README's license section states it as an added term under GPLv3 section 7(e),
+which allows declining trademark rights. Not reviewed by a lawyer yet.
+- **The default build is neutral**: no credit, the neutral `public/favicon.svg`.
+  It's what anyone cloning the repository builds.
+- **`PACER_BRAND_DIR` names a brand kit** for a branded build: `brand.json`
+  (`name`, an https `url`; required), and optionally `logo.svg` and
+  `favicon.svg`. A kit that's named but broken fails the build, so a deploy
+  meant to be branded can't quietly go out neutral.
+- The app reads it as `virtual:brand` (null when neutral): `BrandCredit`
+  puts "by {name}" beside the app's name, with the logo, linking to the url in
+  a tab of its own. `rel="noopener"` without `noreferrer`, so the visit is seen
+  to come from the app. The docs site puts the same credit in its footer.
+- The plugin also gives the dev server read access to the kit, which lives
+  outside the repository, and serves its favicon.
+- Planned, not built: CI checking the kit out of its own private repository
+  and building with it for the deploy. Waiting on where the kit lives.
+
 ## Planned UI reorganization (agreed, not built)
 
 The current shell — a Play/Edit toggle in the header and a tab strip of

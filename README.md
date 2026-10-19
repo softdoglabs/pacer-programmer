@@ -73,6 +73,10 @@ You should have received a copy of the GNU General Public License along with
 this program, in [LICENSE](LICENSE). If not, see
 <https://www.gnu.org/licenses/>.
 
+Additional term, under section 7(e) of the GNU General Public License: no
+rights are granted under trademark law to the Soft Dog Labs name or logos. See
+[TRADEMARKS.md](TRADEMARKS.md).
+
 The display font, DSEG14 by keshikan, is under the SIL Open Font License 1.1;
 its license is bundled with it in `src/assets/fonts/`. The factory preset dump
 in `fixtures/` is Nektar's own configuration data; see

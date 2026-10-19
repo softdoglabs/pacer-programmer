@@ -1,0 +1,20 @@
+# Response headers for the deployed app, read by Cloudflare's static assets (wrangler.jsonc).
+# SPDX-License-Identifier: GPL-3.0-only
+# Copyright (C) 2026 Soft Dog Labs, LLC
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'
+  Permissions-Policy: midi=(self), camera=(), microphone=(), geolocation=()
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Content-Type-Options: nosniff
+
+# Vite names these by content hash, so a name never changes meaning. A day for now; a year once
+# it's confirmed how Cloudflare treats a previous deploy's files.
+/assets/*
+  Cache-Control: public, max-age=86400, immutable
+
+# The page that names the current hashes: always check for a newer one.
+/
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache

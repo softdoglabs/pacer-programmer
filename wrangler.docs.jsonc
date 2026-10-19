@@ -1,0 +1,23 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Soft Dog Labs, LLC
+//
+// The docs site (`pnpm docs:build`), deployed as a Cloudflare Worker that only serves the built
+// files, on a path of softdoglabs.com itself. The rest of softdoglabs.com is the main site's,
+// deployed from its own repository; this route takes only /docs/pacer-programmer.
+// Deploy with `pnpm deploy:docs`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pacer-programmer-docs",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    // The site is built under docs/pacer-programmer/ inside this directory, because the Worker is
+    // handed the whole path and looks it up as it comes.
+    "directory": "./build/docs-site",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+  },
+  // Served on softdoglabs.com only, so search engines see one copy of each page.
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "softdoglabs.com/docs/pacer-programmer*", "zone_name": "softdoglabs.com" }],
+}

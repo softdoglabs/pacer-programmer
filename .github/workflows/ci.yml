@@ -3,7 +3,9 @@
 #
 # Checks every push and pull request, and deploys main once the checks pass.
 # The deploy steps skip themselves until the repository has the CLOUDFLARE_API_TOKEN and
-# CLOUDFLARE_ACCOUNT_ID secrets, so this runs as checks only until then.
+# CLOUDFLARE_ACCOUNT_ID secrets, so this runs as checks only until then. The docs also wait for the
+# DEPLOY_DOCS repository variable to be "true", since their route takes a path on softdoglabs.com
+# and the links in the app and the AI prompt should move to them in the same push.
 
 name: CI
 
@@ -60,3 +62,10 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm exec wrangler deploy
+
+      - name: Deploy the docs
+        if: steps.cloudflare.outputs.ready == 'true' && vars.DEPLOY_DOCS == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm exec wrangler deploy -c wrangler.docs.jsonc

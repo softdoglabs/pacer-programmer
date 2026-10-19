@@ -1446,8 +1446,18 @@ asset requests are free on Cloudflare's free plan.
   aren't in CI yet.
 - To do once deploys are live: check whether an old bundle URL still loads after
   a redeploy. If it does, raise `/assets/*` to a year.
-- Planned, not built: the docs as a second Worker on
-  `softdoglabs.com/docs/pacer-programmer/`.
+- **The docs are a second Worker** (`wrangler.docs.jsonc`, `pnpm deploy:docs`)
+  on the route `softdoglabs.com/docs/pacer-programmer*`: a path of the main
+  site's own domain, which is what lets the docs count toward softdoglabs.com
+  in search. The main site is deployed from its own repository and owns
+  everything else there; it needs to do nothing for this path beyond linking
+  to it. Served as it's built (clean URLs, folder redirects, its own 404, the
+  raw `.md` as `text/markdown`), checked under `wrangler dev`.
+  - CI deploys it only once the `DEPLOY_DOCS` repository variable is `true`
+    as well, so the route goes live in the same push that moves the app's
+    Docs link and the AI prompt onto it.
+  - Not yet confirmed: that the route wins over the main site's Pages custom
+    domain for that path. Test it on the first deploy.
 
 ## Planned UI reorganization (agreed, not built)
 

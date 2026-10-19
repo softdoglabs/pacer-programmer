@@ -21,7 +21,8 @@
     "deploy:app": "pnpm build && wrangler deploy",
     "docs:build": "vitepress build docs && node scripts/docs-site-check.mjs",
     "docs:dev": "vitepress dev docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "deploy:docs": "pnpm docs:build && wrangler deploy -c wrangler.docs.jsonc"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

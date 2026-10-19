@@ -1317,7 +1317,25 @@ so the link resolves for the owner only until it's published.
   `guide/working-with-ai.md`'s prompt (an AI fetches it from there, so it has
   to be absolute). Both point at `github.com/softdoglabs/pacer-programmer`;
   if the repository moves again, update both.
-- **Layout**: `reference/` is the manual (one page per part of the app, each
+- **They're also built as a website** (`pnpm docs:build`, VitePress,
+  `docs/.vitepress/config.ts`) for `softdoglabs.com/docs/pacer-programmer/`,
+  into `build/docs-site/docs/pacer-programmer/`. The Markdown stays written
+  for GitHub; the config adapts it rather than the other way round:
+  - `README.md` pages become each folder's index (`rewrites`). That renames
+    files but not links, so a markdown-it rule repoints `…/README.md` links.
+  - Heading anchors are slugged GitHub's way (`githubSlug`). VitePress's own
+    turns an apostrophe into a hyphen, which broke every `#…cant…` link.
+  - The sidebar is read from `docs/README.md`'s Contents section, so the
+    pages are listed and ordered in one place. Add a page there and it's in
+    the sidebar.
+  - Every page gets a canonical URL on softdoglabs.com, there's a sitemap,
+    and the raw `.md` files are copied out at their repository paths, so an
+    AI can be pointed at the Markdown on the site.
+  - `scripts/docs-site-check.mjs` runs after the build (and in CI): every
+    link, image and `#anchor` on every built page must resolve the way the
+    Worker will serve it. `docsLinks.test.ts` checks the same links as GitHub
+    shows them; this one checks what VitePress made of them.
+ (one page per part of the app, each
   led by an annotated screenshot, plus troubleshooting and a glossary),
   `guide/` is short task pages, `tutorials/` builds the looper from factory
   defaults, and `why-a-state-machine.md` is the rationale. `README.md` is the

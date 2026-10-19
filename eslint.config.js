@@ -41,7 +41,7 @@ const oneMachine = {
 };
 
 export default tseslint.config(
-  { ignores: ["dist", "src/components/ui"] },
+  { ignores: ["dist", "build", "docs/.vitepress/cache", "src/components/ui"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

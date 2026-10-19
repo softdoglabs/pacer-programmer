@@ -40,6 +40,7 @@ jobs:
       - run: pnpm format:check
       - run: pnpm test
       - run: pnpm build
+      - run: pnpm docs:build
 
       # Secrets can't be read in an `if`, so this step says whether there's one to deploy with.
       - id: cloudflare

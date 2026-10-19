@@ -23,7 +23,13 @@ function sourceFiles(dir: string): string[] {
 
 describe("licence headers", () => {
   it("are on every source file and script", () => {
-    const files = [...sourceFiles("src"), ...sourceFiles("scripts"), "eslint.config.js", "vite.config.ts"];
+    const files = [
+      ...sourceFiles("src"),
+      ...sourceFiles("scripts"),
+      "eslint.config.js",
+      "vite.config.ts",
+      "docs/.vitepress/config.ts",
+    ];
     const missing = files.filter((path) => !HEADER.test(readFileSync(path, "utf8").slice(0, 400)));
     expect(missing).toEqual([]);
   });

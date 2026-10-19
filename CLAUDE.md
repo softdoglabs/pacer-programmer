@@ -1418,8 +1418,18 @@ asset requests are free on Cloudflare's free plan.
 - Node and pnpm are pinned (`.node-version`, `packageManager`), so CI builds what
   builds locally. pnpm refuses packages published within about a day (its
   minimum release age policy), which is why `wrangler` sits a release behind.
-- Planned, not built: deploying from GitHub Actions after the checks pass, and
-  the docs as a second Worker on `softdoglabs.com/docs/pacer-programmer/`.
+- **CI** (`.github/workflows/ci.yml`): every push and pull request runs lint,
+  typecheck, format check, tests and the build; a push to main then deploys.
+  The deploy steps skip themselves (with a notice) until the repository has the
+  `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets, and only the
+  deploy step is given the token, so no install script can read it. Deploys use
+  the pinned `wrangler` from the lockfile rather than the Wrangler action.
+  Checked with actionlint. The docs walkthrough and `check:map` need Chrome and
+  aren't in CI yet.
+- To do once deploys are live: check whether an old bundle URL still loads after
+  a redeploy. If it does, raise `/assets/*` to a year.
+- Planned, not built: the docs as a second Worker on
+  `softdoglabs.com/docs/pacer-programmer/`.
 
 ## Planned UI reorganization (agreed, not built)
 

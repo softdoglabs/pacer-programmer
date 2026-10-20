@@ -14,6 +14,9 @@ export default defineConfig({
   assetsInclude: ["**/*.syx"],
   test: {
     setupFiles: ["src/test/setup.ts"],
+    // Node 25+ has a localStorage of its own, which warns when read without a storage file. Tests
+    // outside jsdom should find none, as before; the jsdom ones get jsdom's.
+    poolOptions: { forks: { execArgv: ["--no-experimental-webstorage"] } },
   },
   resolve: {
     alias: { "@": path.resolve(import.meta.dirname, "./src") },

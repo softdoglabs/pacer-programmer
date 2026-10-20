@@ -2,8 +2,12 @@
 # SPDX-License-Identifier: GPL-3.0-only
 # Copyright (C) 2026 Soft Dog Labs, LLC
 
+# Beyond the app's own origin, the policy allows two analytics services. Cloudflare Web Analytics:
+# Cloudflare injects its beacon from static.cloudflareinsights.com, and it reports to this site's
+# own /cdn-cgi/rum. Google Analytics 4: the hosts Google lists for it
+# (developers.google.com/tag-platform/security/guides/csp).
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.googletagmanager.com https://*.google-analytics.com; font-src 'self' data:; connect-src 'self' https://www.googletagmanager.com https://*.google-analytics.com https://*.google.com; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'
   Permissions-Policy: midi=(self), camera=(), microphone=(), geolocation=()
   Referrer-Policy: strict-origin-when-cross-origin
   X-Content-Type-Options: nosniff

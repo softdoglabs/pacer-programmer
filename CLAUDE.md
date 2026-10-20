@@ -1427,8 +1427,11 @@ asset requests are free on Cloudflare's free plan.
   library. Chosen over Pages for exactly this.
 - **Response headers are in `public/_headers`**, which Vite copies into `dist/`
   and Cloudflare reads rather than serves. Its content security policy allows
-  only the app's own origin, plus `data:` for the assets Vite inlines and the
-  inline styles libraries set. Checked by loading the built app under `wrangler
+  the app's own origin, `data:` for the assets Vite inlines, the inline styles
+  libraries set, and two analytics services (owner's call, 2026-10-20):
+  Cloudflare Web Analytics, whose beacon Cloudflare injects into the page, and
+  Google Analytics 4, by the hosts Google lists. The app doesn't load GA itself
+  yet. Checked by loading the built app under `wrangler
   dev` in headless Chrome with no violations; check again after adding anything
   loaded from elsewhere. `/assets/*` is cached for a day (content-hashed
   names; to become a year once it's confirmed whether a deploy keeps the

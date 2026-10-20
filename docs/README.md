@@ -29,8 +29,11 @@ There's no project file. The app reads and writes the Pacer's own `.syx` dump,
 and the format is [documented](reference/programming-the-pacer.md) well enough
 that you (or an AI) can read and write it too.
 
-You only need MIDI to reach real gear and the Pacer, and for that your browser
-has to support Web MIDI with SysEx. Everything else works without it.
+It runs in your browser at
+[pacer-programmer.softdoglabs.com](https://pacer-programmer.softdoglabs.com),
+with nothing to install. You only need MIDI to reach real gear and the Pacer,
+and for that your browser has to support Web MIDI with SysEx. Everything else
+works without it.
 
 ## Where to Start
 

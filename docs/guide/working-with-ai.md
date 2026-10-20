@@ -47,7 +47,7 @@ I've attached a configuration dump (.syx) from a Nektar Pacer MIDI foot
 controller. The file format is documented here. Read the whole page before
 you change anything, and follow its "Writing a dump safely" section:
 
-https://raw.githubusercontent.com/softdoglabs/pacer-programmer/main/docs/reference/programming-the-pacer.md
+https://softdoglabs.com/docs/pacer-programmer/reference/programming-the-pacer.md
 
 Please change the dump as follows:
 
@@ -59,8 +59,8 @@ correctly and every checksum is right. Then give me the new .syx file to
 download, and a short table of what each changed switch now does.
 ```
 
-If your AI can't fetch web pages, download the page from GitHub and attach it
-along with the dump.
+If your AI can't fetch web pages, open that address, save the page and attach
+it along with the dump.
 
 ### Example: A Looper Preset for the Quad Cortex
 

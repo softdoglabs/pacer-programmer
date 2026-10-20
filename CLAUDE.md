@@ -1307,16 +1307,16 @@ no hover-only UI, for tablets.
 
 ### User docs (`docs/`)
 
-The user documentation lives in `docs/` as Markdown, rendered by GitHub.
-**The app links to it rather than carrying a copy** (`ui/DocsLink.tsx`, the
+The user documentation lives in `docs/` as Markdown, which GitHub renders as
+it is, and is published as a website on softdoglabs.com (below). **The app
+links to the site rather than carrying a copy** (`ui/DocsLink.tsx`, the
 header's Docs link): one canonical page per topic, nothing to keep in step,
-and nothing a search engine sees twice. The repository is private for now,
-so the link resolves for the owner only until it's published.
-- **The address is written in two places**: `REPOSITORY_URL` in the app, and
-  the raw-file URL of `reference/programming-the-pacer.md` in
-  `guide/working-with-ai.md`'s prompt (an AI fetches it from there, so it has
-  to be absolute). Both point at `github.com/softdoglabs/pacer-programmer`;
-  if the repository moves again, update both.
+and nothing a search engine sees twice.
+- **The site's address is written in two places**: `src/docsSite.ts`, which
+  the app's Docs link and the VitePress config both read, and the Markdown URL
+  of `reference/programming-the-pacer.md` in `guide/working-with-ai.md`'s
+  prompt (an AI fetches it from there, so it has to be absolute). If the site
+  moves, update both.
 - **They're also built as a website** (`pnpm docs:build`, VitePress,
   `docs/.vitepress/config.ts`) for `softdoglabs.com/docs/pacer-programmer/`,
   into `build/docs-site/docs/pacer-programmer/`. The Markdown stays written
@@ -1458,9 +1458,9 @@ asset requests are free on Cloudflare's free plan.
   everything else there; it needs to do nothing for this path beyond linking
   to it. Served as it's built (clean URLs, folder redirects, its own 404, the
   raw `.md` as `text/markdown`), checked under `wrangler dev`.
-  - CI deploys it only once the `DEPLOY_DOCS` repository variable is `true`
-    as well, so the route goes live in the same push that moves the app's
-    Docs link and the AI prompt onto it.
+  - CI deploys it on every push to main, like the app. The route only catches
+    requests for a hostname whose DNS record is proxied, so softdoglabs.com
+    needs one even before the main site exists (an `AAAA 100::` placeholder).
   - Not yet confirmed: that the route wins over the main site's Pages custom
     domain for that path. Test it on the first deploy.
 

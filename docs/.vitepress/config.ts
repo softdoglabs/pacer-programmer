@@ -14,10 +14,11 @@ import { copyFileSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { defineConfig, type DefaultTheme } from "vitepress";
 import { MAKER } from "../../src/brand/maker";
+import { DOCS_BASE, DOCS_SITE } from "../../src/docsSite";
 import { BRAND_ENV, brandDocsPlugin, iconLinks, readBrandKit } from "../../src/brand/vitePlugin";
 
-export const SITE = "https://softdoglabs.com";
-export const BASE = "/docs/pacer-programmer/";
+export const SITE = DOCS_SITE;
+export const BASE = DOCS_BASE;
 const REPOSITORY = "https://github.com/softdoglabs/pacer-programmer";
 /** The same optional brand kit as the app's (src/brand/vitePlugin.ts): neutral without one. */
 const brandDir = process.env[BRAND_ENV];

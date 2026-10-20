@@ -11,8 +11,10 @@
 # CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets.
 #
 # A pull request from this repository gets a preview of the branded app and docs instead: uploaded
-# as Cloudflare versions under the alias pr-<number>, so the addresses stay the same for the life of
-# the pull request, and posted as a comment only when they change.
+# as Cloudflare versions under an alias made from its number and the PREVIEW_KEY secret
+# (scripts/preview-alias.sh), so the addresses stay the same for the life of the pull request but
+# can't be worked out from the number, and posted as a comment only when they change. The comment is
+# as public as the pull request it's on.
 
 name: CI
 
@@ -62,19 +64,29 @@ jobs:
     steps:
       # Secrets can't be read in an `if`, so this step says which ones there are. A deploy without
       # the kit fails rather than going out neutral.
+      # The preview alias needs the repository's own script, so it's checked out first.
+      - uses: actions/checkout@v7
       - id: secrets
         env:
           BRANDKIT_TOKEN: ${{ secrets.BRANDKIT_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          PREVIEW_KEY: ${{ secrets.PREVIEW_KEY }}
+          PR: ${{ github.event.pull_request.number }}
           DEPLOYING: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           PREVIEWING: ${{ github.event_name == 'pull_request' }}
         run: |
           deploy=false
           preview=false
           if [ "$DEPLOYING" = true ] && [ -n "$CLOUDFLARE_API_TOKEN" ]; then deploy=true; fi
-          # Pull requests from forks get no secrets, so no kit and no token: no preview.
+          # Pull requests from forks get no secrets, so no kit and no token: no preview. Nor without
+          # the key, rather than at an address anyone could work out from the number.
           if [ "$PREVIEWING" = true ] && [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$BRANDKIT_TOKEN" ]; then
-            preview=true
+            if [ -n "$PREVIEW_KEY" ]; then
+              preview=true
+              echo "alias=$(scripts/preview-alias.sh "$PR")" >> "$GITHUB_OUTPUT"
+            else
+              echo "::notice::No PREVIEW_KEY secret, so this pull request gets no preview."
+            fi
           fi
           if [ -n "$BRANDKIT_TOKEN" ]; then
             echo "kit=true" >> "$GITHUB_OUTPUT"
@@ -90,8 +102,6 @@ jobs:
           echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
           echo "preview=$preview" >> "$GITHUB_OUTPUT"
 
-      - if: steps.secrets.outputs.kit == 'true'
-        uses: actions/checkout@v7
       - name: Check out the brand kit
         if: steps.secrets.outputs.kit == 'true'
         uses: actions/checkout@v7
@@ -144,7 +154,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          ALIAS: pr-${{ github.event.pull_request.number }}
+          ALIAS: ${{ steps.secrets.outputs.alias }}
         run: |
           upload() {
             pnpm exec wrangler versions upload --preview-alias "$ALIAS" "$@" 2>&1 | tee /dev/stderr |

@@ -1427,11 +1427,23 @@ asset requests are free on Cloudflare's free plan.
   Pages for exactly this.
 - **Pull request previews** (owner's call, 2026-10-20): `preview_urls` is on
   for both Workers. A pull request from this repository has its branded app
-  and docs uploaded as versions (`wrangler versions upload --preview-alias
-  pr-<n>`), which doesn't touch the live site, at workers.dev addresses that
-  stay the same for the life of the pull request. CI comments them on the pull
-  request only when they differ from the last comment it left (found by a
-  hidden marker). Fork pull requests get no secrets and so no preview.
+  and docs uploaded as versions (`wrangler versions upload --preview-alias`),
+  which doesn't touch the live site, at workers.dev addresses that stay the
+  same for the life of the pull request. CI comments them on the pull request
+  only when they differ from the last comment it left (found by a hidden
+  marker). Fork pull requests get no secrets and so no preview.
+  - **The alias can't be worked out from the number**: `pr-<n>-<16 hex>`, an
+    HMAC of the number keyed by the `PREVIEW_KEY` secret
+    (`scripts/preview-alias.sh`). Without the secret there's no preview rather
+    than one at `pr-<n>`.
+  - **This hides less than it sounds in a public repository**: the preview
+    comment is as public as the pull request, so anyone reading it has the
+    address. What the key stops is listing every preview by counting up
+    numbers. In a private repository, where the comment is private too, it's
+    what keeps a preview private.
+  - **Nothing removes a preview**: Cloudflare has no way to delete an alias,
+    and keeps the 1000 most recently deployed. A closed pull request's preview
+    stays up at its address (owner's call: that's fine).
   - Only `wrangler deploy` applies `preview_urls`, so a new Worker needs one
     deploy from main before its previews have addresses. They also need the
     account's workers.dev subdomain.

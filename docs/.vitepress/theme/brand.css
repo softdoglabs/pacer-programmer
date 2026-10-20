@@ -63,12 +63,6 @@
   margin: calc(var(--vp-nav-logo-height) * -40 / 300);
 }
 
-.VPNavBarTitle .logo + span {
-  margin-left: 12px;
-  padding-left: 12px;
-  border-left: 1px solid var(--vp-c-divider);
-}
-
 /* The display face is all caps and heavy, so it's for the page titles only. */
 .vp-doc h1 {
   font-family: var(--softdog-font-display);

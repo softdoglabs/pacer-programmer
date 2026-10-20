@@ -12,6 +12,7 @@
 
 import { copyFileSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig, type DefaultTheme } from "vitepress";
 import { MAKER } from "../../src/brand/maker";
 import { DOCS_BASE, DOCS_SITE } from "../../src/docsSite";
@@ -88,7 +89,20 @@ export default defineConfig({
   head: iconLinks(brand, BASE).map((attrs) => ["link", attrs]),
   // VitePress runs its own, older Vite, whose Plugin type differs from this repository's; the hooks
   // the plugin uses are the same in both.
-  vite: { plugins: [brandDocsPlugin(brand, brandDir, resolve(import.meta.dirname, "theme/brand.css")) as never] },
+  vite: {
+    plugins: [brandDocsPlugin(brand, brandDir, resolve(import.meta.dirname, "theme/brand.css")) as never],
+    // The nav title as two links, the lockup to the maker's site and the name to the front page
+    // (theme/NavBarTitle.vue): VitePress's own is one link around both. Its documented way to
+    // replace a component of the default theme.
+    resolve: {
+      alias: [
+        {
+          find: /^.*\/VPNavBarTitle\.vue$/,
+          replacement: fileURLToPath(new URL("./theme/NavBarTitle.vue", import.meta.url)),
+        },
+      ],
+    },
+  },
 
   // `rewrites` renames the files but not the links to them, so `guide/README.md` in a page's text
   // would point at a page that isn't there. Point it at the folder's index instead.
@@ -132,7 +146,8 @@ export default defineConfig({
     editLink: { pattern: `${REPOSITORY}/edit/main/docs/:path`, text: "Edit this page on GitHub" },
     // Credited in every build, like the app (src/brand/maker.ts); the kit adds its lockup ahead of
     // the site's name, as the app has it (theme/brand.css sizes it).
-    footer: { message: `Pacer Programmer by <a href="${MAKER.url}">${MAKER.name}</a>` },
+    // target="_self" so VitePress's router leaves it to the browser (see theme/NavBarTitle.vue).
+    footer: { message: `Pacer Programmer by <a href="${MAKER.url}" target="_self">${MAKER.name}</a>` },
     logo: brand ? { light: "/brand/lockup-light.svg", dark: "/brand/lockup-dark.svg", alt: MAKER.name } : undefined,
   },
 });

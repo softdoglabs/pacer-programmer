@@ -1519,6 +1519,14 @@ which allows declining trademark rights. Not reviewed by a lawyer yet.
     otherwise; the docs theme sets it from VitePress's light/dark switch. Its
     `sdl-theme-*` classes are for sections and lose to its dark-OS rule on the
     root, which is how a light choice on a dark OS first stayed dark.
+  - **The docs' nav title is two links** (`docs/.vitepress/theme/NavBarTitle.vue`,
+    swapped in for VitePress's `VPNavBarTitle` by an alias in the config): the
+    lockup goes to softdoglabs.com, as in the app, and the name to the docs'
+    front page. VitePress's own is one link around both.
+  - **Links to softdoglabs.com need `target="_self"`.** The docs share its
+    origin, and VitePress's router takes any same-origin link without a target
+    for one of its own pages, so the footer credit used to open as a missing
+    page inside the docs.
   - VitePress runs its own older Vite, so its plugin is cast to that Vite's
     type in the docs config; the hooks are the same. It writes its own page
     HTML, so the icons go in through `head`, not `transformIndexHtml`.

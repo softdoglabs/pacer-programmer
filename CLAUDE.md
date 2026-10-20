@@ -1468,8 +1468,9 @@ repository so no fork receives a copy of it. `TRADEMARKS.md` says so, and the
 README's license section states it as an added term under GPLv3 section 7(e),
 which allows declining trademark rights. Not reviewed by a lawyer yet.
 - **Every build credits the maker** (`maker.ts`): "by Soft Dog Labs", linking to
-  softdoglabs.com, beside the app's name (`BrandCredit`) and in the docs'
-  footer. It's an author's credit, so it's code, branded or not (owner's call).
+  softdoglabs.com, beside the app's name (`AppTitle`) and in the docs'
+  footer. A branded app shows the kit's lockup in place of the words, still
+  linking there. It's an author's credit, so it's code, branded or not (owner's call).
   The link opens a tab of its own (leaving would drop unsaved edits) and is
   `rel="noopener"` without `noreferrer`, so the visit is seen to come from here.
 - **The brand's look comes from the kit**, the private `softdoglabs/brandkit`
@@ -1479,13 +1480,24 @@ which allows declining trademark rights. Not reviewed by a lawyer yet.
   needs that's missing fails the build, so a deploy meant to be branded can't go
   out neutral. Without it: the neutral `public/favicon.svg` and VitePress's
   stock theme.
-  - The app gets the dog mark for dark backgrounds beside the credit
-    (`virtual:brand`), and the navy app icon as favicon and home-screen icon.
-  - The docs get both marks beside the site name (light and dark), the icons,
-    and the kit's colour tokens and fonts, mapped onto VitePress's variables
-    by `docs/.vitepress/theme/brand.css` (`virtual:brand-docs.css`, empty when
-    neutral). The display face is all caps, so it's only the site name and
-    page titles.
+  - **The lockup, not the bare mark** (owner's call, 2026-10-20): the
+    horizontal lockup, a divider, then "Pacer Programmer", in the app's header
+    and the docs' nav. The lockup is 40px high, so its name can be read, with
+    its built-in clear space (40 of 300 units each side) overlapping what's
+    around it. On dark it's the kit's `dark-transparent/` version: the plain
+    `dark/` one has a navy box baked in. The docs' sidebar is widened to 352px,
+    since their title column is the sidebar's width.
+  - The app also gets the navy app icon as favicon and home-screen icon, and
+    the kit's dark navy palette under its own tokens (`src/brand/app.css`, via
+    `virtual:brand-app.css`): page, panels, lines, text, and the preset map's
+    canvas. **Teal stays** (Nektar's colour, the Pacer's own; owner's call),
+    and so does the faceplate's hardware look. The plugin sets
+    `data-theme="dark"` on the page, which both picks the kit's dark tokens
+    and lets the mapping outrank `index.css` regardless of order.
+  - The docs get both lockups (light and dark), the icons, and the kit's
+    colour tokens and fonts, mapped onto VitePress's variables by
+    `docs/.vitepress/theme/brand.css` (`virtual:brand-docs.css`, empty when
+    neutral). The display face is all caps, so it's only the page titles.
   - The kit's tokens follow the OS unless `data-theme` on `<html>` says
     otherwise; the docs theme sets it from VitePress's light/dark switch. Its
     `sdl-theme-*` classes are for sections and lose to its dark-OS rule on the

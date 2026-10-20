@@ -129,8 +129,9 @@ export default defineConfig({
     search: { provider: "local" },
     socialLinks: [{ icon: "github", link: REPOSITORY }],
     editLink: { pattern: `${REPOSITORY}/edit/main/docs/:path`, text: "Edit this page on GitHub" },
-    // Credited in every build, like the app (src/brand/maker.ts); the kit adds the logo.
+    // Credited in every build, like the app (src/brand/maker.ts); the kit adds its lockup ahead of
+    // the site's name, as the app has it (theme/brand.css sizes it).
     footer: { message: `Pacer Programmer by <a href="${MAKER.url}">${MAKER.name}</a>` },
-    logo: brand ? { light: "/brand/mark-light.svg", dark: "/brand/mark-dark.svg", alt: "" } : undefined,
+    logo: brand ? { light: "/brand/lockup-light.svg", dark: "/brand/lockup-dark.svg", alt: MAKER.name } : undefined,
   },
 });

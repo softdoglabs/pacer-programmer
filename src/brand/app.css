@@ -1,0 +1,35 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
+/* Copyright (C) 2026 Soft Dog Labs, LLC */
+
+/*
+ * The brand kit's dark palette under the app's colours (src/index.css): its navy for the page,
+ * panels and lines, and its text colours. Only loaded in a branded build, after the kit's own
+ * colours (src/brand/vitePlugin.ts), so it names their variables but carries none of the brand.
+ *
+ * Teal stays, and so does the faceplate: teal is Nektar's colour, the Pacer's own, and the faceplate
+ * is drawn to look like the hardware. data-theme="dark" is set on the page by the plugin, and makes
+ * this outrank index.css's :root without depending on stylesheet order.
+ */
+
+:root[data-theme="dark"] {
+  --background: var(--sdl-color-bg);
+  --foreground: var(--sdl-color-text);
+  --card: var(--sdl-color-surface);
+  --card-foreground: var(--sdl-color-text);
+  --popover: var(--sdl-color-surface);
+  --popover-foreground: var(--sdl-color-text);
+  --secondary: var(--sdl-color-surface-brand);
+  --secondary-foreground: var(--sdl-color-text);
+  --muted: var(--sdl-color-surface-brand);
+  --muted-foreground: var(--sdl-color-text-muted);
+  --accent: var(--sdl-color-surface-brand);
+  --accent-foreground: var(--sdl-color-text);
+  /* Half strength, as the app's own lines are faint. */
+  --border: color-mix(in srgb, var(--sdl-color-border) 50%, transparent);
+  --input: color-mix(in srgb, var(--sdl-color-border-strong) 50%, transparent);
+}
+
+/* The preset map's canvas: React Flow's dark mode brings its own near-black. */
+:root[data-theme="dark"] .react-flow {
+  --xy-background-color-default: var(--background);
+}

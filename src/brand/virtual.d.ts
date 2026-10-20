@@ -3,5 +3,5 @@
 
 /** The build's brand kit (see vitePlugin.ts): null in a neutral build, which is the default. */
 declare module "virtual:brand" {
-  export const brand: { logoUrl: string } | null;
+  export const brand: { lockupUrl: string } | null;
 }

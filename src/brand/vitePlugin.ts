@@ -14,8 +14,8 @@
  * stays a brand kit rather than a dependency of this one. A file this needs that's missing fails the
  * build: a deploy meant to be branded can't quietly go out neutral.
  *
- * The app reads the result as `virtual:brand`, the docs theme as `virtual:brand-docs.css`. Node-only:
- * this runs in the build, never in the browser.
+ * The app reads the result as `virtual:brand` and `virtual:brand-app.css`, the docs theme as
+ * `virtual:brand-docs.css`. Node-only: this runs in the build, never in the browser.
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -27,9 +27,13 @@ const NEUTRAL_FAVICON = resolve(import.meta.dirname, "../../public/favicon.svg")
 
 /** The kit's files this uses, by their paths in the kit. */
 const KIT_FILES = {
-  /** The dog on its own, for dark backgrounds (the app's) and light ones. */
-  markOnDark: "svg/mark/softdog-mark-dark.svg",
-  markOnLight: "svg/mark/softdog-mark-color.svg",
+  /**
+   * The horizontal lockup, dog and name, for dark backgrounds (the app's) and light ones. The dark
+   * one is the kit's transparent version: the plain dark one brings its own navy box. Both have
+   * clear space built in, 40 units of their 300 high on each side.
+   */
+  lockupOnDark: "svg/dark-transparent/softdog-horizontal-dark-transparent.svg",
+  lockupOnLight: "svg/color/softdog-horizontal-color.svg",
   /** The app icon, navy, at the sizes a tab and a home screen ask for. */
   favicon: "png/app-icon-sizes/softdog-app-icon-dark-32.png",
   appleTouchIcon: "png/app-icon-sizes/softdog-app-icon-dark-180.png",
@@ -52,7 +56,7 @@ export function readBrandKit(dir: string | undefined): BrandKit | null {
 /** The source of `virtual:brand` for a kit. */
 export function brandModule(kit: BrandKit | null): string {
   if (!kit) return "export const brand = null;\n";
-  return `import logoUrl from ${JSON.stringify(`${kit.markOnDark}?url`)};\nexport const brand = { logoUrl };\n`;
+  return `import lockupUrl from ${JSON.stringify(`${kit.lockupOnDark}?url`)};\nexport const brand = { lockupUrl };\n`;
 }
 
 /** The `<link>`s for a page's tab and home-screen icons, at `base`: the kit's, or the neutral one. */
@@ -69,7 +73,7 @@ function brandFiles(kit: BrandKit, docs: boolean): Record<string, string> {
   return {
     "brand/favicon.png": kit.favicon,
     "brand/apple-touch-icon.png": kit.appleTouchIcon,
-    ...(docs ? { "brand/mark-light.svg": kit.markOnLight, "brand/mark-dark.svg": kit.markOnDark } : {}),
+    ...(docs ? { "brand/lockup-light.svg": kit.lockupOnLight, "brand/lockup-dark.svg": kit.lockupOnDark } : {}),
   };
 }
 
@@ -98,28 +102,50 @@ function allowKit(kit: BrandKit | null, dir: string | undefined) {
   return { server: { fs: { allow: [searchForWorkspaceRoot(process.cwd()), resolve(dir)] } } };
 }
 
-/** The app's branding (vite.config.ts). */
+/** A stylesheet that imports `files`, in order. */
+function cssImports(files: string[]): string {
+  return files.map((file) => `@import ${JSON.stringify(file)};`).join("\n") + "\n";
+}
+
+/** The source of `virtual:brand-app.css`: the kit's colours, then `themeCss` mapping them. */
+export function brandAppCss(kit: BrandKit | null, themeCss: string): string {
+  return kit ? cssImports([kit.colors, themeCss]) : "";
+}
+
+/**
+ * The app's branding (vite.config.ts): the lockup, the icons, and the kit's dark palette under the
+ * app's own colours (app.css). The app is dark only, so the page says so to the kit, whose tokens
+ * otherwise follow the OS.
+ */
 export function brandPlugin(dir = process.env[BRAND_ENV]): Plugin {
   const kit = readBrandKit(dir);
   const MODULE = "virtual:brand";
+  const CSS = "virtual:brand-app.css";
+  const themeCss = resolve(import.meta.dirname, "app.css");
   return {
     name: "pacer-brand",
     config: () => allowKit(kit, dir),
-    resolveId: (id) => (id === MODULE ? `\0${MODULE}` : undefined),
-    load: (id) => (id === `\0${MODULE}` ? brandModule(kit) : undefined),
-    transformIndexHtml: () => iconLinks(kit, "/").map((attrs) => ({ tag: "link", attrs, injectTo: "head" })),
+    resolveId: (id) => (id === MODULE || id === CSS ? `\0${id}` : undefined),
+    load(id) {
+      if (id === `\0${MODULE}`) return brandModule(kit);
+      // Ends in .css, so Vite treats it as a stylesheet.
+      if (id === `\0${CSS}`) return brandAppCss(kit, themeCss);
+    },
+    transformIndexHtml: (html) => ({
+      html: kit ? html.replace(/<html\b/, '<html data-theme="dark"') : html,
+      tags: iconLinks(kit, "/").map((attrs) => ({ tag: "link", attrs, injectTo: "head" as const })),
+    }),
     ...(kit ? fixedFiles(brandFiles(kit, false)) : {}),
   };
 }
 
 /** The source of `virtual:brand-docs.css`: the kit's fonts and colours, then `themeCss` mapping them. */
 export function brandDocsCss(kit: BrandKit | null, themeCss: string): string {
-  if (!kit) return "";
-  return [kit.fonts, kit.colors, themeCss].map((file) => `@import ${JSON.stringify(file)};`).join("\n") + "\n";
+  return kit ? cssImports([kit.fonts, kit.colors, themeCss]) : "";
 }
 
 /**
- * The docs site's branding (docs/.vitepress/config.ts): the theme's stylesheet, and the marks and
+ * The docs site's branding (docs/.vitepress/config.ts): the theme's stylesheet, and the lockups and
  * icons at fixed addresses, since the theme's logo and the page head name files rather than
  * importing them. The config adds the icons to the head with iconLinks.
  */

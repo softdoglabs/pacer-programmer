@@ -8,9 +8,12 @@
   "name": "pacer-programmer",
   "compatibility_date": "2026-10-01",
   "assets": { "directory": "./dist" },
-  // Only the custom domain: no workers.dev address and no preview addresses. Saved snapshots live in
-  // the browser's storage for one origin, so a second address would hold a second, separate set.
+  // Only the custom domain, no workers.dev address: saved snapshots live in the browser's storage
+  // for one origin, so a second address would hold a second, separate set. Preview addresses are on
+  // (on workers.dev) for pull requests, which CI uploads as versions under a pr-<number> alias; each
+  // is its own origin with its own empty library, which suits a preview. Cloudflare gives every
+  // version one, live ones included, but nothing links to those. A deploy applies this setting.
   "workers_dev": false,
-  "preview_urls": false,
+  "preview_urls": true,
   "routes": [{ "pattern": "pacer-programmer.softdoglabs.com", "custom_domain": true }],
 }

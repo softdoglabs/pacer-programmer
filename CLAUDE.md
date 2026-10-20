@@ -1421,10 +1421,24 @@ The build is static files (`pnpm build` → `dist/`), served at
 `pacer-programmer.softdoglabs.com` by a Cloudflare Worker that only serves those
 files and runs no code of its own (`wrangler.jsonc`, `pnpm deploy:app`). Static
 asset requests are free on Cloudflare's free plan.
-- **One address only**: `workers_dev` and `preview_urls` are off. Saved
-  snapshots live in localStorage, which belongs to one origin, so a second
-  address (as Pages' `*.pages.dev` always is) would hold a second, separate
-  library. Chosen over Pages for exactly this.
+- **One address only**: `workers_dev` is off. Saved snapshots live in
+  localStorage, which belongs to one origin, so a second address (as Pages'
+  `*.pages.dev` always is) would hold a second, separate library. Chosen over
+  Pages for exactly this.
+- **Pull request previews** (owner's call, 2026-10-20): `preview_urls` is on
+  for both Workers. A pull request from this repository has its branded app
+  and docs uploaded as versions (`wrangler versions upload --preview-alias
+  pr-<n>`), which doesn't touch the live site, at workers.dev addresses that
+  stay the same for the life of the pull request. CI comments them on the pull
+  request only when they differ from the last comment it left (found by a
+  hidden marker). Fork pull requests get no secrets and so no preview.
+  - Only `wrangler deploy` applies `preview_urls`, so a new Worker needs one
+    deploy from main before its previews have addresses. They also need the
+    account's workers.dev subdomain.
+  - Every version, live ones included, gets a workers.dev address of its own.
+    Nothing links to them, and each is a separate origin with an empty library.
+  - Previews are public to anyone with the address. The docs' pages name their
+    softdoglabs.com address as canonical, so a crawled preview doesn't compete.
 - **Response headers are in `public/_headers`**, which Vite copies into `dist/`
   and Cloudflare reads rather than serves. Its content security policy allows
   the app's own origin, `data:` for the assets Vite inlines, the inline styles

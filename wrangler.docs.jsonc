@@ -16,8 +16,10 @@
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
   },
-  // Served on softdoglabs.com only, so search engines see one copy of each page.
+  // Served on softdoglabs.com only. Preview addresses (on workers.dev) are on for pull requests, as
+  // for the app; every page names its softdoglabs.com address as canonical, so a crawled preview
+  // doesn't compete with it.
   "workers_dev": false,
-  "preview_urls": false,
+  "preview_urls": true,
   "routes": [{ "pattern": "softdoglabs.com/docs/pacer-programmer*", "zone_name": "softdoglabs.com" }],
 }

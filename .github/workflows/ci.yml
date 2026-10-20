@@ -9,6 +9,10 @@
 # requests from forks don't get secrets, so for them (and until the token is added) only
 # the neutral checks run. The deploy steps skip themselves until the repository has the
 # CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets.
+#
+# A pull request from this repository gets a preview of the branded app and docs instead: uploaded
+# as Cloudflare versions under the alias pr-<number>, so the addresses stay the same for the life of
+# the pull request, and posted as a comment only when they change.
 
 name: CI
 
@@ -51,6 +55,10 @@ jobs:
   branded:
     needs: neutral
     runs-on: ubuntu-latest
+    # Writing to pull requests is only for the preview comment.
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       # Secrets can't be read in an `if`, so this step says which ones there are. A deploy without
       # the kit fails rather than going out neutral.
@@ -59,9 +67,15 @@ jobs:
           BRANDKIT_TOKEN: ${{ secrets.BRANDKIT_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           DEPLOYING: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          PREVIEWING: ${{ github.event_name == 'pull_request' }}
         run: |
           deploy=false
+          preview=false
           if [ "$DEPLOYING" = true ] && [ -n "$CLOUDFLARE_API_TOKEN" ]; then deploy=true; fi
+          # Pull requests from forks get no secrets, so no kit and no token: no preview.
+          if [ "$PREVIEWING" = true ] && [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$BRANDKIT_TOKEN" ]; then
+            preview=true
+          fi
           if [ -n "$BRANDKIT_TOKEN" ]; then
             echo "kit=true" >> "$GITHUB_OUTPUT"
           elif [ "$deploy" = true ]; then
@@ -74,6 +88,7 @@ jobs:
             echo "::notice::No CLOUDFLARE_API_TOKEN secret yet, so nothing is deployed."
           fi
           echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
+          echo "preview=$preview" >> "$GITHUB_OUTPUT"
 
       - if: steps.secrets.outputs.kit == 'true'
         uses: actions/checkout@v7
@@ -119,3 +134,54 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm exec wrangler deploy -c wrangler.docs.jsonc
+
+      # Uploaded, not deployed: the live site doesn't change. Cloudflare prints each address only
+      # once preview addresses are on for the Worker, which a deploy from main sets (wrangler*.jsonc).
+      - name: Upload previews
+        id: preview
+        if: steps.secrets.outputs.preview == 'true'
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ALIAS: pr-${{ github.event.pull_request.number }}
+        run: |
+          upload() {
+            pnpm exec wrangler versions upload --preview-alias "$ALIAS" "$@" 2>&1 | tee /dev/stderr |
+              sed -n 's/.*Version Preview Alias URL: \(https:[^ ]*\).*/\1/p' | tail -n 1
+          }
+          app=$(upload)
+          docs=$(upload -c wrangler.docs.jsonc)
+          if [ -z "$app" ] || [ -z "$docs" ]; then
+            echo "::error::Cloudflare gave no preview address. Preview addresses are turned on by a deploy from main, and need the account's workers.dev subdomain."
+            exit 1
+          fi
+          echo "app=$app/" >> "$GITHUB_OUTPUT"
+          echo "docs=$docs/docs/pacer-programmer/" >> "$GITHUB_OUTPUT"
+
+      # The addresses only change if the alias or the account's subdomain does, so most pushes post
+      # nothing: a new comment only when the last one this job left says something else.
+      - name: Comment the preview addresses
+        if: steps.secrets.outputs.preview == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          APP: ${{ steps.preview.outputs.app }}
+          DOCS: ${{ steps.preview.outputs.docs }}
+        run: |
+          marker="<!-- pacer-programmer-preview -->"
+          body="$marker
+          Previews of this pull request, branded, updated on every push:
+
+          - App: $APP
+          - Docs: $DOCS"
+          last=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .body | @base64" |
+            tail -n 1 | base64 -d)
+          if [ "$last" = "$body" ]; then
+            echo "The pull request already has these addresses."
+          else
+            gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$body" > /dev/null
+            echo "Commented the preview addresses."
+          fi

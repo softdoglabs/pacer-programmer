@@ -4,8 +4,9 @@
 # Checks every push and pull request, both as the neutral build a clone gets and as the branded one
 # that's deployed, and deploys main once both pass.
 #
-# The branded build reads the private softdoglabs/brandkit repository with the BRANDKIT_DEPLOY_KEY
-# secret. Pull requests from forks don't get secrets, so for them (and until the key is added) only
+# The branded build reads the private softdoglabs/brandkit repository with the BRANDKIT_TOKEN
+# secret, a fine-grained token that can read that repository's contents and nothing else. Pull
+# requests from forks don't get secrets, so for them (and until the token is added) only
 # the neutral checks run. The deploy steps skip themselves until the repository has the
 # CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets. The docs also wait for the DEPLOY_DOCS
 # repository variable to be "true", since their route takes a path on softdoglabs.com and the links
@@ -57,19 +58,19 @@ jobs:
       # the kit fails rather than going out neutral.
       - id: secrets
         env:
-          BRANDKIT_DEPLOY_KEY: ${{ secrets.BRANDKIT_DEPLOY_KEY }}
+          BRANDKIT_TOKEN: ${{ secrets.BRANDKIT_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           DEPLOYING: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: |
           deploy=false
           if [ "$DEPLOYING" = true ] && [ -n "$CLOUDFLARE_API_TOKEN" ]; then deploy=true; fi
-          if [ -n "$BRANDKIT_DEPLOY_KEY" ]; then
+          if [ -n "$BRANDKIT_TOKEN" ]; then
             echo "kit=true" >> "$GITHUB_OUTPUT"
           elif [ "$deploy" = true ]; then
-            echo "::error::No BRANDKIT_DEPLOY_KEY secret, so a deploy would be unbranded."
+            echo "::error::No BRANDKIT_TOKEN secret, so a deploy would be unbranded."
             exit 1
           else
-            echo "::notice::No BRANDKIT_DEPLOY_KEY secret here, so the branded build isn't checked."
+            echo "::notice::No BRANDKIT_TOKEN secret here, so the branded build isn't checked."
           fi
           if [ "$deploy" = false ] && [ "$DEPLOYING" = true ]; then
             echo "::notice::No CLOUDFLARE_API_TOKEN secret yet, so nothing is deployed."
@@ -84,7 +85,7 @@ jobs:
         with:
           repository: softdoglabs/brandkit
           path: .brandkit
-          ssh-key: ${{ secrets.BRANDKIT_DEPLOY_KEY }}
+          token: ${{ secrets.BRANDKIT_TOKEN }}
           persist-credentials: false
 
       - if: steps.secrets.outputs.kit == 'true'

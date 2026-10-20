@@ -1506,8 +1506,9 @@ which allows declining trademark rights. Not reviewed by a lawyer yet.
     type in the docs config; the hooks are the same. It writes its own page
     HTML, so the icons go in through `head`, not `transformIndexHtml`.
 - **CI checks both builds and deploys the branded one**: the `branded` job
-  checks out the kit with the `BRANDKIT_DEPLOY_KEY` secret (a read-only deploy
-  key on the brandkit repository) and runs the tests and both builds with it.
+  checks out the kit with the `BRANDKIT_TOKEN` secret (a fine-grained token
+  limited to the brandkit repository, Contents read-only; owner's choice over a
+  deploy key) and runs the tests and both builds with it.
   Without the secret (fork pull requests, or before it's added) that job only
   says so; a deploy without it fails. It follows the kit's main branch.
 

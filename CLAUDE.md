@@ -1437,7 +1437,9 @@ asset requests are free on Cloudflare's free plan.
   builds locally. pnpm refuses packages published within about a day (its
   minimum release age policy), which is why `wrangler` sits a release behind.
 - **CI** (`.github/workflows/ci.yml`): every push and pull request runs lint,
-  typecheck, format check, tests and the build; a push to main then deploys.
+  typecheck, format check, tests and both builds neutral, then (job `branded`)
+  the tests and both builds again with the brand kit; a push to main then
+  deploys from the branded job, so what goes out is what was just tested.
   The deploy steps skip themselves (with a notice) until the repository has the
   `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets, and only the
   deploy step is given the token, so no install script can read it. Deploys use
@@ -1491,10 +1493,11 @@ which allows declining trademark rights. Not reviewed by a lawyer yet.
   - VitePress runs its own older Vite, so its plugin is cast to that Vite's
     type in the docs config; the hooks are the same. It writes its own page
     HTML, so the icons go in through `head`, not `transformIndexHtml`.
-- **CI checks the neutral build** (what a clone gets) and **deploys the branded
-  one**: it checks out the kit with the `BRANDKIT_DEPLOY_KEY` secret (a
-  read-only deploy key on the brandkit repository) and rebuilds both sites with
-  it. It follows the kit's main branch.
+- **CI checks both builds and deploys the branded one**: the `branded` job
+  checks out the kit with the `BRANDKIT_DEPLOY_KEY` secret (a read-only deploy
+  key on the brandkit repository) and runs the tests and both builds with it.
+  Without the secret (fork pull requests, or before it's added) that job only
+  says so; a deploy without it fails. It follows the kit's main branch.
 
 ## Planned UI reorganization (agreed, not built)
 

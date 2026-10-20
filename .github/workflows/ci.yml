@@ -1,13 +1,15 @@
 # SPDX-License-Identifier: GPL-3.0-only
 # Copyright (C) 2026 Soft Dog Labs, LLC
 #
-# Checks every push and pull request, and deploys main once the checks pass.
+# Checks every push and pull request, both as the neutral build a clone gets and as the branded one
+# that's deployed, and deploys main once both pass.
 #
-# The deploy steps skip themselves until the repository has the CLOUDFLARE_API_TOKEN and
-# CLOUDFLARE_ACCOUNT_ID secrets, so this runs as checks only until then. Deploys are branded from
-# the private softdoglabs/brandkit repository, which needs the BRANDKIT_DEPLOY_KEY secret. The docs
-# also wait for the DEPLOY_DOCS repository variable to be "true", since their route takes a path on
-# softdoglabs.com and the links in the app and the AI prompt should move to them in the same push.
+# The branded build reads the private softdoglabs/brandkit repository with the BRANDKIT_DEPLOY_KEY
+# secret. Pull requests from forks don't get secrets, so for them (and until the key is added) only
+# the neutral checks run. The deploy steps skip themselves until the repository has the
+# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets. The docs also wait for the DEPLOY_DOCS
+# repository variable to be "true", since their route takes a path on softdoglabs.com and the links
+# in the app and the AI prompt should move to them in the same push.
 
 name: CI
 
@@ -25,7 +27,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check-and-deploy:
+  neutral:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -46,23 +48,38 @@ jobs:
       - run: pnpm build
       - run: pnpm docs:build
 
-      # Secrets can't be read in an `if`, so this step says whether there's one to deploy with.
-      - id: cloudflare
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  # Deploys from here, so what goes out is the build these steps just tested.
+  branded:
+    needs: neutral
+    runs-on: ubuntu-latest
+    steps:
+      # Secrets can't be read in an `if`, so this step says which ones there are. A deploy without
+      # the kit fails rather than going out neutral.
+      - id: secrets
         env:
+          BRANDKIT_DEPLOY_KEY: ${{ secrets.BRANDKIT_DEPLOY_KEY }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          DEPLOYING: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: |
-          if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
+          deploy=false
+          if [ "$DEPLOYING" = true ] && [ -n "$CLOUDFLARE_API_TOKEN" ]; then deploy=true; fi
+          if [ -n "$BRANDKIT_DEPLOY_KEY" ]; then
+            echo "kit=true" >> "$GITHUB_OUTPUT"
+          elif [ "$deploy" = true ]; then
+            echo "::error::No BRANDKIT_DEPLOY_KEY secret, so a deploy would be unbranded."
+            exit 1
           else
+            echo "::notice::No BRANDKIT_DEPLOY_KEY secret here, so the branded build isn't checked."
+          fi
+          if [ "$deploy" = false ] && [ "$DEPLOYING" = true ]; then
             echo "::notice::No CLOUDFLARE_API_TOKEN secret yet, so nothing is deployed."
           fi
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
 
-      # What's deployed is branded; what's checked above is the neutral build a clone gets. The kit
-      # is a private repository, read with a deploy key. Without the key this fails, so a deploy is
-      # never quietly neutral.
+      - if: steps.secrets.outputs.kit == 'true'
+        uses: actions/checkout@v7
       - name: Check out the brand kit
-        if: steps.cloudflare.outputs.ready == 'true'
+        if: steps.secrets.outputs.kit == 'true'
         uses: actions/checkout@v7
         with:
           repository: softdoglabs/brandkit
@@ -70,23 +87,35 @@ jobs:
           ssh-key: ${{ secrets.BRANDKIT_DEPLOY_KEY }}
           persist-credentials: false
 
-      - name: Build branded
-        if: steps.cloudflare.outputs.ready == 'true'
+      - if: steps.secrets.outputs.kit == 'true'
+        uses: pnpm/action-setup@v6
+      - if: steps.secrets.outputs.kit == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - if: steps.secrets.outputs.kit == 'true'
+        run: pnpm install --frozen-lockfile
+
+      # Lint, types and formatting don't change with the kit; the tests and the builds do.
+      - name: Test and build branded
+        if: steps.secrets.outputs.kit == 'true'
         env:
           PACER_BRAND_DIR: .brandkit
         run: |
+          pnpm test
           pnpm build
           pnpm docs:build
 
       - name: Deploy the app
-        if: steps.cloudflare.outputs.ready == 'true'
+        if: steps.secrets.outputs.deploy == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm exec wrangler deploy
 
       - name: Deploy the docs
-        if: steps.cloudflare.outputs.ready == 'true' && vars.DEPLOY_DOCS == 'true'
+        if: steps.secrets.outputs.deploy == 'true' && vars.DEPLOY_DOCS == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

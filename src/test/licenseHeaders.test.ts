@@ -17,7 +17,7 @@ function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name);
     if (statSync(path).isDirectory()) return sourceFiles(path);
-    return /\.(ts|tsx|js|mjs|css)$/.test(name) ? [path] : [];
+    return /\.(ts|tsx|js|mjs|css|vue)$/.test(name) ? [path] : [];
   });
 }
 
@@ -29,6 +29,7 @@ describe("licence headers", () => {
       "eslint.config.js",
       "vite.config.ts",
       "docs/.vitepress/config.ts",
+      ...sourceFiles("docs/.vitepress/theme"),
     ];
     const missing = files.filter((path) => !HEADER.test(readFileSync(path, "utf8").slice(0, 400)));
     expect(missing).toEqual([]);

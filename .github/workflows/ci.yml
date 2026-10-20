@@ -2,10 +2,12 @@
 # Copyright (C) 2026 Soft Dog Labs, LLC
 #
 # Checks every push and pull request, and deploys main once the checks pass.
+#
 # The deploy steps skip themselves until the repository has the CLOUDFLARE_API_TOKEN and
-# CLOUDFLARE_ACCOUNT_ID secrets, so this runs as checks only until then. The docs also wait for the
-# DEPLOY_DOCS repository variable to be "true", since their route takes a path on softdoglabs.com
-# and the links in the app and the AI prompt should move to them in the same push.
+# CLOUDFLARE_ACCOUNT_ID secrets, so this runs as checks only until then. Deploys are branded from
+# the private softdoglabs/brandkit repository, which needs the BRANDKIT_DEPLOY_KEY secret. The docs
+# also wait for the DEPLOY_DOCS repository variable to be "true", since their route takes a path on
+# softdoglabs.com and the links in the app and the AI prompt should move to them in the same push.
 
 name: CI
 
@@ -55,6 +57,26 @@ jobs:
           else
             echo "::notice::No CLOUDFLARE_API_TOKEN secret yet, so nothing is deployed."
           fi
+
+      # What's deployed is branded; what's checked above is the neutral build a clone gets. The kit
+      # is a private repository, read with a deploy key. Without the key this fails, so a deploy is
+      # never quietly neutral.
+      - name: Check out the brand kit
+        if: steps.cloudflare.outputs.ready == 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: softdoglabs/brandkit
+          path: .brandkit
+          ssh-key: ${{ secrets.BRANDKIT_DEPLOY_KEY }}
+          persist-credentials: false
+
+      - name: Build branded
+        if: steps.cloudflare.outputs.ready == 'true'
+        env:
+          PACER_BRAND_DIR: .brandkit
+        run: |
+          pnpm build
+          pnpm docs:build
 
       - name: Deploy the app
         if: steps.cloudflare.outputs.ready == 'true'

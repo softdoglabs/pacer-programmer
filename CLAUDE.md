@@ -1459,26 +1459,42 @@ asset requests are free on Cloudflare's free plan.
   - Not yet confirmed: that the route wins over the main site's Pages custom
     domain for that path. Test it on the first deploy.
 
-### Branding (`src/brand/vitePlugin.ts`, `TRADEMARKS.md`)
+### Branding (`src/brand/`, `TRADEMARKS.md`)
 
 The code is GPL; the Soft Dog Labs brand isn't, and is kept out of the
 repository so no fork receives a copy of it. `TRADEMARKS.md` says so, and the
 README's license section states it as an added term under GPLv3 section 7(e),
 which allows declining trademark rights. Not reviewed by a lawyer yet.
-- **The default build is neutral**: no credit, the neutral `public/favicon.svg`.
-  It's what anyone cloning the repository builds.
-- **`PACER_BRAND_DIR` names a brand kit** for a branded build: `brand.json`
-  (`name`, an https `url`; required), and optionally `logo.svg` and
-  `favicon.svg`. A kit that's named but broken fails the build, so a deploy
-  meant to be branded can't quietly go out neutral.
-- The app reads it as `virtual:brand` (null when neutral): `BrandCredit`
-  puts "by {name}" beside the app's name, with the logo, linking to the url in
-  a tab of its own. `rel="noopener"` without `noreferrer`, so the visit is seen
-  to come from the app. The docs site puts the same credit in its footer.
-- The plugin also gives the dev server read access to the kit, which lives
-  outside the repository, and serves its favicon.
-- Planned, not built: CI checking the kit out of its own private repository
-  and building with it for the deploy. Waiting on where the kit lives.
+- **Every build credits the maker** (`maker.ts`): "by Soft Dog Labs", linking to
+  softdoglabs.com, beside the app's name (`BrandCredit`) and in the docs'
+  footer. It's an author's credit, so it's code, branded or not (owner's call).
+  The link opens a tab of its own (leaving would drop unsaved edits) and is
+  `rel="noopener"` without `noreferrer`, so the visit is seen to come from here.
+- **The brand's look comes from the kit**, the private `softdoglabs/brandkit`
+  repository, when `PACER_BRAND_DIR` names a checkout of it (locally,
+  `PACER_BRAND_DIR=../brandkit`). It's read as the kit lays it out
+  (`KIT_FILES` in `vitePlugin.ts`), with no manifest of ours in it; a file it
+  needs that's missing fails the build, so a deploy meant to be branded can't go
+  out neutral. Without it: the neutral `public/favicon.svg` and VitePress's
+  stock theme.
+  - The app gets the dog mark for dark backgrounds beside the credit
+    (`virtual:brand`), and the navy app icon as favicon and home-screen icon.
+  - The docs get both marks beside the site name (light and dark), the icons,
+    and the kit's colour tokens and fonts, mapped onto VitePress's variables
+    by `docs/.vitepress/theme/brand.css` (`virtual:brand-docs.css`, empty when
+    neutral). The display face is all caps, so it's only the site name and
+    page titles.
+  - The kit's tokens follow the OS unless `data-theme` on `<html>` says
+    otherwise; the docs theme sets it from VitePress's light/dark switch. Its
+    `sdl-theme-*` classes are for sections and lose to its dark-OS rule on the
+    root, which is how a light choice on a dark OS first stayed dark.
+  - VitePress runs its own older Vite, so its plugin is cast to that Vite's
+    type in the docs config; the hooks are the same. It writes its own page
+    HTML, so the icons go in through `head`, not `transformIndexHtml`.
+- **CI checks the neutral build** (what a clone gets) and **deploys the branded
+  one**: it checks out the kit with the `BRANDKIT_DEPLOY_KEY` secret (a
+  read-only deploy key on the brandkit repository) and rebuilds both sites with
+  it. It follows the kit's main branch.
 
 ## Planned UI reorganization (agreed, not built)
 

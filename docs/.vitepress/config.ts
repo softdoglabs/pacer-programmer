@@ -13,13 +13,15 @@
 import { copyFileSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { defineConfig, type DefaultTheme } from "vitepress";
-import { BRAND_ENV, readBrandKit } from "../../src/brand/vitePlugin";
+import { MAKER } from "../../src/brand/maker";
+import { BRAND_ENV, brandDocsPlugin, iconLinks, readBrandKit } from "../../src/brand/vitePlugin";
 
 export const SITE = "https://softdoglabs.com";
 export const BASE = "/docs/pacer-programmer/";
 const REPOSITORY = "https://github.com/softdoglabs/pacer-programmer";
 /** The same optional brand kit as the app's (src/brand/vitePlugin.ts): neutral without one. */
-const brand = readBrandKit(process.env[BRAND_ENV]);
+const brandDir = process.env[BRAND_ENV];
+const brand = readBrandKit(brandDir);
 
 const DOCS = resolve(import.meta.dirname, "..");
 /** Built under its own path, so the Worker serving it finds `/docs/pacer-programmer/...` there. */
@@ -41,10 +43,6 @@ export function githubSlug(text: string): string {
     .toLowerCase()
     .replace(/[^\p{L}\p{N} _-]/gu, "")
     .replace(/ /g, "-");
-}
-
-function escapeHtml(text: string): string {
-  return text.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 }
 
 /** A relative link to a folder's README.md, as a link to the page the site builds from it. */
@@ -86,6 +84,10 @@ export default defineConfig({
   cleanUrls: true,
   rewrites: { "README.md": "index.md", ":folder/README.md": ":folder/index.md" },
   sitemap: { hostname: SITE + BASE },
+  head: iconLinks(brand, BASE).map((attrs) => ["link", attrs]),
+  // VitePress runs its own, older Vite, whose Plugin type differs from this repository's; the hooks
+  // the plugin uses are the same in both.
+  vite: { plugins: [brandDocsPlugin(brand, brandDir, resolve(import.meta.dirname, "theme/brand.css")) as never] },
 
   // `rewrites` renames the files but not the links to them, so `guide/README.md` in a page's text
   // would point at a page that isn't there. Point it at the folder's index instead.
@@ -127,8 +129,8 @@ export default defineConfig({
     search: { provider: "local" },
     socialLinks: [{ icon: "github", link: REPOSITORY }],
     editLink: { pattern: `${REPOSITORY}/edit/main/docs/:path`, text: "Edit this page on GitHub" },
-    footer: brand
-      ? { message: `Pacer Programmer by <a href="${escapeHtml(brand.url)}">${escapeHtml(brand.name)}</a>` }
-      : undefined,
+    // Credited in every build, like the app (src/brand/maker.ts); the kit adds the logo.
+    footer: { message: `Pacer Programmer by <a href="${MAKER.url}">${MAKER.name}</a>` },
+    logo: brand ? { light: "/brand/mark-light.svg", dark: "/brand/mark-dark.svg", alt: "" } : undefined,
   },
 });

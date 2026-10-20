@@ -18,5 +18,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "docs/.vitepress/config.ts"]
+  "include": ["src", "docs/.vitepress/config.ts", "docs/.vitepress/theme"]
 }

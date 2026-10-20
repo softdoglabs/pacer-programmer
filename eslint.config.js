@@ -41,7 +41,7 @@ const oneMachine = {
 };
 
 export default tseslint.config(
-  { ignores: ["dist", "build", "docs/.vitepress/cache", "src/components/ui"] },
+  { ignores: ["dist", "build", ".brandkit", "docs/.vitepress/cache", "src/components/ui"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -52,6 +52,11 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
     },
+  },
+  {
+    // The docs site's theme is Vue, where use* names a composable, not a React hook.
+    files: ["docs/.vitepress/**/*.ts"],
+    rules: Object.fromEntries(Object.keys(reactHooks.configs.recommended.rules).map((rule) => [rule, "off"])),
   },
   {
     // Tooling that runs under Node, outside the app: the docs' screenshot script.

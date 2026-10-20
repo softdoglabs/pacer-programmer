@@ -1,0 +1,54 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
+/* Copyright (C) 2026 Soft Dog Labs, LLC */
+
+/*
+ * The brand kit's tokens, mapped onto VitePress's theme variables. Only loaded in a branded build,
+ * after the kit's own colours and fonts (src/brand/vitePlugin.ts), so it names their variables but
+ * carries none of the brand itself.
+ */
+
+:root,
+.dark {
+  --vp-c-bg: var(--sdl-color-bg);
+  --vp-c-bg-alt: var(--sdl-color-surface);
+  --vp-c-bg-elv: var(--sdl-color-bg);
+  --vp-c-bg-soft: var(--sdl-color-surface);
+  --vp-c-text-1: var(--sdl-color-text);
+  --vp-c-text-2: var(--sdl-color-text-muted);
+  --vp-c-divider: var(--sdl-color-border);
+  --vp-c-border: var(--sdl-color-border-strong);
+  --vp-c-gutter: var(--sdl-color-border);
+
+  --vp-c-brand-1: var(--sdl-color-link);
+  --vp-c-brand-2: var(--sdl-color-link-hover);
+  --vp-c-brand-3: var(--sdl-color-primary);
+  --vp-c-brand-soft: var(--sdl-color-highlight);
+
+  --vp-button-brand-bg: var(--sdl-color-primary);
+  --vp-button-brand-hover-bg: var(--sdl-color-primary-hover);
+  --vp-button-brand-text: var(--sdl-color-on-primary);
+  --vp-button-brand-hover-text: var(--sdl-color-on-primary);
+
+  --vp-c-tip-1: var(--sdl-color-info);
+  --vp-c-tip-soft: var(--sdl-color-info-bg);
+  --vp-c-warning-1: var(--sdl-color-warning);
+  --vp-c-warning-soft: var(--sdl-color-warning-bg);
+  --vp-c-danger-1: var(--sdl-color-danger);
+  --vp-c-danger-soft: var(--sdl-color-danger-bg);
+}
+
+::selection {
+  background: var(--sdl-color-selection);
+}
+
+:focus-visible {
+  outline-color: var(--sdl-color-focus);
+}
+
+/* The display face is all caps and heavy, so it's for the site's name and the page titles only. */
+.VPNavBarTitle .title,
+.vp-doc h1 {
+  font-family: var(--softdog-font-display);
+  letter-spacing: 0.01em;
+  font-weight: 400;
+}

@@ -5,3 +5,4 @@ dist/
 .wrangler/
 build/
 docs/.vitepress/cache/
+.brandkit/

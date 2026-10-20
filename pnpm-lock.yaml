@@ -263,6 +263,9 @@ importers:
       vitest:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.4)(jsdom@30.1.0)(lightningcss@1.33.0)(supports-color@10.2.2)
+      vue:
+        specifier: 3.5.44
+        version: 3.5.44(typescript@5.9.3)
       wrangler:
         specifier: 4.150.0
         version: 4.150.0(@types/node@22.20.4)

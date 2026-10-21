@@ -1465,13 +1465,22 @@ asset requests are free on Cloudflare's free plan.
 - Node and pnpm are pinned (`.node-version`, `packageManager`), so CI builds what
   builds locally. pnpm refuses packages published within about a day (its
   minimum release age policy), which is why `wrangler` sits a release behind.
-- **CI** (`.github/workflows/ci.yml`): every push and pull request runs lint,
-  typecheck, format check, tests and both builds neutral, then (job `branded`)
-  the tests and both builds again with the brand kit; a push to main then
-  deploys from the branded job, so what goes out is what was just tested.
-  The deploy steps skip themselves (with a notice) until the repository has the
-  `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets, and only the
-  deploy step is given the token, so no install script can read it. Deploys use
+- **CI** (`.github/workflows/ci.yml`) is four jobs. **Checks** (lint,
+  typecheck, format check, tests and both builds, neutral) and **Branded
+  checks** (the tests and both builds with the brand kit) run side by side on
+  every push and pull request, and are the checks a pull request must pass.
+  Then **Deploy** (main) or **Preview** (a same-repository pull request) runs
+  the branded build Branded checks saved as an artifact, so what goes out is
+  exactly what was tested.
+  - Job conditions can't read secrets, so Branded checks publishes only
+    `true`/`false` for what may run, plus the preview alias (an HMAC, not the
+    key, and posted in the PR anyway). Deploy and Preview read the secrets
+    themselves, into the one step that uses each. The artifact is what the site
+    serves anyway, kept a day.
+  - Deploy is skipped (with a notice) until the repository has the
+    `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets, and only the
+    wrangler steps are given the token, so no install script can read it.
+  - Never `pull_request_target`: it gives fork PRs this repository's secrets. Deploys use
   the pinned `wrangler` from the lockfile rather than the Wrangler action.
   Checked with actionlint. The docs walkthrough and `check:map` need Chrome and
   aren't in CI yet.

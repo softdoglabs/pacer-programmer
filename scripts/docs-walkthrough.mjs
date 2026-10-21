@@ -519,8 +519,8 @@ async function tutorial4(r) {
   await r.p.cdp.send("Browser.setDownloadBehavior", { behavior: "allow", downloadPath: folder });
   await r.click(`document.querySelector('[title^="Open configurations"] button')`, "the configuration's name");
   await r.click(
-    `[...(window.__find.byText("li", "Factory defaults", { prefix: true })?.querySelectorAll("button") ?? [])].find((b) => b.textContent.trim() === "Export .syx")`,
-    "Export .syx on the Factory defaults row",
+    `[...(window.__find.byText("li", "Factory defaults", { prefix: true })?.querySelectorAll("button") ?? [])].find((b) => b.textContent.trim() === "Export")`,
+    "Export on the Factory defaults row",
   );
   const file = join(folder, "Factory defaults.syx");
   for (let i = 0; i < 50 && !(await exists(file)); i++) await wait(100);
@@ -530,9 +530,9 @@ async function tutorial4(r) {
   if (!exported.equals(factory)) r.fail("the exported factory defaults aren't the factory dump byte for byte");
   await r.key("Escape");
 
-  r.at("Bring in the presets it changed");
+  r.at("Merge the presets it changed");
   // The assistant's part, done from the format page alone: scripts/docs-ai-example.mjs. Then
-  // Import presets… in the drawer, whose file picker is a file input.
+  // Pick presets from a file… in the drawer, whose file picker is a file input.
   const pick = async (input, fixture) => {
     await r.click(`document.querySelector('[title^="Open configurations"] button')`, "the configuration's name");
     const { root } = await r.p.cdp.send("DOM.getDocument");
@@ -545,7 +545,7 @@ async function tutorial4(r) {
   };
   const ticked = () =>
     r.p.eval(
-      `[...document.querySelectorAll('ul[aria-label="Presets in the file"] li')].filter((li) => li.querySelector("input").checked).map((li) => li.textContent.match(/[A-D][1-6]/)[0])`,
+      `[...document.querySelectorAll('ul[aria-label="Presets to merge"] li')].filter((li) => li.querySelector("input").checked).map((li) => li.textContent.match(/[A-D][1-6]/)[0])`,
     );
   const changed = `d.editing.changedPresets(d.factory.loadFactoryDefaults(), s.board.config)`;
 
@@ -553,7 +553,7 @@ async function tutorial4(r) {
   await pick("File to import", "ai-looper-presets.syx");
   await r.expectText("holds 2 of the Pacer's 24 presets");
   if (JSON.stringify(await ticked()) !== '["A1","C1"]') r.fail("expected A1 and C1 ticked for the partial file");
-  await r.button("Bring in 2 presets");
+  await r.button("Merge 2 presets");
   await wait(400);
   await r.expect(changed, [1, 13], "the presets the partial file changed");
   await r.p.app(`window.__fromPartial = d.store.getState().board.config;`);
@@ -562,10 +562,10 @@ async function tutorial4(r) {
   await r.expect(changed, [], "the presets changed after undo");
 
   // The whole dump: 24 presets listed, the two that differ first and ticked.
-  await pick("File to import presets from", "ai-looper.syx");
-  await r.expectText("ai-looper.syx is a whole configuration");
+  await pick("File to merge presets from", "ai-looper.syx");
+  await r.expectText("Tick the presets from ai-looper.syx to merge");
   if (JSON.stringify(await ticked()) !== '["A1","C1"]') r.fail("expected A1 and C1 ticked for the whole dump");
-  await r.button("Bring in 2 presets");
+  await r.button("Merge 2 presets");
   await wait(400);
   await r.expect(changed, [1, 13], "the presets the dump changed");
   await r.expect(`s.configSource`, "Factory defaults", "the open configuration, still");

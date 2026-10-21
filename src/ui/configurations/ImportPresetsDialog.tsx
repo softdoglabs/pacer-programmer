@@ -10,10 +10,11 @@ import { presetIndexToLabel } from "@/pacer/protocol/constants";
 import { usePacerStore } from "../../store/pacerStore";
 
 /*
- * Bringing presets in from a file, into the configuration that's open.
+ * Merging presets into the configuration that's open, from a file or from a saved configuration.
  *
  * Opening a file replaces everything; this adds to what's there. It's for a file that isn't a whole
- * configuration — two presets an AI wrote, say — and for taking a few presets out of one that is.
+ * configuration — two presets an AI wrote, say — and for taking a few presets out of one that is,
+ * on disk or in the list.
  * Either way it's an ordinary edit: undoable, unsaved until saved, and the presets it changed show
  * up as changed wherever that's marked, Send's "Changed" included.
  *
@@ -22,9 +23,15 @@ import { usePacerStore } from "../../store/pacerStore";
  */
 
 export interface PresetFileChoice {
-  fileName: string;
+  /** The file's name, or the saved configuration's. */
+  name: string;
+  /** Where the presets come from, which only changes the wording. */
+  from: "file" | "saved";
   file: PresetFile;
 }
+
+/** A file by its name, a saved configuration in quotes. */
+const quoted = (c: PresetFileChoice) => (c.from === "file" ? c.name : `“${c.name}”`);
 
 export function ImportPresetsDialog({
   choice,
@@ -40,16 +47,17 @@ export function ImportPresetsDialog({
     <ModalDialog
       isOpen={choice !== undefined}
       onOpenChange={(open) => !open && onClose()}
-      title={choice ? `Bring presets in from ${choice.fileName}` : ""}
+      title={choice ? `Merge presets from ${quoted(choice)}` : ""}
     >
       {/* Keyed so a second file starts from its own ticks rather than the last one's. */}
-      {choice && <Form key={choice.fileName} choice={choice} onClose={onClose} onDone={onDone} />}
+      {choice && <Form key={`${choice.from}:${choice.name}`} choice={choice} onClose={onClose} onDone={onDone} />}
     </ModalDialog>
   );
 }
 
 function Form({ choice, onClose, onDone }: { choice: PresetFileChoice; onClose: () => void; onDone: () => void }) {
-  const { file, fileName } = choice;
+  const { file } = choice;
+  const source = quoted(choice);
   const config = usePacerStore((s) => s.board.config);
   const configSource = usePacerStore((s) => s.configSource);
   const applyEdit = usePacerStore((s) => s.applyEdit);
@@ -74,13 +82,13 @@ function Form({ choice, onClose, onDone }: { choice: PresetFileChoice; onClose: 
     <div className="space-y-3 text-sm">
       <p className="text-muted-foreground">
         {file.whole
-          ? `${fileName} is a whole configuration. Tick the presets to bring into “${configSource}”; the ones that differ from it are ticked.`
-          : `${fileName} holds ${file.presets.length} of the Pacer's 24 presets, so it's brought into “${configSource}” rather than opened by itself.`}{" "}
-        Each preset is written over the one in the same slot, and anything the file doesn't say about that preset stays
+          ? `Tick the presets from ${source} to merge into the open configuration, “${configSource}”. The ones that differ from it are ticked.`
+          : `${source} holds ${file.presets.length} of the Pacer's 24 presets, so they're merged into the open configuration, “${configSource}”, rather than opened by themselves.`}{" "}
+        Each preset is written over the one in the same slot, and anything {source} doesn't say about that preset stays
         as it is.
       </p>
 
-      <ul className="max-h-72 space-y-1 overflow-auto rounded-md border p-2" aria-label="Presets in the file">
+      <ul className="max-h-72 space-y-1 overflow-auto rounded-md border p-2" aria-label="Presets to merge">
         {listed.map((i) => {
           const changes = differing.includes(i);
           const renamed = merged.presets[i]?.name?.trim() !== config.presets[i]?.name?.trim();
@@ -112,9 +120,7 @@ function Form({ choice, onClose, onDone }: { choice: PresetFileChoice; onClose: 
         })}
       </ul>
 
-      {file.hasGlobals && (
-        <p className="text-xs text-muted-foreground">The file's global settings aren't brought in, only presets.</p>
-      )}
+      {file.hasGlobals && <p className="text-xs text-muted-foreground">Global settings aren't merged, only presets.</p>}
       <p className="text-xs text-muted-foreground">
         Nothing reaches the Pacer until you send it, and one undo takes all of this back.
       </p>
@@ -130,7 +136,7 @@ function Form({ choice, onClose, onDone }: { choice: PresetFileChoice; onClose: 
             onDone();
           }}
         >
-          Bring in {chosen.length === 1 ? "1 preset" : `${chosen.length} presets`}
+          Merge {chosen.length === 1 ? "1 preset" : `${chosen.length} presets`}
         </Button>
       </div>
     </div>

@@ -501,7 +501,7 @@ Whether you're a person with a hex editor or an AI with a script:
 A correct preset written in full is 189 messages. Writing fewer is fine for
 changing a few fields of a preset that's already there: the Pacer sets what
 each message addresses and keeps everything else, and Pacer Programmer's
-**Import presets…** reads a file the same way. So a file can hold just the
+**Pick presets from a file…** reads a file the same way. So a file can hold just the
 presets you changed. A file that's meant to be opened as a whole configuration
 by itself needs every message.
 

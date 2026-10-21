@@ -12,7 +12,7 @@ import { goBack } from "./appHistory";
 import { PullControls } from "./configurations/DeviceControls";
 import { ImportPresetsDialog, type PresetFileChoice } from "./configurations/ImportPresetsDialog";
 import { factoryDefaultBytes } from "../pacer/factoryDefaults";
-import { EntryRow, ExportButton, OpenArea, rowClass, type Guard } from "./configurations/EntryRow";
+import { EntryRow, ExportButton, MergeButton, OpenArea, rowClass, type Guard } from "./configurations/EntryRow";
 
 /** Saved configurations: pull from a Pacer or import files, then switch between snapshots. */
 export function ConfigurationsPanel() {
@@ -33,6 +33,7 @@ export function ConfigurationsPanel() {
   const guard: Guard = (action) => (unsaved ? setPending(() => action) : action());
   const presetsInputRef = useRef<HTMLInputElement>(null);
   const setDrawerOpen = usePacerStore((s) => s.setDeviceDrawerOpen);
+  const savedConfigBytes = usePacerStore((s) => s.savedConfigBytes);
   // A file whose presets are being brought into the open configuration, and why one couldn't be.
   const [presetFile, setPresetFile] = useState<PresetFileChoice>();
   const [presetFileError, setPresetFileError] = useState<string>();
@@ -56,7 +57,7 @@ export function ConfigurationsPanel() {
      */
     try {
       const file = readPresetFile(chosen.bytes);
-      if (!file.whole && file.presets.length > 0) return setPresetFile({ fileName: chosen.name, file });
+      if (!file.whole && file.presets.length > 0) return setPresetFile({ name: chosen.name, from: "file", file });
     } catch {
       // Reported by the import below.
     }
@@ -69,15 +70,27 @@ export function ConfigurationsPanel() {
     try {
       const file = readPresetFile(chosen.bytes);
       if (file.presets.length === 0) return setPresetFileError(`${chosen.name} has no presets in it.`);
-      setPresetFile({ fileName: chosen.name, file });
+      setPresetFile({ name: chosen.name, from: "file", file });
     } catch (err) {
       setPresetFileError(`Couldn't read ${chosen.name}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
+  /** A saved configuration's presets, offered for merging like a file's. */
+  function mergeFrom(name: string, bytes: Uint8Array) {
+    setPresetFileError(undefined);
+    try {
+      setPresetFile({ name, from: "saved", file: readPresetFile(bytes) });
+    } catch (err) {
+      setPresetFileError(`Couldn't read “${name}”: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   return (
     <div className="space-y-3">
+      {/* Two kinds of bringing in, so each is headed by where it puts things. */}
       <div className="flex flex-wrap items-center gap-2">
+        <span className="w-full text-xs text-muted-foreground">New configuration</span>
         <Button
           size="sm"
           isDisabled={!canPull || pull.status === "pulling" || sending}
@@ -93,10 +106,10 @@ export function ConfigurationsPanel() {
         <Button
           size="sm"
           variant="outline"
-          title="Open a .syx dump from a file as a new snapshot. A file with only some presets is brought into the open configuration instead."
+          title="Open a .syx dump from a file as a new snapshot. A file with only some presets is merged into the open configuration instead."
           onPress={() => fileInputRef.current?.click()}
         >
-          Import .syx
+          Import config…
         </Button>
         <input
           ref={fileInputRef}
@@ -106,22 +119,28 @@ export function ConfigurationsPanel() {
           aria-label="File to import"
           onChange={handleFile}
         />
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="w-full truncate text-xs text-muted-foreground">
+          Merge presets into the open configuration, “{configSource}”
+        </span>
         <Button
           size="sm"
           variant="outline"
-          title="Bring some or all of a .syx file's presets into the open configuration, keeping the rest of it"
+          title="Choose presets from a .syx file to merge into the open configuration, as edits you can undo"
           onPress={() => presetsInputRef.current?.click()}
         >
-          Import presets…
+          Pick presets from a file…
         </Button>
         <input
           ref={presetsInputRef}
           type="file"
           accept=".syx"
           className="hidden"
-          aria-label="File to import presets from"
+          aria-label="File to merge presets from"
           onChange={handlePresetsFile}
         />
+        <span className="text-xs text-muted-foreground">or from a configuration below.</span>
       </div>
       <PullControls />
       {presetFileError && <p className="text-xs text-destructive">{presetFileError}</p>}
@@ -140,10 +159,23 @@ export function ConfigurationsPanel() {
             active={activeConfigId === undefined}
             onOpen={() => guard(openFactoryDefaults)}
           />
-          <ExportButton fileName="Factory defaults" bytes={factoryDefaultBytes} />
+          <div className="flex gap-1">
+            {activeConfigId !== undefined && (
+              <MergeButton
+                name="Factory defaults"
+                onMerge={() => mergeFrom("Factory defaults", factoryDefaultBytes())}
+              />
+            )}
+            <ExportButton fileName="Factory defaults" bytes={factoryDefaultBytes} />
+          </div>
         </li>
         {library.entries.map((entry) => (
-          <EntryRow key={entry.id} entry={entry} guard={guard} />
+          <EntryRow
+            key={entry.id}
+            entry={entry}
+            guard={guard}
+            onMerge={() => mergeFrom(entry.name, savedConfigBytes(entry.id))}
+          />
         ))}
       </ul>
       <ImportPresetsDialog

@@ -24,13 +24,13 @@ to open the drawer:
 | | Part | What it does |
 |---|---|---|
 | 1 | Pull from Pacer | Reads everything on the Pacer into a new snapshot and opens it. Nothing on the device changes. |
-| 2 | Import .syx | Opens a `.syx` file as a new snapshot. |
-| 3 | Import presets… | Brings presets from a `.syx` file into the configuration that's open, and keeps the rest of it. |
+| 2 | Import config… | Opens a `.syx` file as a new snapshot. |
+| 3 | Pick presets from a file… | Merges the presets you choose from a `.syx` file into the configuration that's open, and keeps the rest of it. |
 | 4 | Pacer ports | The Pacer's MIDI input and output. The app picks any port with "Pacer" in its name; if yours is named differently, choose them by hand. |
 | 5 | Firmware | What the Pacer says when asked who it is. The app asks automatically whenever its ports show up. |
 | 6 | Factory defaults | The Pacer's factory configuration, built into the app. It's always there and can't be changed, so edits to it are saved as a new snapshot. You can export it like any other. |
-| 7 | The open configuration | Highlighted. Click any other row to open that configuration instead. |
-| 8 | Rename, Export .syx, Delete | One set for each snapshot (the factory defaults only have Export). Delete asks you to click again to confirm. |
+| 7 | The open configuration | Highlighted. Click any other row to open that configuration instead. The pencil beside a snapshot's name renames it (or press F2 on the name). |
+| 8 | Pick presets from this…, Export, Delete | **Pick presets from this…** merges presets you choose from that configuration into the open one (every row but the open one has it). **Export** downloads it as a `.syx` file. The trash can deletes a snapshot, and asks you to click again to confirm. The factory defaults can't be deleted or renamed. |
 
 Until you've granted MIDI access, the drawer shows a **Connect MIDI** button
 where the ports would be.
@@ -51,32 +51,32 @@ version at all.
 
 ### Importing and Exporting Files
 
-**Import .syx** takes any full Pacer dump, whether it was saved by this app, by
+**Import config…** takes any full Pacer dump, whether it was saved by this app, by
 Nektar's editor, by a MIDI utility, or written by hand or by an AI (see
 [Working with an AI](../guide/working-with-ai.md)). It becomes a new snapshot,
 and the original file isn't touched.
 
-**Export .syx** on a snapshot's row downloads it as a `.syx` file. Those are the
+**Export** on a snapshot's row downloads it as a `.syx` file. Those are the
 same bytes the Pacer would send in a dump, so any SysEx tool can send it back
 to the Pacer. To export your edits, save them first and then export the
 snapshot.
 
-### Importing Some of a File's Presets
+### Merging Presets into the Open Configuration
 
 A `.syx` file doesn't have to be a whole dump. It's a list of messages, and
 each one sets a few fields of one preset, so a file can hold two presets, or
 just one switch of one preset. That's often what an AI gives you when you ask
 it to write a preset.
 
-**Import presets…** brings a file's presets into the configuration you have
-open, where **Import .syx** would open the file in its place. Pick a file and
-it lists the presets in it:
+**Pick presets from a file…** merges a file's presets into the configuration
+you have open, where **Import config…** would open the file in its place. Pick
+a file and it lists the presets in it:
 
-![Import presets: the two presets that differ are ticked, and the rest are listed as the same](../images/import-presets.png)
+![Merging presets: the two presets that differ are ticked, and the rest are listed as the same](../images/import-presets.png)
 
 The presets that differ from what you have open come first, already ticked.
 With a whole dump that an AI changed two presets of, those two are the ones
-ticked. Untick any you don't want and click **Bring in**.
+ticked. Untick any you don't want and click **Merge**.
 
 Each preset is written over the one in the same slot. If the file only sets
 part of a preset, the rest of that preset stays as it was, which is exactly
@@ -86,13 +86,17 @@ are left out.
 A preset you've edited since opening the configuration is marked. The file may
 have an older version of it, so untick it if you'd rather keep your edit.
 
-Bringing presets in is an edit like any other. You can undo it, it's unsaved
+Merging presets is an edit like any other. You can undo it, it's unsaved
 until you save, and the presets it changed are the ones **Send to Pacer…**
 offers to write.
 
-If you pick a file with only some presets in it for **Import .syx**, you get
-the same list, since a file like that can't stand as a configuration by
+If you pick a file with only some presets in it for **Import config…**, you
+get the same list, since a file like that can't stand as a configuration by
 itself.
+
+**Pick presets from this…** on a row of the list does the same with a saved
+configuration instead of a file, so you can take a preset or two from another
+snapshot, or put back a factory preset, without opening it.
 
 If a file isn't a Pacer dump, or it's damaged, the import is refused and you're
 told why. The app checks every message's framing and checksum. What a valid

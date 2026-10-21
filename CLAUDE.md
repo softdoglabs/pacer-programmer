@@ -1257,7 +1257,10 @@ no hover-only UI, for tablets.
     localStorage. It holds the raw SysEx bytes as received, plus name,
     source, date and preset count.
   - Snapshots can be opened, renamed, exported as `.syx`, or deleted. The
-    built-in factory defaults are always listed, and export like any other
+    row's name opens it (stretched over the row); renaming is a small pencil
+    beside the name (or F2), since it's rare and a Rename button took a whole
+    column; Delete is a trash can that turns into "Confirm delete" for 3 s.
+    The built-in factory defaults are always listed, and export like any other
     row (the fixture's bytes as captured, `factoryDefaultBytes`), since
     they're the natural starting point for handing a dump to an AI.
   - The last-opened configuration is reopened on reload.
@@ -1266,10 +1269,17 @@ no hover-only UI, for tablets.
     5 MB (~25 dumps).
   - Edits are saved as new snapshots or over the open one (see Save
     above); sending to the device is separate (see Send to Pacer).
-- **Bringing presets in from a file** (`editing/mergePresets.ts`,
+- **Merging presets into the open configuration** (`editing/mergePresets.ts`,
   `ui/configurations/ImportPresetsDialog.tsx`): a `.syx` needn't be a whole
   dump — an AI asked for one preset writes one preset — and opening such a
   file as a configuration would leave it 23 presets short.
+  - **"Merge" is the word for this everywhere, and "import" only for a new
+    configuration** (owner's call, 2026-10-21). The drawer heads its buttons
+    by where things land: *New configuration* (Pull from Pacer, Import
+    config…) and *Merge presets into the open configuration* (Pick presets
+    from a file…). The buttons say "pick", since you choose which presets.
+    "Import presets…" beside "Import .syx" didn't say which one adds to the
+    list and which edits what's open.
   - **Read the way the Pacer reads it: a message sets what it addresses and
     nothing else.** `mergePresets` writes each chosen preset over the one in
     the same slot, field by field, so a preset the file doesn't mention is
@@ -1281,9 +1291,14 @@ no hover-only UI, for tablets.
     Send's "Changed" show. No new snapshot, no new session.
   - Only the 24 user presets. Current (idx 0) and global settings in the file
     are left out, as Send leaves them out.
-  - Two ways in. **Import presets…** takes any file. **Import .syx** given a
-    file that doesn't address all 24 presets (`PresetFile.whole`) opens the
-    same dialog rather than a broken configuration.
+  - Three ways in. **Pick presets from a file…** takes any file. **Import
+    config…** given a file that doesn't address all 24 presets
+    (`PresetFile.whole`) opens the same dialog rather than a broken
+    configuration. **Pick presets from this…** on any row of the list but the
+    open one uses that saved configuration as the source (the factory
+    defaults included, which is how to put back one factory preset). It
+    names the row as the source, like "from a file" beside it: "Pick presets
+    to merge…" read as merging into that row (owner's catch).
   - **The dialog ticks the presets that would actually change**
     (`presetsMergeWouldChange`) and lists them first, so a whole dump an AI
     changed two presets of offers those two without anyone naming them. It
@@ -1294,9 +1309,9 @@ no hover-only UI, for tablets.
   - The `import-presets` screenshot scene runs it in the real app on
     `fixtures/ai-looper.syx` and fails unless exactly A1 and C1 change.
   - **Tutorial 4 works this way**, and the walkthrough follows it with both
-    of the AI example's files: the whole dump through Import presets…, and
-    `fixtures/ai-looper-presets.syx` (only the 66 messages the example
-    changed) through Import .syx. Both must come to the same A1 and C1.
+    of the AI example's files: the whole dump through Pick presets from a
+    file…, and `fixtures/ai-looper-presets.syx` (only the 66 messages the
+    example changed) through Import config…. Both must come to the same A1 and C1.
 - **Expression pedals are swept, not pressed**: a `BoardEvent` carries a
   `position` (0 = heel, 1 = toe) and a "move" phase, and where each pedal
   sits is device state (`BoardState.pedals`), not component state — a

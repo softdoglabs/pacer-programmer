@@ -11,6 +11,7 @@ import { loadFactoryDefaults } from "../../pacer/factoryDefaults";
 import { renamePreset } from "../../pacer/editing";
 import { usePacerStore } from "../../store/pacerStore";
 import { App } from "../../App";
+import { TOUCH_SETTLE_MS } from "../useSettledPress";
 
 function hold(el: Element) {
   fireEvent.keyDown(el, { key: " " });
@@ -184,12 +185,82 @@ describe("Faceplate (factory defaults)", () => {
     const preset = screen.getByRole("button", { name: /^Preset button/ });
     const touch = { pointerId: 2, pointerType: "touch", button: 0, width: 20, height: 20, pressure: 0.5 };
     fireEvent.pointerDown(preset, touch);
-    act(() => vi.advanceTimersByTime(PRESET_HOLD_MS));
+    // A touch goes down once it has settled (useSettledPress), and the hold runs from there.
+    act(() => vi.advanceTimersByTime(TOUCH_SETTLE_MS + PRESET_HOLD_MS));
     fireEvent.pointerUp(preset, touch);
     act(() => vi.advanceTimersByTime(100)); // React Aria's synthetic-click fallback
     vi.useRealTimers();
     expect(display()).toBe("A-");
     expect(usePacerStore.getState().deviceMode.presetButtonDown).toBe(false);
+  });
+
+  // A swipe across the faceplate on a phone starts on a switch. The browser takes a moving finger
+  // as a scroll and cancels the press (pointercancel), which must leave nothing behind.
+  describe("by touch, a drag to scroll is never a press", () => {
+    const touch = { pointerId: 3, pointerType: "touch", button: 0, width: 20, height: 20, pressure: 0.5 };
+    const sent = () => screen.getByRole("log").textContent ?? "";
+    // The store outlives a test; the rest of the file expects Simulate.
+    afterEach(() => {
+      vi.useRealTimers();
+      act(() => usePacerStore.getState().setUiMode("simulate"));
+    });
+
+    it("a quick tap presses and releases the switch", () => {
+      vi.useFakeTimers();
+      render(<App />);
+      const sw1 = switchButton("1");
+      fireEvent.pointerDown(sw1, touch);
+      act(() => vi.advanceTimersByTime(50));
+      fireEvent.pointerUp(sw1, touch);
+      act(() => vi.advanceTimersByTime(100));
+      vi.useRealTimers();
+      expect(sent()).toContain("Program Change 0");
+      expect(sw1.getAttribute("aria-pressed")).toBe("false");
+    });
+
+    it("a finger held still goes down once it has settled, and up when it lifts", () => {
+      vi.useFakeTimers();
+      render(<App />);
+      const sw1 = switchButton("1");
+      fireEvent.pointerDown(sw1, touch);
+      act(() => vi.advanceTimersByTime(TOUCH_SETTLE_MS - 1));
+      expect(sent()).not.toContain("Program Change 0");
+      act(() => vi.advanceTimersByTime(1));
+      expect(sent()).toContain("Program Change 0");
+      fireEvent.pointerUp(sw1, touch);
+      act(() => vi.advanceTimersByTime(100));
+      vi.useRealTimers();
+      expect(sw1.getAttribute("aria-pressed")).toBe("false");
+    });
+
+    it("a touch the browser takes for a scroll sends nothing", () => {
+      vi.useFakeTimers();
+      render(<App />);
+      const sw1 = switchButton("1");
+      fireEvent.pointerDown(sw1, touch);
+      act(() => vi.advanceTimersByTime(60));
+      fireEvent.pointerCancel(sw1, touch);
+      act(() => vi.advanceTimersByTime(TOUCH_SETTLE_MS * 2));
+      vi.useRealTimers();
+      expect(sent()).not.toContain("Program Change 0");
+      expect(usePacerStore.getState().selectedControlId).toBeUndefined();
+    });
+
+    it("in Program mode, a tap opens the switch and a scroll doesn't", () => {
+      act(() => usePacerStore.getState().setUiMode("program"));
+      vi.useFakeTimers();
+      render(<App />);
+      fireEvent.pointerDown(switchButton("1"), touch);
+      act(() => vi.advanceTimersByTime(60));
+      fireEvent.pointerCancel(switchButton("1"), touch);
+      act(() => vi.advanceTimersByTime(TOUCH_SETTLE_MS * 2));
+      expect(usePacerStore.getState().selectedControlId).toBeUndefined();
+      fireEvent.pointerDown(switchButton("1"), touch);
+      fireEvent.pointerUp(switchButton("1"), touch);
+      act(() => vi.advanceTimersByTime(100));
+      vi.useRealTimers();
+      expect(usePacerStore.getState().selectedControlId).toBeDefined();
+    });
   });
 
   it("a mouse click on a switch presses and releases it", () => {

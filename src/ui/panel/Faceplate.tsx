@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Soft Dog Labs, LLC
 
-import { usePress } from "react-aria";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { panelRow, type SwitchSpec } from "@/pacer/hardware";
 import { checkPresetName, renamePreset } from "@/pacer/editing";
@@ -14,6 +13,7 @@ import { PresetChooser } from "../PresetChooser";
 import { usePacerStore } from "@/store/pacerStore";
 import { useStateOfPreset } from "../useMachine";
 import { useControlPress } from "../useControlPress";
+import { useSettledPress } from "../useSettledPress";
 import { EditBadge, PresetBadge } from "./EditBadge";
 import { HOUSING_H, HOUSING_W, SwitchView } from "./SwitchView";
 
@@ -78,7 +78,8 @@ function PresetPanelSwitch({ spec, state, hint }: PanelSwitchProps) {
   const onPressEnd = usePacerStore((s) => s.presetButtonUp);
   // [Preset] isn't programmable, so in Edit mode it does nothing.
   const editing = usePacerStore((s) => s.uiMode === "program");
-  const { pressProps } = usePress({ onPressStart, onPressEnd, isDisabled: editing });
+  // Settled, like the other switches: a swipe across the faceplate that starts here isn't a tap.
+  const { pressProps } = useSettledPress({ onDown: onPressStart, onUp: onPressEnd, isDisabled: editing });
   return (
     <SwitchView
       spec={spec}

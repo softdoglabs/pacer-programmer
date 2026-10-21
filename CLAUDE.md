@@ -799,9 +799,20 @@ no hover-only UI, for tablets.
   scroll the page across rear jacks that fill it. It was `touch-none`, which
   made both impossible by touch alone (found by the owner on a phone). A tap or
   a finger held still still reaches the switch; one that moves scrolls.
+- **A drag to scroll is never a press** (owner's rule; `ui/useSettledPress.ts`).
+  A touch acts only once it has settled: still for `TOUCH_SETTLE_MS` (150ms) it
+  goes down, lifted sooner it's a tap (down and up together), and moved, the
+  browser scrolls and cancels it, so nothing fires. Mouse, pen and keyboard go
+  down at once. In Program mode a switch opens on a completed press (`onTap`),
+  never on press start, by touch or by mouse. Before this, presses acted on
+  touch start, so a swipe across the faceplate sent the switch it started on,
+  or opened it for editing. The [Preset] hold runs from the settle, so by touch
+  it's 2.15s.
   **`pnpm check:touch`** (`scripts/touch-check.mjs`) drives a 390px phone by
-  touch in headless Chrome and fails if either swipe stops scrolling, or a tap
-  or the [Preset] hold stops working. jsdom can't test any of this.
+  touch in headless Chrome and fails if either swipe stops scrolling, a tap or
+  the [Preset] hold stops working, or a drag that starts on a switch or its
+  pencil presses it or opens it. jsdom can't scroll, but `Faceplate.test.tsx`
+  checks the settle rules with pointer events and a cancel.
 - **Phone and tablet widths** (measured, 2026-10-20): the faceplate shrinks to
   640px (`--faceplate-min`), so it fits any tablet and scrolls on a phone (owner's
   call). The switch editor keeps its close button top right at every width; the

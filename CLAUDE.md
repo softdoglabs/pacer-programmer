@@ -703,8 +703,18 @@ with `editing` and `analysis` alongside, both depending on `protocol` only.
       its target is current), which the A-bar observation disproved. It
       also removed a special case for factory A-D resting dark; the light
       roles now explain that.
+    - **A held switch shows On, whatever its value**, and goes back to its
+      value state when let go: a momentary light, not a state change.
+      Owner-observed on factory D6 (SEQNC), whose sequenced CC Trigger,
+      Program Change and Note steps light on press and dim on release though
+      none is ever On by value when it shows (the model used to keep them dim
+      throughout). Preset navigation keeps its roles while held, and a step
+      following incoming MIDI isn't treated as held.
     - Unknown: Preset Select whose target is the current preset, and
-      explicit colors on a Track/Transport selector.
+      explicit colors on a Track/Transport selector. Also which step a held
+      Sequence switch shows: the sequence pointer may already be on the next
+      step, so a sequence with a different color per step would light the
+      next step's color while held. D6 can't tell, since its steps share one.
   - `userPresetLights` applies that model to each showing step, lighting
     the indicator its LED num selects. Every light is RGB, legends
     included, so the step's own color is what shows; a legend's printed ink

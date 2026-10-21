@@ -36,6 +36,11 @@ So a CC Toggle with green and red is green while its effect is on and red
 while it's off. It stays that way when you change preset and come back,
 because the Pacer remembers the CC's value.
 
+Holding a switch down shows its first colour, whatever the table says, and
+letting go puts it back. That's how the factory SEQNC preset (D6) lights up on
+each press even though its lights rest dim. Preset Select and Inc/Dec keep their
+own lights while held.
+
 ## Default, Off and the Palette
 
 ![The colour picker](../images/colour-picker.png)

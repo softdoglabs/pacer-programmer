@@ -34,13 +34,18 @@ export function App() {
       {/* The switch glow filters, at the app root: a switch is also drawn in the editor, where the
           faceplate isn't on screen, and an element referencing a missing filter isn't drawn at all. */}
       <FaceplateDefs />
-      <header className="flex flex-wrap items-center gap-3 px-4 py-2.5">
+      {/* One row where there's room (xl). Narrower, the configuration and the modes move to a row of
+          their own beneath, so the device slot keeps the top-right corner instead of wrapping to
+          wherever there's space. */}
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
         <AppTitle />
-        <ConfigurationButton />
-        <ModeBar />
+        <div className="order-3 flex w-full flex-wrap items-center gap-3 xl:order-none xl:w-auto">
+          <ConfigurationButton />
+          <ModeBar />
+        </div>
         {/* MIDI access is one grant for the whole app, so it's asked for here, not per mode. */}
         {/* The device slot: asks for MIDI access, then shows whether the Pacer is there. */}
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="order-2 ml-auto flex flex-wrap items-center gap-2 xl:order-none">
           <DocsLink />
           <MidiAccessControl />
         </div>

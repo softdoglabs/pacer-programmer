@@ -1,0 +1,26 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
+/* Copyright (C) 2026 Soft Dog Labs, LLC */
+
+/*
+ * The docs' own styles, branded or not (brand.css is the kit's, and only in a branded build).
+ *
+ * The top bar's link to the app (config.ts, `nav`) as a button, so someone who lands on a page from
+ * a search sees where the app itself is. VitePress gives nav links no class of their own, so it's
+ * found by its address. The colours are VitePress's brand button's, which the kit sets when there's
+ * one.
+ */
+.VPNavBarMenu .VPNavBarMenuLink[href^="https://pacer-programmer.softdoglabs.com"] {
+  align-self: center;
+  margin-left: 8px;
+  padding: 0 14px;
+  border-radius: 16px;
+  line-height: 32px;
+  background-color: var(--vp-button-brand-bg);
+  color: var(--vp-button-brand-text);
+  transition: background-color 0.25s;
+}
+
+.VPNavBarMenu .VPNavBarMenuLink[href^="https://pacer-programmer.softdoglabs.com"]:hover {
+  background-color: var(--vp-button-brand-hover-bg);
+  color: var(--vp-button-brand-hover-text);
+}

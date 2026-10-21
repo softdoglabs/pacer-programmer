@@ -10,3 +10,6 @@
 export const DOCS_SITE = "https://softdoglabs.com";
 export const DOCS_BASE = "/docs/pacer-programmer/";
 export const DOCS_URL = DOCS_SITE + DOCS_BASE;
+
+/** Where the app itself is, which every docs page links to from its top bar. */
+export const APP_URL = "https://pacer-programmer.softdoglabs.com/";

@@ -65,7 +65,9 @@ function FootswitchControl({ controlId, live }: { controlId: number; live: boole
       title={title}
       aria-label={`${live ? "Try" : "Switch"} ${controlLabel(controlId)}`}
       className={cn(
-        "h-full touch-none rounded-md text-left outline-none select-none",
+        // Touches may pan, as on the faceplate: on a phone these cards fill the width, and a swipe
+        // on them has to scroll the page.
+        "h-full touch-pan-x touch-pan-y rounded-md text-left outline-none select-none",
         "ring-focus",
         pressed && "translate-y-px",
       )}

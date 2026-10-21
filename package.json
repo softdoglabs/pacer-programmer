@@ -18,6 +18,7 @@
     "docs:screenshots": "node scripts/docs-screenshots.mjs",
     "docs:walkthrough": "node scripts/docs-walkthrough.mjs",
     "check:map": "node scripts/map-check.mjs",
+    "check:touch": "node scripts/touch-check.mjs",
     "deploy:app": "pnpm build && wrangler deploy",
     "docs:build": "vitepress build docs && node scripts/docs-site-check.mjs",
     "docs:dev": "vitepress dev docs",

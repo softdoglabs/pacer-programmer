@@ -321,9 +321,11 @@ export function Faceplate() {
     </PanelCell>
   );
 
+  // Touches may pan (pan-x pan-y), so a phone can scroll a faceplate wider than its screen; a tap or
+  // a held finger still reaches the switch. touch-none here made the faceplate unscrollable by touch.
   return (
     <div
-      className="@container w-full touch-none rounded-[2%] bg-[#3a3b3e] p-[1.2cqw] select-none"
+      className="@container w-full touch-pan-x touch-pan-y rounded-[2%] bg-[#3a3b3e] p-[1.2cqw] select-none"
       role="group"
       aria-label={editing ? "Pacer faceplate (editing: tap a switch to program it)" : "Pacer faceplate"}
     >

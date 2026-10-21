@@ -88,7 +88,7 @@ describe("Faceplate (factory defaults)", () => {
     expect(within(list).getByText(/Imported gig-rig.syx .* 24 presets$/)).toBeTruthy(); // no firmware for files
 
     // Rename inline.
-    fireEvent.click(within(list).getByRole("button", { name: "Rename" }));
+    fireEvent.click(within(list).getByRole("button", { name: /^Rename “gig-rig”/ }));
     const input = within(list).getByRole("textbox", { name: "Configuration name" });
     fireEvent.change(input, { target: { value: "Friday gig" } });
     fireEvent.keyDown(input, { key: "Enter" });

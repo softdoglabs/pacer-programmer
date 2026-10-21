@@ -31,12 +31,27 @@ export function EditBadge({
   onPress?: () => void;
   label?: string;
   className?: string;
-  /** "small" sits beside the thing it edits rather than on a control's corner. */
-  size?: "default" | "small";
+  /**
+   * "small" sits beside the thing it edits rather than on a control's corner. "inline" sits in a
+   * line of text, a rounded square the size of the font rather than a disc, since it isn't on
+   * hardware and needn't stand out from it. It's too small for a finger, so a pseudo-element
+   * around it takes taps for 10px on every side.
+   */
+  size?: "default" | "small" | "inline";
 }) {
-  const small = size === "small";
-  const badgeClass = cn(BADGE_CLASS, small && "size-6 shadow-md ring-1", className);
-  const icon = <Pencil className={small ? "size-3.5" : "size-5"} strokeWidth={2.5} />;
+  const badgeClass = cn(
+    BADGE_CLASS,
+    size === "small" && "size-6 shadow-md ring-1",
+    size === "inline" &&
+      "relative right-0 bottom-0 size-[1em] rounded-[3px] shadow-none ring-0 before:absolute before:-inset-2.5",
+    className,
+  );
+  const icon = (
+    <Pencil
+      className={size === "inline" ? "size-[0.75em]" : size === "small" ? "size-3.5" : "size-5"}
+      strokeWidth={2.5}
+    />
+  );
   if (!onPress) {
     return (
       <span aria-hidden title={label} className={badgeClass}>

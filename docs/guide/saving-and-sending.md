@@ -16,7 +16,7 @@ opened. Saving doesn't touch the Pacer. Snapshots survive closing the browser;
 unsaved edits don't.
 
 If you want a file (a backup, or something to hand an AI), save first, then
-open the device drawer and click **Export .syx** on that snapshot.
+open the device drawer and click **Export** on that snapshot.
 
 ## Send When It's Right
 

@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Soft Dog Labs, LLC
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { LibraryEntry } from "../../library/configLibrary";
 import { usePacerStore } from "../../store/pacerStore";
+import { EditBadge } from "../panel/EditBadge";
 import { describeSource } from "./describe";
 
 function downloadBytes(fileName: string, bytes: Uint8Array) {
@@ -26,7 +28,24 @@ export function ExportButton({ fileName, bytes }: { fileName: string; bytes: () 
       title="Download this configuration as a .syx file"
       onPress={() => downloadBytes(`${fileName}.syx`, bytes())}
     >
-      Export .syx
+      Export
+    </Button>
+  );
+}
+
+/**
+ * Opens the merge dialog with this row's configuration as the source. Not offered on the open row:
+ * merging a configuration into itself changes nothing.
+ */
+export function MergeButton({ name, onMerge }: { name: string; onMerge: () => void }) {
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      title={`Choose presets from “${name}” to merge into the open configuration`}
+      onPress={onMerge}
+    >
+      Pick presets from this…
     </Button>
   );
 }
@@ -40,37 +59,65 @@ export const rowClass = (active: boolean) =>
 /**
  * The clickable part of a configuration row: selecting it opens that configuration in the
  * simulator. Opening never sends anything to the Pacer.
+ *
+ * The button is the name, stretched over the whole area by a pseudo-element, so the rename pencil
+ * beside the name can be a button of its own rather than one nested inside it. F2 renames too,
+ * for the keyboard.
  */
 export function OpenArea({
   name,
   detail,
   active,
   onOpen,
+  onRename,
 }: {
   name: string;
   detail: string;
   active: boolean;
   onOpen: () => void;
+  onRename?: () => void;
 }) {
+  const detailId = useId();
   return (
-    <button
-      type="button"
-      className="min-w-0 flex-1 cursor-pointer rounded-md px-3 py-2 text-left ring-focus outline-none"
-      aria-current={active ? "true" : undefined}
-      title={active ? "Open in the simulator" : "Open in the simulator (nothing is sent to the Pacer)"}
-      onClick={onOpen}
-    >
-      <div className="truncate text-sm font-medium">{name}</div>
-      <div className="truncate text-xs text-muted-foreground">{detail}</div>
-    </button>
+    <div className="relative min-w-0 flex-1 rounded-md px-3 py-2 has-[button:focus-visible]:outline-2 has-[button:focus-visible]:outline-ring">
+      <div className="flex min-w-0 items-center gap-2">
+        <button
+          type="button"
+          className="min-w-0 cursor-pointer truncate text-left text-sm font-medium outline-none after:absolute after:inset-0"
+          aria-current={active ? "true" : undefined}
+          aria-describedby={detailId}
+          aria-keyshortcuts={onRename ? "F2" : undefined}
+          title={active ? "Open in the simulator" : "Open in the simulator (nothing is sent to the Pacer)"}
+          onClick={onOpen}
+          onKeyDown={(e) => {
+            if (e.key === "F2" && onRename) {
+              e.preventDefault();
+              onRename();
+            }
+          }}
+        >
+          {name}
+        </button>
+        {onRename && (
+          <EditBadge
+            size="inline"
+            className="z-10 shrink-0 text-sm"
+            label={`Rename “${name}” (F2)`}
+            onPress={onRename}
+          />
+        )}
+      </div>
+      <div id={detailId} className="truncate text-xs text-muted-foreground">
+        {detail}
+      </div>
+    </div>
   );
 }
 
-/** Runs an action that replaces the working config, asking first if there are unsaved edits. */
 /** Runs an action, or asks first when there are unsaved edits (see ConfigurationsPanel). */
 export type Guard = (action: () => void) => void;
 
-export function EntryRow({ entry, guard }: { entry: LibraryEntry; guard: Guard }) {
+export function EntryRow({ entry, guard, onMerge }: { entry: LibraryEntry; guard: Guard; onMerge: () => void }) {
   const active = usePacerStore((s) => s.activeConfigId === entry.id);
   const openSavedConfig = usePacerStore((s) => s.openSavedConfig);
   const renameSavedConfig = usePacerStore((s) => s.renameSavedConfig);
@@ -119,37 +166,39 @@ export function EntryRow({ entry, guard }: { entry: LibraryEntry; guard: Guard }
           detail={describeSource(entry)}
           active={active}
           onOpen={() => guard(() => openSavedConfig(entry.id))}
-        />
-      )}
-      <div className="flex gap-1">
-        <Button
-          size="sm"
-          variant="ghost"
-          title="Rename this snapshot"
-          onPress={() => {
+          onRename={() => {
             setDraft(entry.name);
             setEditing(true);
           }}
-        >
-          Rename
-        </Button>
+        />
+      )}
+      <div className="flex gap-1">
+        {!active && <MergeButton name={entry.name} onMerge={onMerge} />}
         <ExportButton fileName={entry.name} bytes={() => savedConfigBytes(entry.id)} />
-        <Button
-          size="sm"
-          variant={confirmingDelete ? "destructive" : "ghost"}
-          title={
-            confirmingDelete ? "Delete it for good — this can't be undone" : "Delete this snapshot from the browser"
-          }
-          onPress={() =>
-            confirmingDelete
-              ? active
+        {confirmingDelete ? (
+          <Button
+            size="sm"
+            variant="destructive"
+            title="Delete it for good — this can't be undone"
+            onPress={() =>
+              active
                 ? guard(() => deleteSavedConfig(entry.id)) // deleting the open one reopens the factory defaults
                 : deleteSavedConfig(entry.id)
-              : setConfirmingDelete(true)
-          }
-        >
-          {confirmingDelete ? "Confirm delete" : "Delete"}
-        </Button>
+            }
+          >
+            Confirm delete
+          </Button>
+        ) : (
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label="Delete"
+            title="Delete this snapshot from the browser"
+            onPress={() => setConfirmingDelete(true)}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        )}
       </div>
     </li>
   );

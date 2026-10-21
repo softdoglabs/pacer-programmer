@@ -794,6 +794,19 @@ no hover-only UI, for tablets.
   click on iOS/Android) for `HTMLElement` targets.
 - **Tap vs. hold on [Preset]:** decided by the device machine's timer, not
   the UI.
+- **Touches may pan** (`touch-action: pan-x pan-y` on the faceplate and the
+  rear jacks), so a phone can scroll a faceplate wider than its screen and
+  scroll the page across rear jacks that fill it. It was `touch-none`, which
+  made both impossible by touch alone (found by the owner on a phone). A tap or
+  a finger held still still reaches the switch; one that moves scrolls.
+  **`pnpm check:touch`** (`scripts/touch-check.mjs`) drives a 390px phone by
+  touch in headless Chrome and fails if either swipe stops scrolling, or a tap
+  or the [Preset] hold stops working. jsdom can't test any of this.
+- **Phone and tablet widths** (measured, 2026-10-20): the faceplate shrinks to
+  640px (`--faceplate-min`), so it fits any tablet and scrolls on a phone (owner's
+  call). The switch editor keeps its close button top right at every width; the
+  top bar puts the configuration and modes on a second row below 1280px; the
+  map may zoom out to 0.3, so it fits a phone.
 - **Programming interface (first slice):**
   - **Play/Edit** switch in the header. In Edit mode, tapping a switch
     (or a rear-jack control) selects it for editing and fires nothing;

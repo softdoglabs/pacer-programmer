@@ -57,16 +57,21 @@ export function SwitchEditorView({ controlId }: { controlId: number }) {
       aria-label={`Programming ${controlLabel(controlId)}`}
       className="rounded-lg border border-primary/50 bg-card p-4"
     >
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        {/* Which preset this switch belongs to — the faceplate's display isn't on screen here. */}
-        <PresetChooserButton />
-        <h2 className="text-base font-semibold">
-          <span aria-hidden className="mr-2 text-muted-foreground">
-            ›
-          </span>
-          {controlLabel(controlId)}
-        </h2>
-        <div className="min-w-0 flex-1">
+      {/* The breadcrumb and the close button share the top row, so the close button stays in the
+          corner however narrow the window; the switch picker gets a row of its own beneath them,
+          and only joins them between where there's room for all three (xl). */}
+      <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 xl:grid-cols-[auto_minmax(0,1fr)_auto] xl:items-center">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          {/* Which preset this switch belongs to — the faceplate's display isn't on screen here. */}
+          <PresetChooserButton />
+          <h2 className="text-base font-semibold">
+            <span aria-hidden className="mr-2 text-muted-foreground">
+              ›
+            </span>
+            {controlLabel(controlId)}
+          </h2>
+        </div>
+        <div className="col-span-2 row-start-2 xl:col-span-1 xl:col-start-2 xl:row-start-1">
           <SwitchPicker selected={controlId} onSelect={selectControl} />
         </div>
         {/* Returns to the faceplate, still in Edit mode — as a history step, so Back agrees. */}
@@ -75,6 +80,7 @@ export function SwitchEditorView({ controlId }: { controlId: number }) {
           variant="outline"
           aria-label="Back to faceplate"
           title="Back to faceplate"
+          className="col-start-2 row-start-1 xl:col-start-3"
           onPress={() => goBack(() => selectControl(undefined))}
         >
           ✕

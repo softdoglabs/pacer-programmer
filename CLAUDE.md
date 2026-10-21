@@ -1550,6 +1550,14 @@ which allows declining trademark rights. Not reviewed by a lawyer yet.
     swapped in for VitePress's `VPNavBarTitle` by an alias in the config): the
     lockup goes to softdoglabs.com, as in the app, and the name to the docs'
     front page. VitePress's own is one link around both.
+  - **On a phone the dog mark stands in for the lockup** (below 480px, owner's
+    call): the lockup, the name, search and the menu button don't fit in one
+    bar, and the bar used to push the menu button off screen and scroll the page
+    sideways. Measured from 320px up with `document.documentElement.scrollWidth`.
+  - **"Open the programmer"** is on every docs page, for whoever arrives from a
+    search: a button in the top bar (`nav`, styled in `theme/site.css`), and on
+    phones, where the top bar folds nav into a menu, one above the page
+    (`theme/OpenAppPhone.vue`, in the `doc-before` slot).
   - **Links to softdoglabs.com need `target="_self"`.** The docs share its
     origin, and VitePress's router takes any same-origin link without a target
     for one of its own pages, so the footer credit used to open as a missing

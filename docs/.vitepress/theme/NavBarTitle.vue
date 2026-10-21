@@ -6,7 +6,8 @@
  * VitePress's nav title (VPNavBarTitle), replaced (config.ts aliases it here) because its one link
  * wraps both the logo and the site's name. Here they're two links: the brand kit's lockup goes to
  * the maker's site, as it does in the app, and the name to the docs' front page. A neutral build has
- * no logo, so only the name.
+ * no logo, so only the name. A phone gets the kit's dog mark in place of the whole lockup, which
+ * wouldn't fit beside the name (brand.css says which shows when).
  *
  * The maker's site shares the docs' origin, and VitePress's router takes any same-origin link to be
  * one of its own pages unless the link has a target. Hence target="_self": an ordinary page load.
@@ -18,13 +19,16 @@ import { MAKER } from "../../../src/brand/maker";
 
 const { site, theme } = useData();
 const { hasSidebar } = useSidebar();
+// Served beside the lockups by the brand plugin (src/brand/vitePlugin.ts), so only in a branded build.
+const mark = { light: "/brand/mark-light.svg", dark: "/brand/mark-dark.svg", alt: MAKER.name };
 </script>
 
 <template>
   <div class="VPNavBarTitle" :class="{ 'has-sidebar': hasSidebar }">
     <div class="title">
       <a v-if="theme.logo" class="lockup" :href="MAKER.url" target="_self">
-        <VPImage class="logo" :image="theme.logo" />
+        <VPImage class="logo full" :image="theme.logo" />
+        <VPImage class="logo mark" :image="mark" />
       </a>
       <a class="name" :href="withBase('/')">{{ site.title }}</a>
     </div>
@@ -78,5 +82,14 @@ const { hasSidebar } = useSidebar();
 
 :deep(.logo) {
   height: var(--vp-nav-logo-height);
+}
+
+/* The narrowest phones: a little less room around the name, so the menu button still fits. */
+@media (max-width: 359px) {
+  .lockup + .name {
+    margin-left: 8px;
+    padding-left: 8px;
+    font-size: 15px;
+  }
 }
 </style>

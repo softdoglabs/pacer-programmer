@@ -49,7 +49,10 @@
  * The kit's lockup ahead of the site's name, as in the app: taller than VitePress's logo, so its
  * name can be read, with its clear space (40 units of its 300 high on each side) overlapping what's
  * around it, and a line between it and the name. Beside a sidebar the title gets the sidebar's
- * width, which is too narrow for both, so the sidebar is wider too.
+ * width, which is too narrow for both, so the sidebar is wider too. Below 480px the lockup, the name,
+ * search and the menu button don't fit in one bar, so the dog mark stands in for the lockup there;
+ * the mark has no clear space of its own. One of the two is hidden rather than the other shown, so
+ * VitePress's own light/dark choice between images still applies.
  */
 :root {
   --vp-sidebar-width: 352px;
@@ -59,8 +62,24 @@
   --vp-nav-logo-height: 40px;
 }
 
-.VPNavBarTitle .logo {
+.VPNavBarTitle .logo.full {
   margin: calc(var(--vp-nav-logo-height) * -40 / 300);
+}
+
+.VPNavBarTitle .logo.mark {
+  height: 30px;
+}
+
+@media (min-width: 480px) {
+  .VPNavBarTitle .logo.mark {
+    display: none;
+  }
+}
+
+@media (max-width: 479px) {
+  .VPNavBarTitle .logo.full {
+    display: none;
+  }
 }
 
 /* The display face is all caps and heavy, so it's for the page titles only. */

@@ -62,6 +62,16 @@ export function startVite() {
 }
 
 export async function startChrome() {
+  // A Chrome left over from an earlier run would answer on the port instead of this one, and its
+  // saved snapshots and MIDI state would end up in the pictures. Refuse rather than share it.
+  const leftover = await fetch(`http://127.0.0.1:${CDP_PORT}/json/version`).then(
+    () => true,
+    () => false,
+  );
+  if (leftover)
+    throw new Error(
+      `Something is already listening on port ${CDP_PORT}: a Chrome left from an earlier run? Quit it first.`,
+    );
   const profile = await mkdtemp(join(tmpdir(), "pacer-docs-"));
   const chrome = spawn(
     CHROME,
@@ -386,6 +396,10 @@ export class Page {
    * drawn over the page for the length of the capture.
    */
   async shot(name, { around, pad = 12, callouts = [] } = {}) {
+    // Out of the way first: the mouse rests wherever a scene last clicked, and anything under it
+    // shows its hover style, so a picture would depend on an earlier scene's clicks.
+    await this.cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
+    await wait(100);
     if (callouts.length > 0) {
       await this.eval(`(() => {
         const layer = document.createElement("div");

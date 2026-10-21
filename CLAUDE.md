@@ -1345,7 +1345,9 @@ and nothing a search engine sees twice.
   `docs/README.md` and `docs/guide/README.md` all open with the same text and
   the simulator screenshot, so each still makes sense on its own, including
   the guide built and hosted away from GitHub. Edit all three together (only
-  the relative paths differ).
+  the relative paths differ). The repository's README alone puts a link to the
+  live app above it (owner's call), since that's the page people land on from
+  GitHub.
 - **So does the "Not Affiliated with Nektar" section**, word for word, at
   the end of the same three pages and for the same reason: a page hosted on
   its own still has to say it. Edit all three together.

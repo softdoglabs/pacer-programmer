@@ -1,5 +1,7 @@
 # Pacer Programmer
 
+**[Try the live programmer at pacer-programmer.softdoglabs.com](https://pacer-programmer.softdoglabs.com)**
+
 Pacer Programmer is a browser-based editor for the Nektar Pacer MIDI foot
 controller. It's built around two ideas.
 

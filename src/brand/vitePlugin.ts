@@ -34,6 +34,9 @@ const KIT_FILES = {
    */
   lockupOnDark: "svg/dark-transparent/softdog-horizontal-dark-transparent.svg",
   lockupOnLight: "svg/color/softdog-horizontal-color.svg",
+  /** The dog on its own, for where the lockup won't fit (the docs' top bar on a phone). */
+  markOnDark: "svg/mark/softdog-mark-dark.svg",
+  markOnLight: "svg/mark/softdog-mark-color.svg",
   /** The app icon, navy, at the sizes a tab and a home screen ask for. */
   favicon: "png/app-icon-sizes/softdog-app-icon-dark-32.png",
   appleTouchIcon: "png/app-icon-sizes/softdog-app-icon-dark-180.png",
@@ -73,7 +76,14 @@ function brandFiles(kit: BrandKit, docs: boolean): Record<string, string> {
   return {
     "brand/favicon.png": kit.favicon,
     "brand/apple-touch-icon.png": kit.appleTouchIcon,
-    ...(docs ? { "brand/lockup-light.svg": kit.lockupOnLight, "brand/lockup-dark.svg": kit.lockupOnDark } : {}),
+    ...(docs
+      ? {
+          "brand/lockup-light.svg": kit.lockupOnLight,
+          "brand/lockup-dark.svg": kit.lockupOnDark,
+          "brand/mark-light.svg": kit.markOnLight,
+          "brand/mark-dark.svg": kit.markOnDark,
+        }
+      : {}),
   };
 }
 

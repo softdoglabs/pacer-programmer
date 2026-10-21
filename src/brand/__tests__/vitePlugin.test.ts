@@ -11,6 +11,8 @@ import { brandAppCss, brandDocsCss, brandModule, iconLinks, readBrandKit } from 
 const KIT = [
   "svg/dark-transparent/softdog-horizontal-dark-transparent.svg",
   "svg/color/softdog-horizontal-color.svg",
+  "svg/mark/softdog-mark-dark.svg",
+  "svg/mark/softdog-mark-color.svg",
   "png/app-icon-sizes/softdog-app-icon-dark-32.png",
   "png/app-icon-sizes/softdog-app-icon-dark-180.png",
   "colors/softdog-colors.css",

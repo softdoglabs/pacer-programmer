@@ -15,7 +15,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type DefaultTheme } from "vitepress";
 import { MAKER } from "../../src/brand/maker";
-import { DOCS_BASE, DOCS_SITE } from "../../src/docsSite";
+import { APP_URL, DOCS_BASE, DOCS_SITE } from "../../src/docsSite";
 import { BRAND_ENV, brandDocsPlugin, iconLinks, readBrandKit } from "../../src/brand/vitePlugin";
 
 export const SITE = DOCS_SITE;
@@ -142,6 +142,9 @@ export default defineConfig({
     sidebar: sidebarFrom(readFileSync(join(DOCS, "README.md"), "utf8")),
     outline: { level: [2, 3] },
     search: { provider: "local" },
+    // On every page, for whoever arrives from a search; theme/site.css makes it a button. Phones
+    // get it in the menu.
+    nav: [{ text: "Open the programmer", link: APP_URL }],
     socialLinks: [{ icon: "github", link: REPOSITORY }],
     editLink: { pattern: `${REPOSITORY}/edit/main/docs/:path`, text: "Edit this page on GitHub" },
     // Credited in every build, like the app (src/brand/maker.ts); the kit adds its lockup ahead of

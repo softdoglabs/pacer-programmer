@@ -2,13 +2,14 @@
 // Copyright (C) 2026 Soft Dog Labs, LLC
 
 /*
- * VitePress's own theme, plus the brand kit's look when the build has one (`virtual:brand-docs.css`
- * is empty otherwise; see src/brand/vitePlugin.ts).
+ * VitePress's own theme, with the docs' own styles (site.css), plus the brand kit's look when the
+ * build has one (`virtual:brand-docs.css` is empty otherwise; see src/brand/vitePlugin.ts).
  */
 
 import { useData } from "vitepress";
 import DefaultTheme from "vitepress/theme";
 import { watchEffect } from "vue";
+import "./site.css";
 import "virtual:brand-docs.css";
 
 export default {

@@ -12,6 +12,11 @@
   Referrer-Policy: strict-origin-when-cross-origin
   X-Content-Type-Options: nosniff
 
+# Previews and per-version addresses (pr-<n>-<hex>-pacer-programmer.<account>.workers.dev): kept out
+# of search results, so the app is found at its own address. The live hostname doesn't match.
+https://:version.:subdomain.workers.dev/*
+  X-Robots-Tag: noindex
+
 # Vite names these by content hash, so a name never changes meaning. A day for now; a year once
 # it's confirmed how Cloudflare treats a previous deploy's files.
 /assets/*

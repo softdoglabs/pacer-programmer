@@ -1449,8 +1449,12 @@ asset requests are free on Cloudflare's free plan.
     account's workers.dev subdomain.
   - Every version, live ones included, gets a workers.dev address of its own.
     Nothing links to them, and each is a separate origin with an empty library.
-  - Previews are public to anyone with the address. The docs' pages name their
-    softdoglabs.com address as canonical, so a crawled preview doesn't compete.
+  - Previews are public to anyone with the address. The app's are kept out of
+    search results by a hostname rule in `public/_headers`
+    (`https://:version.:subdomain.workers.dev/*` → `X-Robots-Tag: noindex`),
+    which the live hostname doesn't match; tested with `wrangler dev
+    --local-upstream <host>`, since a Host header alone isn't matched locally.
+    The docs' pages name their softdoglabs.com address as canonical instead.
 - **Response headers are in `public/_headers`**, which Vite copies into `dist/`
   and Cloudflare reads rather than serves. Its content security policy allows
   the app's own origin, `data:` for the assets Vite inlines, the inline styles

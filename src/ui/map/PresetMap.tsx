@@ -332,6 +332,10 @@ export function PresetMap() {
             nodeTypes={NODE_TYPES}
             edgeTypes={EDGE_TYPES}
             fitView
+            // React Flow stops zooming out at 0.5, which on a phone cuts the map off at both sides
+            // with nothing to say there's more. At 0.3 the whole map fits from 320px up, as an
+            // overview to pinch into; wider screens never get near it.
+            minZoom={0.3}
             // Selecting a node otherwise lifts it over the edge labels, so the map rearranges
             // itself in depth as soon as you click anything.
             elevateNodesOnSelect={false}

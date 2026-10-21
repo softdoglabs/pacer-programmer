@@ -46,6 +46,13 @@ const DARK: StepLight = { kind: "dark" };
  *   switch for the last sent message is fully illuminated with other switches dimmed".
  * - Other MIDI types (CC/Program Step, NRPN, MMC, Relay, Step Select): On while held. Assumed.
  *
+ * Whatever the value says, a switch shows On while it's held, and goes back to its value state
+ * when let go: a momentary light on the press, not a change of state. Owner-observed on the Pacer
+ * with the factory SEQNC preset (D6), whose sequenced CC, Program Change and note steps light up on
+ * press and dim on release, though none of their values is ever On by the time it shows. A step
+ * whose light follows incoming MIDI isn't held for this (its presses don't move it; see
+ * userPresetLights), and preset navigation keeps its fixed role below.
+ *
  * Preset navigation has no value state; the firmware gives each kind a fixed light role:
  * - Preset Select to a user preset: On color, steadily. Observed: A set to Preset Select with
  *   White/Dim White is bright white on both A1 (targeting C1) and C1 (targeting A1). Whether it
@@ -68,7 +75,8 @@ export function stepLight(step: Step, ctx: StepContext): StepLight {
     case SwitchMessageType.PresetIncDec:
       return DARK;
     default:
+      if (ctx.held) return ON;
       if (ctx.valueOn !== undefined) return ctx.valueOn ? ON : OFF;
-      return ctx.held ? ON : OFF;
+      return OFF;
   }
 }

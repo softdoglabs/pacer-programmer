@@ -19,12 +19,32 @@ describe("stepLight (the firmware LED model)", () => {
   it("MIDI steps show On/Off by their remembered value when they have one, else by being held", () => {
     for (const t of [SwitchMessageType.CcToggle, SwitchMessageType.ProgramAndBank, SwitchMessageType.Note]) {
       expect(stepLight(step(t), { ...idle, valueOn: true })).toEqual({ kind: "on" });
-      expect(stepLight(step(t), { ...idle, valueOn: false, held: true })).toEqual({ kind: "off" });
+      expect(stepLight(step(t), { ...idle, valueOn: false })).toEqual({ kind: "off" });
     }
     for (const t of [SwitchMessageType.CcStep, SwitchMessageType.Mmc, SwitchMessageType.Relay]) {
       expect(stepLight(step(t), { ...idle, held: true })).toEqual({ kind: "on" });
       expect(stepLight(step(t), idle)).toEqual({ kind: "off" });
     }
+  });
+
+  // Owner-observed on factory D6 (SEQNC): its sequenced steps light on press and dim on release,
+  // though none of their values is On when it shows.
+  it("a held MIDI step shows On whatever its value, a momentary light on the press", () => {
+    for (const t of [
+      SwitchMessageType.CcTrigger,
+      SwitchMessageType.CcToggle,
+      SwitchMessageType.ProgramAndBank,
+      SwitchMessageType.Note,
+    ]) {
+      expect(stepLight(step(t), { ...idle, valueOn: false, held: true })).toEqual({ kind: "on" });
+    }
+  });
+
+  it("holding doesn't change preset navigation's fixed light roles", () => {
+    const held = { ...idle, held: true };
+    expect(stepLight(step(SwitchMessageType.PresetIncDec), held)).toEqual({ kind: "dark" }); // observed
+    expect(stepLight(step(SwitchMessageType.PresetSelect, 0), held)).toEqual({ kind: "dark" });
+    expect(stepLight(step(SwitchMessageType.PresetSelect, 1), held)).toEqual({ kind: "modeIndicator", lit: false });
   });
 
   it("Preset Select to a user preset shows its On color steadily (observed: bright white on A1 and C1)", () => {

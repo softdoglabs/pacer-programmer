@@ -57,6 +57,33 @@ describe("computePanelState (factory presets)", () => {
     expect(bars(userPresetIndex(0, 5))[0]?.color).toEqual({ kind: "hue", hue: "green" });
   });
 
+  // Owner-observed: D6's switches light on press and dim on release. Each is a Sequence of six steps
+  // with Default colors (1-4 CC Trigger, 5 Program Change, 6 Note), so the step that shows next
+  // is never On by its value; only the press lights it.
+  it("D6 (SEQNC): each sequenced switch lights while held and dims when released", () => {
+    const D6 = userPresetIndex(3, 6);
+    let board = createBoardState(config, D6);
+    const switches = [
+      [ControlId.Stompswitch1, "sw1"],
+      [ControlId.Stompswitch5, "sw5"],
+      [ControlId.Stompswitch6, "sw6"],
+    ] as const;
+    for (const [controlId, id] of switches) {
+      for (let press = 1; press <= 7; press++) {
+        board = applyBoardEvent(board, { controlId, phase: "press" }).board;
+        expect(
+          computePanelState(board, USER).switches[id].lights.bottom?.brightness,
+          `${id} held, press ${press}`,
+        ).toBe("bright");
+        board = applyBoardEvent(board, { controlId, phase: "release" }).board;
+        expect(
+          computePanelState(board, USER).switches[id].lights.bottom?.brightness,
+          `${id} let go, press ${press}`,
+        ).toBe("dim");
+      }
+    }
+  });
+
   it("A1: the switch that sent the last Program Change stays bright; the others stay dim", () => {
     let board = createBoardState(config, A1);
     for (const phase of ["press", "release"] as const) {

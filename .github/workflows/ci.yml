@@ -2,19 +2,24 @@
 # Copyright (C) 2026 Soft Dog Labs, LLC
 #
 # Checks every push and pull request, both as the neutral build a clone gets and as the branded one
-# that's deployed, and deploys main once both pass.
+# that's deployed. Two jobs, Checks and Branded checks, are the checks a pull request has to pass;
+# they run side by side. Once both pass, main is deployed (Deploy) or the pull request previewed
+# (Preview), from the branded build Branded checks tested and saved, so what goes out is exactly what
+# was tested.
 #
 # The branded build reads the private softdoglabs/brandkit repository with the BRANDKIT_TOKEN
 # secret, a fine-grained token that can read that repository's contents and nothing else. Pull
-# requests from forks don't get secrets, so for them (and until the token is added) only
-# the neutral checks run. The deploy steps skip themselves until the repository has the
-# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets.
+# requests from forks don't get secrets, so for them (and until the token is added) Branded checks
+# only says so. Deploying needs the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets.
 #
-# A pull request from this repository gets a preview of the branded app and docs instead: uploaded
-# as Cloudflare versions under an alias made from its number and the PREVIEW_KEY secret
+# A pull request from this repository gets a preview of the branded app and docs: uploaded as
+# Cloudflare versions under an alias made from its number and the PREVIEW_KEY secret
 # (scripts/preview-alias.sh), so the addresses stay the same for the life of the pull request but
 # can't be worked out from the number, and posted as a comment only when they change. The comment is
 # as public as the pull request it's on.
+#
+# Never switch this to pull_request_target: that runs a fork's pull request with this repository's
+# secrets, which would hand anyone the Cloudflare and brand kit tokens.
 
 name: CI
 
@@ -32,7 +37,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  neutral:
+  checks:
+    name: Checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -53,19 +59,20 @@ jobs:
       - run: pnpm build
       - run: pnpm docs:build
 
-  # Deploys from here, so what goes out is the build these steps just tested.
   branded:
-    needs: neutral
+    name: Branded checks
     runs-on: ubuntu-latest
-    # Writing to pull requests is only for the preview comment.
-    permissions:
-      contents: read
-      pull-requests: write
+    # What the jobs after this one may do. They can't read secrets in their own conditions.
+    outputs:
+      deploy: ${{ steps.secrets.outputs.deploy }}
+      preview: ${{ steps.secrets.outputs.preview }}
+      alias: ${{ steps.secrets.outputs.alias }}
     steps:
-      # Secrets can't be read in an `if`, so this step says which ones there are. A deploy without
-      # the kit fails rather than going out neutral.
       # The preview alias needs the repository's own script, so it's checked out first.
       - uses: actions/checkout@v7
+
+      # Secrets can't be read in an `if`, so this step says which ones there are. A deploy without
+      # the kit fails here rather than going out neutral.
       - id: secrets
         env:
           BRANDKIT_TOKEN: ${{ secrets.BRANDKIT_TOKEN }}
@@ -131,30 +138,79 @@ jobs:
           pnpm build
           pnpm docs:build
 
+      # Handed to Deploy or Preview. It holds only what the live site serves anyway, and is kept a
+      # day: long enough for the jobs after this one, or a re-run of them.
+      - name: Save the branded build
+        if: steps.secrets.outputs.deploy == 'true' || steps.secrets.outputs.preview == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: branded-build
+          path: |
+            dist
+            build/docs-site
+          retention-days: 1
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy
+    needs: [checks, branded]
+    if: needs.branded.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      # wrangler and its configuration, from the repository; the files it serves, from the build.
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          name: branded-build
+
       - name: Deploy the app
-        if: steps.secrets.outputs.deploy == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm exec wrangler deploy
 
       - name: Deploy the docs
-        if: steps.secrets.outputs.deploy == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm exec wrangler deploy -c wrangler.docs.jsonc
 
+  preview:
+    name: Preview
+    needs: [checks, branded]
+    if: needs.branded.outputs.preview == 'true'
+    runs-on: ubuntu-latest
+    # Writing to pull requests is only for the preview comment.
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          name: branded-build
+
       # Uploaded, not deployed: the live site doesn't change. Cloudflare prints each address only
       # once preview addresses are on for the Worker, which a deploy from main sets (wrangler*.jsonc).
       - name: Upload previews
         id: preview
-        if: steps.secrets.outputs.preview == 'true'
         shell: bash
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          ALIAS: ${{ steps.secrets.outputs.alias }}
+          ALIAS: ${{ needs.branded.outputs.alias }}
         run: |
           upload() {
             pnpm exec wrangler versions upload --preview-alias "$ALIAS" "$@" 2>&1 | tee /dev/stderr |
@@ -172,7 +228,6 @@ jobs:
       # The addresses only change if the alias or the account's subdomain does, so most pushes post
       # nothing: a new comment only when the last one this job left says something else.
       - name: Comment the preview addresses
-        if: steps.secrets.outputs.preview == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}

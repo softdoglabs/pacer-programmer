@@ -1607,6 +1607,17 @@ which allows declining trademark rights. Not reviewed by a lawyer yet.
     search: a button in the top bar (`nav`, styled in `theme/site.css`), and on
     phones, where the top bar folds nav into a menu, one above the page
     (`theme/OpenAppPhone.vue`, in the `doc-before` slot).
+  - **The credit, the License page and the source are under every page**
+    (`theme/PageFooter.vue`, in the `doc-after` slot), not in VitePress's
+    `footer`: that's hidden on any page with a sidebar, which here is every
+    page, so the credit never showed (found 2026-10-22). The top bar also has
+    VitePress's GitHub icon (`socialLinks`). `docs/license.md` states the
+    license, the trademark term and the font and fixture notes, linking to the
+    files on GitHub; the repository's address is `REPO_URL` in
+    `src/docsSite.ts`.
+  - **The app links to its source too** (`ui/SourceLink.tsx`): a muted GitHub
+    mark beside the Docs link (owner's call: inconspicuous, not hidden). The
+    mark is drawn inline, since lucide's brand icons are deprecated.
   - **Links to softdoglabs.com need `target="_self"`.** The docs share its
     origin, and VitePress's router takes any same-origin link without a target
     for one of its own pages, so the footer credit used to open as a missing

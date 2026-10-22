@@ -10,13 +10,15 @@ import { useData } from "vitepress";
 import DefaultTheme from "vitepress/theme";
 import { h, watchEffect } from "vue";
 import OpenAppPhone from "./OpenAppPhone.vue";
+import PageFooter from "./PageFooter.vue";
 import "./site.css";
 import "virtual:brand-docs.css";
 
 export default {
   extends: DefaultTheme,
-  // A phone's way to the app, above each page (OpenAppPhone.vue).
-  Layout: () => h(DefaultTheme.Layout, null, { "doc-before": () => h(OpenAppPhone) }),
+  // A phone's way to the app, above each page (OpenAppPhone.vue), and the credit, license and
+  // source below it (PageFooter.vue).
+  Layout: () => h(DefaultTheme.Layout, null, { "doc-before": () => h(OpenAppPhone), "doc-after": () => h(PageFooter) }),
   setup() {
     // The kit's colours follow the OS unless told otherwise, and the docs have a light/dark switch
     // of their own, so tell the kit which one the switch chose. data-theme on <html> is how the kit

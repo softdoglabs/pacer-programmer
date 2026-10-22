@@ -78,6 +78,8 @@ part, see [Working with an AI](guide/working-with-ai.md).
 [Why a State Machine](why-a-state-machine.md): the problem the preset map
 solves.
 
+[License](license.md): what you can do with the app, and where its source is.
+
 ## Not Affiliated with Nektar
 
 Pacer Programmer is an independent project. It isn't affiliated with,

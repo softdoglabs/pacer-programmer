@@ -13,3 +13,6 @@ export const DOCS_URL = DOCS_SITE + DOCS_BASE;
 
 /** Where the app itself is, which every docs page links to from its top bar. */
 export const APP_URL = "https://pacer-programmer.softdoglabs.com/";
+
+/** The source, which the app's header and the docs (top bar, footer, License page) link to. */
+export const REPO_URL = "https://github.com/softdoglabs/pacer-programmer";

@@ -15,12 +15,12 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type DefaultTheme } from "vitepress";
 import { MAKER } from "../../src/brand/maker";
-import { APP_URL, DOCS_BASE, DOCS_SITE } from "../../src/docsSite";
+import { APP_URL, DOCS_BASE, DOCS_SITE, REPO_URL } from "../../src/docsSite";
 import { BRAND_ENV, brandDocsPlugin, iconLinks, readBrandKit } from "../../src/brand/vitePlugin";
 
 export const SITE = DOCS_SITE;
 export const BASE = DOCS_BASE;
-const REPOSITORY = "https://github.com/softdoglabs/pacer-programmer";
+const REPOSITORY = REPO_URL;
 /** The same optional brand kit as the app's (src/brand/vitePlugin.ts): neutral without one. */
 const brandDir = process.env[BRAND_ENV];
 const brand = readBrandKit(brandDir);
@@ -150,7 +150,8 @@ export default defineConfig({
     // Credited in every build, like the app (src/brand/maker.ts); the kit adds its lockup ahead of
     // the site's name, as the app has it (theme/brand.css sizes it).
     // target="_self" so VitePress's router leaves it to the browser (see theme/NavBarTitle.vue).
-    footer: { message: `Pacer Programmer by <a href="${MAKER.url}" target="_self">${MAKER.name}</a>` },
+    // No `footer`: VitePress hides it wherever there's a sidebar, which is every page, so the
+    // credit, license and source are under each page instead (theme/PageFooter.vue).
     logo: brand ? { light: "/brand/lockup-light.svg", dark: "/brand/lockup-dark.svg", alt: MAKER.name } : undefined,
   },
 });

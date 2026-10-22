@@ -12,6 +12,7 @@ import { AppTitle } from "./ui/AppTitle";
 import { ContextBar } from "./ui/ContextBar";
 import { ConfigurationButton, DeviceDrawer } from "./ui/DeviceDrawer";
 import { DocsLink } from "./ui/DocsLink";
+import { SourceLink } from "./ui/SourceLink";
 import { SwitchEditorView } from "./ui/editor/SwitchEditorView";
 import { FirmwareModeNote } from "./ui/FirmwareModeNote";
 import { MessageLog } from "./ui/MessageLog";
@@ -47,6 +48,7 @@ export function App() {
         {/* The device slot: asks for MIDI access, then shows whether the Pacer is there. */}
         <div className="order-2 ml-auto flex flex-wrap items-center gap-2 xl:order-none">
           <DocsLink />
+          <SourceLink />
           <MidiAccessControl />
         </div>
       </header>

@@ -9,8 +9,8 @@ the Pacer until you send it.
 The Pacer holds whatever it was last sent. The app reads it with **Pull** and
 writes it with **Send**, and it never does either on its own.
 
-Pulling and sending both need MIDI with SysEx permission, so your browser has
-to support Web MIDI with SysEx. Everything else, including the
+Pulling and sending both need MIDI, so your browser has to support Web MIDI
+(on a computer, [Google Chrome](https://www.google.com/chrome/) does). Everything else, including the
 simulator, programming, the map, and importing and exporting files, works
 without MIDI.
 
@@ -44,7 +44,7 @@ progress bar counts them in, and **Cancel** stops it. When the Pacer goes
 quiet, the dump is saved as a snapshot named after the time, and opened.
 
 If the Pacer doesn't answer, the drawer says so. Check that it's on, that the
-ports are right, and that the browser granted SysEx.
+ports are right, and that MIDI is allowed for this site.
 
 The firmware line only shows the Pacer's major and minor version (`0101` means
 firmware 1.01), because that's all the Pacer reports. A dump doesn't carry a
@@ -193,7 +193,7 @@ presses in the simulator are dropped during that time rather than sent.
 **Cancel** stops a send part way through. Any presets already written stay
 written, and the result tells you which ones.
 
-**Send to Pacer…** stays greyed out until MIDI with SysEx is granted and the
+**Send to Pacer…** stays greyed out until MIDI is allowed and the
 Pacer's output port is chosen.
 
 The [preset chooser](the-faceplate.md#the-preset-chooser) marks each preset the

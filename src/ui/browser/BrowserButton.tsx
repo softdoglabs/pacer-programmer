@@ -3,7 +3,6 @@
 
 import { HardDriveDownload, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { usePacerStore } from "../../store/pacerStore";
 import { BROWSER_BUTTON_ID } from "./BrowserNotice";
 import { installOffered, useBrowser } from "./useBrowser";
@@ -24,14 +23,15 @@ export function BrowserButton() {
     <Button
       id={BROWSER_BUTTON_ID}
       size="icon"
-      variant="ghost"
+      variant="subtle"
       aria-label={label}
       title={
         browser.storageExpires
           ? `${label}: ${browser.safari ? "Safari" : "this browser"} deletes saved configurations after seven days unused`
           : label
       }
-      className={cn("rounded-full", browser.storageExpires ? "text-warning" : "text-muted-foreground")}
+      // Its tone only: amber while what you save here can be deleted. The shape is every button's.
+      className={browser.storageExpires ? "text-warning" : undefined}
       onPress={() => setBrowserNotice("button")}
     >
       {install ? (

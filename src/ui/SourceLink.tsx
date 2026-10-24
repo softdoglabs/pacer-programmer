@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Soft Dog Labs, LLC
 
-import { Titled } from "@/components/ui/titled";
+import { LinkButton } from "@/components/ui/button";
 import { REPO_URL } from "@/docsSite";
 
 /**
@@ -22,16 +22,16 @@ function GitHubMark({ className }: { className?: string }) {
  */
 export function SourceLink() {
   return (
-    <Titled title="Pacer Programmer's source code, on GitHub">
-      <a
-        href={REPO_URL}
-        target="_blank"
-        rel="noopener"
-        aria-label="Source code on GitHub"
-        className="flex size-9 items-center justify-center rounded-md text-muted-foreground ring-focus outline-none hover:bg-accent hover:text-foreground"
-      >
-        <GitHubMark className="size-4" />
-      </a>
-    </Titled>
+    <LinkButton
+      variant="subtle"
+      size="icon"
+      href={REPO_URL}
+      target="_blank"
+      rel="noopener"
+      aria-label="Source code on GitHub"
+      title="Pacer Programmer's source code, on GitHub"
+    >
+      <GitHubMark className="size-4" />
+    </LinkButton>
   );
 }

@@ -142,8 +142,16 @@ export class ConfigLibrary {
     this.storage.setItem(INDEX_KEY, JSON.stringify(entries));
   }
 
-  /** Saves a snapshot. Throws if the bytes don't decode as a Pacer dump, or LibraryFullError if storage is full. */
-  add(name: string, source: ConfigSource, bytes: Uint8Array, details: Pick<LibraryEntry, "device"> = {}): LibraryEntry {
+  /**
+   * Saves a snapshot. Throws if the bytes don't decode as a Pacer dump, or LibraryFullError if
+   * storage is full. `details` can carry its dates when it's coming back from an archive.
+   */
+  add(
+    name: string,
+    source: ConfigSource,
+    bytes: Uint8Array,
+    details: Partial<Pick<LibraryEntry, "device" | "createdAt" | "modifiedAt">> = {},
+  ): LibraryEntry {
     const entry: LibraryEntry = {
       id: this.newId(),
       name,

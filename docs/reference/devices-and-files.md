@@ -118,6 +118,30 @@ keep. Whatever configuration you had open is reopened when you come back.
 If you have unsaved edits, opening another configuration, importing or pulling
 will first ask whether you want to throw them away.
 
+### Backing Up Every Snapshot
+
+**Download all (.zip)**, above the list, puts every saved snapshot in one zip
+file. Each one is a plain `.syx` inside it, the same bytes **Export** would
+give you, so any SysEx tool can use them. A small `library.json` beside them
+remembers each snapshot's name, where it came from and when. The factory
+defaults aren't included, since they're built in.
+
+**Load a .zip…** adds the snapshots in a zip to your list. Nothing you already
+have changes unless you say so. Where a name in the zip is already taken, its
+row has a tick box: leave it unticked to keep the one you have and skip the
+zip's, or tick it to replace yours with the zip's. With several taken names,
+**Replace all of them** and **Keep all the saved ones** set every box at
+once. A snapshot that's identical to the one you have is skipped without
+asking, and one that can't be read is listed with the reason.
+
+Replacing the configuration you have open reopens it from the zip, so if you
+have unsaved edits you're asked first.
+
+This is also how you move your snapshots to another browser or computer, or
+into the app once you've installed it. A zip of
+`.syx` files made some other way loads too, with each snapshot named after its
+file.
+
 ## Saving
 
 **Save…** in the context bar (in Program mode and on the preset map) opens

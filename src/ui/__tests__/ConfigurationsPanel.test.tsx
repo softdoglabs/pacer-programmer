@@ -5,7 +5,9 @@
 import { readFileSync } from "node:fs";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { zipSync } from "fflate";
 import { App } from "../../App";
+import { unpackLibrary } from "../../library/libraryArchive";
 import { changedPresets, renamePreset } from "../../pacer/editing";
 import { userPresetIndex } from "../../pacer/protocol/constants";
 import { encodePresetMessages, encodeSysex } from "../../pacer/protocol/encode";
@@ -197,5 +199,108 @@ describe("merging presets from a saved configuration", () => {
     fireEvent.click(within(row()).getByRole("button", { name: "Delete" }));
     fireEvent.click(within(row()).getByRole("button", { name: "Confirm delete" }));
     expect(within(list).queryByText("Friday")).toBeNull();
+  });
+});
+
+describe("downloading and loading every saved configuration as a zip", () => {
+  const entriesNamed = (name: string) => store().library.entries.filter((e) => e.name === name);
+  const variant = (a1: string) => encodeSysex(renamePreset(store().board.config, userPresetIndex(0, 1), a1));
+
+  beforeEach(() => {
+    act(() => {
+      for (const e of store().library.entries) store().deleteSavedConfig(e.id);
+      store().openFactoryDefaults();
+      store().setDeviceDrawerOpen(true);
+    });
+  });
+
+  it("downloads every saved configuration in one zip", async () => {
+    let downloaded: Blob | undefined;
+    URL.createObjectURL = vi.fn((blob: Blob) => {
+      downloaded = blob;
+      return "blob:zip";
+    });
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    act(() => {
+      store().importSyxFile("one.syx", variant("ONE"));
+      store().importSyxFile("two.syx", variant("TWO"));
+      store().setDeviceDrawerOpen(true);
+    });
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Download all (.zip)" }));
+    expect(downloaded?.type).toBe("application/zip");
+    const back = unpackLibrary(new Uint8Array(await downloaded!.arrayBuffer()));
+    expect(back.map((i) => i.name).sort()).toEqual(["one", "two"]);
+  });
+
+  it("asks per taken name whether to replace it, adds the new ones, and skips what's identical", async () => {
+    act(() => {
+      store().importSyxFile("gig.syx", variant("OLD"));
+      store().importSyxFile("same.syx", variant("SAME"));
+      store().importSyxFile("keep.syx", variant("KEEP"));
+      store().openFactoryDefaults();
+      store().setDeviceDrawerOpen(true);
+    });
+    const gigId = entriesNamed("gig")[0]!.id;
+    const keepId = entriesNamed("keep")[0]!.id;
+    const zip = zipSync({
+      "gig.syx": variant("NEW"),
+      "same.syx": variant("SAME"),
+      "keep.syx": variant("THEIR"),
+      "studio.syx": variant("STU"),
+      "broken.syx": new Uint8Array([0xf0, 0x01, 0xf7]),
+    });
+
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Zip of configurations to load"), {
+      target: { files: [syx("backup.zip", zip)] },
+    });
+    const list = await screen.findByRole("list", { name: "Configurations in the zip" });
+    const row = (name: string) => within(list).getByText(name, { selector: "span.font-medium" }).closest("li")!;
+    expect(row("studio").textContent).toContain("new");
+    expect(row("same").textContent).toContain("already saved, and identical");
+    expect(row("broken").textContent).toContain("can't be read");
+    // A taken name starts unticked, keeping what's saved.
+    expect(within(row("gig")).getByRole("checkbox")).toHaveProperty("checked", false);
+    expect(within(row("keep")).getByRole("checkbox")).toHaveProperty("checked", false);
+    expect(within(row("studio")).getByRole("checkbox")).toHaveProperty("checked", true);
+
+    fireEvent.click(within(row("gig")).getByRole("checkbox"));
+    expect(row("gig").textContent).toContain("replaces the saved “gig”");
+    fireEvent.click(screen.getByRole("button", { name: "Add 1, replace 1" }));
+
+    expect(store().savedConfigBytes(gigId)).toEqual(variant("NEW"));
+    expect(store().savedConfigBytes(keepId)).toEqual(variant("KEEP"));
+    expect(entriesNamed("studio")).toHaveLength(1);
+    expect(entriesNamed("same")).toHaveLength(1);
+    expect(entriesNamed("broken")).toHaveLength(0);
+    expect(screen.getByRole("status").textContent).toBe("Added 1 and replaced 1.");
+  });
+
+  it("replaces or keeps every taken name at once", async () => {
+    act(() => {
+      store().importSyxFile("a.syx", variant("A1"));
+      store().importSyxFile("b.syx", variant("B1"));
+      store().setDeviceDrawerOpen(true);
+    });
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Zip of configurations to load"), {
+      target: { files: [syx("backup.zip", zipSync({ "a.syx": variant("A2"), "b.syx": variant("B2") }))] },
+    });
+    await screen.findByRole("list", { name: "Configurations in the zip" });
+    fireEvent.click(screen.getByRole("button", { name: "Replace all of them" }));
+    expect(screen.getAllByRole<HTMLInputElement>("checkbox").every((c) => c.checked)).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Keep all the saved ones" }));
+    expect(screen.getByRole("button", { name: "Nothing to load" })).toHaveProperty("disabled", true);
+  });
+
+  it("says why a file isn't a zip of configurations", async () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText("Zip of configurations to load"), {
+      target: { files: [syx("dump.zip", new Uint8Array([1, 2, 3]))] },
+    });
+    expect((await screen.findByRole("status")).textContent).toMatch(/Couldn't load dump.zip: That isn't a zip file/);
   });
 });

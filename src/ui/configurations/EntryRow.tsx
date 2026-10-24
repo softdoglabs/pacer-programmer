@@ -10,8 +10,8 @@ import { usePacerStore } from "../../store/pacerStore";
 import { EditBadge } from "../panel/EditBadge";
 import { describeSource } from "./describe";
 
-function downloadBytes(fileName: string, bytes: Uint8Array) {
-  const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: "application/octet-stream" }));
+export function downloadBytes(fileName: string, bytes: Uint8Array, type = "application/octet-stream") {
+  const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type }));
   const a = document.createElement("a");
   a.href = url;
   a.download = fileName;

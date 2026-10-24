@@ -12,7 +12,18 @@ import { goBack } from "./appHistory";
 import { PullControls } from "./configurations/DeviceControls";
 import { ImportPresetsDialog, type PresetFileChoice } from "./configurations/ImportPresetsDialog";
 import { factoryDefaultBytes } from "../pacer/factoryDefaults";
-import { EntryRow, ExportButton, MergeButton, OpenArea, rowClass, type Guard } from "./configurations/EntryRow";
+import {
+  EntryRow,
+  ExportButton,
+  MergeButton,
+  OpenArea,
+  downloadBytes,
+  rowClass,
+  type Guard,
+} from "./configurations/EntryRow";
+import { ArchiveImportDialog, type ArchiveChoiceFile } from "./configurations/ArchiveImportDialog";
+import { ArchiveError, archiveFileName, unpackLibrary } from "../library/libraryArchive";
+import type { ArchiveImportResult } from "../store/configurationsSlice";
 
 /** Saved configurations: pull from a Pacer or import files, then switch between snapshots. */
 export function ConfigurationsPanel() {
@@ -34,6 +45,11 @@ export function ConfigurationsPanel() {
   const presetsInputRef = useRef<HTMLInputElement>(null);
   const setDrawerOpen = usePacerStore((s) => s.setDeviceDrawerOpen);
   const savedConfigBytes = usePacerStore((s) => s.savedConfigBytes);
+  const libraryArchive = usePacerStore((s) => s.libraryArchive);
+  const zipInputRef = useRef<HTMLInputElement>(null);
+  // A zip of configurations being loaded into the list, why one couldn't be, and what loading did.
+  const [archive, setArchive] = useState<ArchiveChoiceFile>();
+  const [archiveNote, setArchiveNote] = useState<{ text: string; error: boolean }>();
   // A file whose presets are being brought into the open configuration, and why one couldn't be.
   const [presetFile, setPresetFile] = useState<PresetFileChoice>();
   const [presetFileError, setPresetFileError] = useState<string>();
@@ -74,6 +90,34 @@ export function ConfigurationsPanel() {
     } catch (err) {
       setPresetFileError(`Couldn't read ${chosen.name}: ${err instanceof Error ? err.message : String(err)}`);
     }
+  }
+
+  async function handleZip(event: ChangeEvent<HTMLInputElement>) {
+    const chosen = await chosenFile(event);
+    setArchiveNote(undefined);
+    if (!chosen) return;
+    try {
+      setArchive({ fileName: chosen.name, items: unpackLibrary(chosen.bytes) });
+    } catch (err) {
+      const reason = err instanceof ArchiveError ? err.message : String(err);
+      setArchiveNote({ text: `Couldn't load ${chosen.name}: ${reason}.`, error: true });
+    }
+  }
+
+  function archiveDone(result: ArchiveImportResult) {
+    setArchive(undefined);
+    const done = [
+      result.added ? `added ${result.added}` : "",
+      result.replaced ? `replaced ${result.replaced}` : "",
+    ].filter(Boolean);
+    const summary = done.length ? `${done.join(" and ")}.` : "";
+    const failed = result.failed.map((f) => `${f.name} (${f.reason})`).join("; ");
+    setArchiveNote({
+      text: [summary && summary.charAt(0).toUpperCase() + summary.slice(1), failed && `Not loaded: ${failed}`]
+        .filter(Boolean)
+        .join(" "),
+      error: result.failed.length > 0,
+    });
   }
 
   /** A saved configuration's presets, offered for merging like a file's. */
@@ -151,6 +195,44 @@ export function ConfigurationsPanel() {
           want to keep.
         </p>
       )}
+      {/* The whole list in one file, and back: a backup, or a move to another browser or an installed copy. */}
+      <div className="flex flex-wrap items-center gap-2 pt-1">
+        <span className="mr-auto text-xs text-muted-foreground">Saved configurations</span>
+        <Button
+          size="sm"
+          variant="ghost"
+          isDisabled={library.entries.length === 0}
+          title={
+            library.entries.length === 0
+              ? "Nothing's saved yet (the factory defaults are built in)"
+              : "Download every saved configuration in one .zip, as .syx files"
+          }
+          onPress={() => downloadBytes(archiveFileName(new Date()), libraryArchive(), "application/zip")}
+        >
+          Download all (.zip)
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          title="Add the configurations in a .zip to this list, choosing what to do where a name is already taken"
+          onPress={() => zipInputRef.current?.click()}
+        >
+          Load a .zip…
+        </Button>
+        <input
+          ref={zipInputRef}
+          type="file"
+          accept=".zip,application/zip"
+          className="hidden"
+          aria-label="Zip of configurations to load"
+          onChange={handleZip}
+        />
+      </div>
+      {archiveNote && (
+        <p role="status" className={archiveNote.error ? "text-xs text-destructive" : "text-xs text-muted-foreground"}>
+          {archiveNote.text}
+        </p>
+      )}
       <ul className="space-y-1.5" aria-label="Saved configurations">
         <li className={rowClass(activeConfigId === undefined)}>
           <OpenArea
@@ -178,6 +260,7 @@ export function ConfigurationsPanel() {
           />
         ))}
       </ul>
+      <ArchiveImportDialog choice={archive} guard={guard} onClose={() => setArchive(undefined)} onDone={archiveDone} />
       <ImportPresetsDialog
         choice={presetFile}
         onClose={() => setPresetFile(undefined)}

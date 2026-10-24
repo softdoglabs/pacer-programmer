@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Soft Dog Labs, LLC
 
 import { ConfigLibrary, LibraryFullError, type LibraryEntry, type KeyValueStorage } from "../library/configLibrary";
+import { packLibrary, type ArchiveItem } from "../library/libraryArchive";
 import { DumpError, findPacerPorts, pullFullDump, type PacerPorts } from "../midi/pacerDump";
 import { queryDeviceIdentity, type IdentityResult } from "../midi/deviceIdentity";
 import type { MidiConnection } from "../midi/webMidi";
@@ -62,6 +63,27 @@ export interface ConfigurationsSlice {
   refreshPacerPorts: () => void;
   /** Reopens the configuration that was open last visit, if it still exists. */
   restoreLastOpened: () => void;
+  /** Every saved configuration as one zip (libraryArchive.ts). The built-in factory defaults aren't in it. */
+  libraryArchive: () => Uint8Array;
+  /**
+   * Brings configurations from an archive into the library: each choice is added, or written over
+   * the saved configuration `replaceId` names. Items not chosen are left out. Replacing the open
+   * one reopens it, so what's on screen is what's saved.
+   */
+  importArchive: (choices: ArchiveChoice[]) => ArchiveImportResult;
+}
+
+export interface ArchiveChoice {
+  item: ArchiveItem;
+  /** Write over this saved configuration instead of adding a new one. */
+  replaceId?: string;
+}
+
+export interface ArchiveImportResult {
+  added: number;
+  replaced: number;
+  /** What couldn't be brought in, and why. Storage running out stops the rest, which are listed too. */
+  failed: { name: string; reason: string }[];
 }
 
 type Set = (partial: Partial<PacerStore> | ((s: PacerStore) => Partial<PacerStore>)) => void;
@@ -325,6 +347,41 @@ export function createConfigurationsSlice(
           error: err instanceof LibraryFullError ? err.message : `Couldn't save: ${errorMessage(err)}`,
         });
       }
+    },
+
+    libraryArchive: () => packLibrary(library.list().map((entry) => ({ entry, bytes: library.loadBytes(entry.id) }))),
+
+    importArchive: (choices) => {
+      const result: ArchiveImportResult = { added: 0, replaced: 0, failed: [] };
+      const activeId = get().activeConfigId;
+      let reopen = false;
+      for (const [n, { item, replaceId }] of choices.entries()) {
+        try {
+          if (replaceId !== undefined) {
+            library.replace(replaceId, item.bytes);
+            result.replaced++;
+            if (replaceId === activeId) reopen = true;
+          } else {
+            const { source, createdAt, modifiedAt, device } = item.details;
+            library.add(item.name, source ?? { kind: "file", fileName: item.file }, item.bytes, {
+              ...(createdAt ? { createdAt } : {}),
+              ...(modifiedAt ? { modifiedAt } : {}),
+              ...(device ? { device } : {}),
+            });
+            result.added++;
+          }
+        } catch (err) {
+          if (err instanceof LibraryFullError) {
+            // Nothing more will fit: say so for this one and every one after it.
+            result.failed.push(...choices.slice(n).map(({ item: rest }) => ({ name: rest.name, reason: err.message })));
+            break;
+          }
+          result.failed.push({ name: item.name, reason: errorMessage(err) });
+        }
+      }
+      refreshEntries();
+      if (reopen && activeId) get().openSavedConfig(activeId);
+      return result;
     },
 
     selectPacerPorts: (ports) => {

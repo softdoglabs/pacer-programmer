@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { brandAppCss, brandDocsCss, brandModule, iconLinks, readBrandKit } from "../vitePlugin";
+import { brandAppCss, brandDocsCss, brandModule, iconLinks, readBrandKit, webAppManifest } from "../vitePlugin";
 
 /** The files the kit has to have, by their paths in softdoglabs/brandkit. */
 const KIT = [
@@ -15,6 +15,8 @@ const KIT = [
   "svg/mark/softdog-mark-color.svg",
   "png/app-icon-sizes/softdog-app-icon-dark-32.png",
   "png/app-icon-sizes/softdog-app-icon-dark-180.png",
+  "png/app-icon-sizes/softdog-app-icon-dark-512.png",
+  "svg/dark/softdog-app-icon-dark.svg",
   "colors/softdog-colors.css",
   "fonts/web/softdog-fonts.css",
 ];
@@ -64,5 +66,31 @@ describe("the brand kit", () => {
     expect(appCss).toEqual([kit.colors, "/brand/app.css"].map((f) => `@import ${JSON.stringify(f)};`));
     const css = brandDocsCss(kit, "/theme/brand.css").trim().split("\n");
     expect(css).toEqual([kit.fonts, kit.colors, "/theme/brand.css"].map((f) => `@import ${JSON.stringify(f)};`));
+  });
+});
+
+describe("the web app manifest", () => {
+  // What Chromium needs before it offers to install (MDN, "Making PWAs installable").
+  const installable = (manifest: Record<string, unknown>) => {
+    expect(manifest.name).toBe("Pacer Programmer");
+    expect(manifest.start_url).toBe("/");
+    expect(manifest.display).toBe("standalone");
+    expect(manifest).not.toHaveProperty("prefer_related_applications");
+  };
+
+  it("gives a branded build the kit's app icon as a drawing, with its 512 px PNG beside it", () => {
+    const manifest = JSON.parse(webAppManifest(readBrandKit(kitWith(KIT))));
+    installable(manifest);
+    expect(manifest.icons).toEqual([
+      { src: "/brand/app-icon.svg", sizes: "any", type: "image/svg+xml" },
+      { src: "/brand/app-icon-512.png", sizes: "512x512", type: "image/png" },
+    ]);
+    expect(manifest.background_color).toBe("#081426");
+  });
+
+  it("gives a neutral build its SVG, at any size", () => {
+    const manifest = JSON.parse(webAppManifest(null));
+    installable(manifest);
+    expect(manifest.icons).toEqual([{ src: "/favicon.svg", sizes: "any", type: "image/svg+xml" }]);
   });
 });

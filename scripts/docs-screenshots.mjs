@@ -32,7 +32,11 @@ const scenes = {
     const callouts = [
       { n: 1, box: await p.rect('[title="Open configurations and the Pacer connection"] button'), at: "corner" },
       { n: 2, box: await p.rect('[role="radiogroup"]'), at: "corner" },
-      { n: 3, box: await p.rect("a", "Docs"), at: "corner" },
+      {
+        n: 3,
+        box: union([await p.rect("#browser-notice-button"), await p.rect('a[aria-label="Source code on GitHub"]')]),
+        at: "corner",
+      },
       { n: 4, box: await p.rect("header button", "Connect MIDI"), at: "corner" },
       { n: 5, box: await p.rect("header + div"), at: "inside-right" },
       { n: 6, box: await p.rect('[aria-label^="Pacer faceplate"]'), at: "inside-top-left" },
@@ -342,6 +346,11 @@ const scenes = {
           at: "right",
         },
         { n: 5, box: await p.rect("span", "Firmware"), at: "right" },
+        {
+          n: 9,
+          box: union([await p.rect("button", "Download all (.zip)"), await p.rect("button", "Load a .zip…")]),
+          at: "corner",
+        },
         { n: 6, box: await p.rect("li", "Factory defaults"), at: "corner" },
         { n: 7, box: await p.rect("li", "looper-from-claude"), at: "corner" },
         {

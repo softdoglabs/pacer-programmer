@@ -55,6 +55,7 @@ part, see [Working with an AI](guide/working-with-ai.md).
 - [MIDI Sent When a Preset Loads](guide/preset-midi-on-load.md)
 - [Saving and Sending](guide/saving-and-sending.md)
 - [Working with an AI](guide/working-with-ai.md)
+- [Browsers and Installing](guide/browsers-and-installing.md)
 
 [Tutorials](tutorials/README.md): a looper, step by step
 

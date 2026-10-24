@@ -57,6 +57,8 @@ For programming in more depth:
   the moment a preset is chosen.
 - [Saving and Sending](saving-and-sending.md): snapshots, and writing to the
   Pacer.
+- [Browsers and Installing](browsers-and-installing.md): which browsers can
+  talk MIDI, which keep what you save, and installing the app.
 
 And for going further, [Working with an AI](working-with-ai.md) shows how to
 have an assistant make large changes to your `.syx` and then try them here.

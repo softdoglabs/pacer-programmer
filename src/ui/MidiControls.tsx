@@ -17,6 +17,8 @@ import { PortSelect } from "./PortSelect";
 export function ConnectMidiButton() {
   const status = usePacerStore((s) => s.midi.status);
   const connectMidi = usePacerStore((s) => s.connectMidi);
+  const setBrowserNotice = usePacerStore((s) => s.setBrowserNotice);
+  if (status === "unsupported") return <NoMidiButton onPress={() => setBrowserNotice("midi")} />;
   return (
     <Button
       variant="outline"
@@ -30,6 +32,21 @@ export function ConnectMidiButton() {
   );
 }
 
+/** Where MIDI was asked for and the browser has none: says so, and opens the notice that explains. */
+function NoMidiButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="text-warning"
+      title="This browser doesn't support Web MIDI. Find out what that means here."
+      onPress={onPress}
+    >
+      No MIDI in this browser
+    </Button>
+  );
+}
+
 /**
  * Header control: asks for MIDI access, then hands its slot to the device status, so the question
  * turns into its answer in place.
@@ -38,15 +55,14 @@ export function MidiAccessControl() {
   const status = usePacerStore((s) => s.midi.status);
   const error = usePacerStore((s) => s.midi.error);
   const connectMidi = usePacerStore((s) => s.connectMidi);
+  const setBrowserNotice = usePacerStore((s) => s.setBrowserNotice);
 
   switch (status) {
     case "disconnected":
     case "connecting":
       return <ConnectMidiButton />;
     case "unsupported":
-      return (
-        <span className="text-xs text-warning">Web MIDI isn't available in this browser (use Chrome or Edge).</span>
-      );
+      return <NoMidiButton onPress={() => setBrowserNotice("midi")} />;
     case "denied":
       return (
         <span className="flex items-center gap-2 text-xs text-warning">
@@ -76,10 +92,11 @@ export function MidiOutputSelect() {
     return (
       <span className="flex flex-wrap items-center gap-2">
         <span className="text-sm text-muted-foreground">Simulated MIDI output</span>
-        {midi.status === "disconnected" || midi.status === "connecting" ? (
-          <ConnectMidiButton />
+        {midi.status === "denied" ? (
+          <span className="text-xs text-warning">MIDI access was refused; Retry is in the header.</span>
         ) : (
-          <span className="text-xs text-warning">MIDI unavailable — see the header</span>
+          // Connect MIDI, or where the browser has none, the same No MIDI button as the header.
+          <ConnectMidiButton />
         )}
       </span>
     );

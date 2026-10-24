@@ -20,7 +20,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
-import { searchForWorkspaceRoot, type Plugin } from "vite";
+import { searchForWorkspaceRoot, type Plugin, type ViteDevServer } from "vite";
 
 export const BRAND_ENV = "PACER_BRAND_DIR";
 const NEUTRAL_FAVICON = resolve(import.meta.dirname, "../../public/favicon.svg");
@@ -40,6 +40,12 @@ const KIT_FILES = {
   /** The app icon, navy, at the sizes a tab and a home screen ask for. */
   favicon: "png/app-icon-sizes/softdog-app-icon-dark-32.png",
   appleTouchIcon: "png/app-icon-sizes/softdog-app-icon-dark-180.png",
+  /**
+   * The installed app's icon: the kit's drawing, which scales to whatever a dock or home screen
+   * asks for, and its 512 px PNG for anywhere that won't take an SVG.
+   */
+  appIcon: "svg/dark/softdog-app-icon-dark.svg",
+  appIcon512: "png/app-icon-sizes/softdog-app-icon-dark-512.png",
   /** Colour tokens (light and dark) and the two web fonts. */
   colors: "colors/softdog-colors.css",
   fonts: "fonts/web/softdog-fonts.css",
@@ -71,11 +77,46 @@ export function iconLinks(kit: BrandKit | null, base: string): Record<string, st
   ];
 }
 
+/**
+ * The web app manifest, which is what lets the app be installed (ui/browser/BrowserNotice): a name,
+ * a start URL, a display mode and icons. MDN lists 192 and 512 px PNGs as what Chromium needs, but
+ * desktop Chrome takes an SVG declared at any size (checked with its own installability report),
+ * so the icon is the kit's drawing, with its 512 px PNG beside it for anywhere that won't take an
+ * SVG. The neutral build has only its SVG. The colours are the page's own, so the window opens the
+ * colour the app is.
+ */
+export function webAppManifest(kit: BrandKit | null): string {
+  const icons = kit
+    ? [
+        { src: "/brand/app-icon.svg", sizes: "any", type: "image/svg+xml" },
+        { src: "/brand/app-icon-512.png", sizes: "512x512", type: "image/png" },
+      ]
+    : [{ src: "/favicon.svg", sizes: "any", type: "image/svg+xml" }];
+  const background = kit ? "#081426" : "#141417";
+  return JSON.stringify(
+    {
+      name: "Pacer Programmer",
+      short_name: "Pacer Prog",
+      description: "Program and simulate the Nektar Pacer MIDI foot controller.",
+      id: "/",
+      start_url: "/",
+      scope: "/",
+      display: "standalone",
+      background_color: background,
+      theme_color: background,
+      icons,
+    },
+    null,
+    2,
+  );
+}
+
 /** Files a page links to by a fixed address, by that address under the base. */
 function brandFiles(kit: BrandKit, docs: boolean): Record<string, string> {
   return {
     "brand/favicon.png": kit.favicon,
     "brand/apple-touch-icon.png": kit.appleTouchIcon,
+    ...(docs ? {} : { "brand/app-icon.svg": kit.appIcon, "brand/app-icon-512.png": kit.appIcon512 }),
     ...(docs
       ? {
           "brand/lockup-light.svg": kit.lockupOnLight,
@@ -87,18 +128,21 @@ function brandFiles(kit: BrandKit, docs: boolean): Record<string, string> {
   };
 }
 
+/** Serves `files` from the dev server, each at its name under the base. */
+function serveFiles(server: ViteDevServer, files: Record<string, string>) {
+  const types: Record<string, string> = { ".png": "image/png", ".svg": "image/svg+xml" };
+  for (const [name, file] of Object.entries(files)) {
+    server.middlewares.use(`${server.config.base}${name}`, (_req, res) => {
+      res.setHeader("Content-Type", types[extname(file)] ?? "application/octet-stream");
+      res.end(readFileSync(file));
+    });
+  }
+}
+
 /** Serves `files` in development and emits them in a build. */
 function fixedFiles(files: Record<string, string>): Pick<Plugin, "configureServer" | "generateBundle"> {
-  const types: Record<string, string> = { ".png": "image/png", ".svg": "image/svg+xml" };
   return {
-    configureServer(server) {
-      for (const [name, file] of Object.entries(files)) {
-        server.middlewares.use(`${server.config.base}${name}`, (_req, res) => {
-          res.setHeader("Content-Type", types[extname(file)] ?? "application/octet-stream");
-          res.end(readFileSync(file));
-        });
-      }
-    },
+    configureServer: (server) => serveFiles(server, files),
     generateBundle() {
       for (const [name, file] of Object.entries(files))
         this.emitFile({ type: "asset", fileName: name, source: readFileSync(file) });
@@ -143,9 +187,24 @@ export function brandPlugin(dir = process.env[BRAND_ENV]): Plugin {
     },
     transformIndexHtml: (html) => ({
       html: kit ? html.replace(/<html\b/, '<html data-theme="dark"') : html,
-      tags: iconLinks(kit, "/").map((attrs) => ({ tag: "link", attrs, injectTo: "head" as const })),
+      tags: [
+        ...iconLinks(kit, "/"),
+        // In development too, so the dev server installs like the site does.
+        { rel: "manifest", href: "/manifest.webmanifest" },
+      ].map((attrs) => ({ tag: "link", attrs, injectTo: "head" as const })),
     }),
-    ...(kit ? fixedFiles(brandFiles(kit, false)) : {}),
+    configureServer(server) {
+      if (kit) serveFiles(server, brandFiles(kit, false));
+      server.middlewares.use("/manifest.webmanifest", (_req, res) => {
+        res.setHeader("Content-Type", "application/manifest+json");
+        res.end(webAppManifest(kit));
+      });
+    },
+    generateBundle() {
+      for (const [name, file] of Object.entries(kit ? brandFiles(kit, false) : {}))
+        this.emitFile({ type: "asset", fileName: name, source: readFileSync(file) });
+      this.emitFile({ type: "asset", fileName: "manifest.webmanifest", source: webAppManifest(kit) });
+    },
   };
 }
 

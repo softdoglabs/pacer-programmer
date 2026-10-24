@@ -22,7 +22,7 @@ another's goes back to A2, and so on. The copies are identical except for that
 one target. With twelve main presets you need twelve copies of the looper,
 and twelve mains plus twelve copies is all 24 slots.
 
-And then you have to keep them identical. Change a colour, move undo to
+And then you have to keep them identical. Change a color, move undo to
 another switch, or fix a CC, and you make the same change on every copy, in an
 editor that shows them as twelve unrelated presets. Miss one and the looper
 behaves differently depending on how you got there.
@@ -42,7 +42,7 @@ hardware needs one per way in.
 
 It reads the design out of your presets. When you load a configuration, the
 [preset map](reference/preset-map.md) groups presets that behave identically
-apart from where their jumps lead into one state, and it recognises a set of
+apart from where their jumps lead into one state, and it recognizes a set of
 copies that each lead back to their own origin as a return. A board you built
 by hand years ago shows up as the design you meant, and you didn't have to
 describe it to anyone.

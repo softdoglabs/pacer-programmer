@@ -51,8 +51,8 @@ For programming in more depth:
 
 - [Switches and Steps](switches-and-steps.md): steps, control modes, toggles
   and pedals.
-- [Lights and Colours](lights-and-colours.md): which light shows, and when
-  each colour shows.
+- [Lights and Colors](lights-and-colors.md): which light shows, and when
+  each color shows.
 - [MIDI Sent When a Preset Loads](preset-midi-on-load.md): setting up your rig
   the moment a preset is chosen.
 - [Saving and Sending](saving-and-sending.md): snapshots, and writing to the

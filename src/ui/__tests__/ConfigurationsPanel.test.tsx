@@ -84,8 +84,8 @@ describe("bringing presets in from a file", () => {
     expect(store().board.config).toBe(before);
   });
 
-  it("offers the presets of a whole dump, with the ones that differ ticked", async () => {
-    // A whole dump an AI changed two presets of: those two are ticked without being named.
+  it("offers the presets of a whole dump, with the ones that differ checked", async () => {
+    // A whole dump an AI changed two presets of: those two are checked without being named.
     act(() => store().setDeviceDrawerOpen(true));
     const before = store().board.config;
     const changed = renamePreset(renamePreset(before, C1, "LOOPR"), D6, "OTHER");
@@ -94,9 +94,9 @@ describe("bringing presets in from a file", () => {
     fireEvent.change(screen.getByLabelText("File to merge presets from"), {
       target: { files: [syx("from-ai.syx", encodeSysex(changed))] },
     });
-    expect(await screen.findByText(/Tick the presets from from-ai.syx to merge/)).toBeTruthy();
-    const ticked = screen.getAllByRole<HTMLInputElement>("checkbox").filter((c) => c.checked);
-    expect(ticked).toHaveLength(2);
+    expect(await screen.findByText(/Check the presets from from-ai.syx to merge/)).toBeTruthy();
+    const checked = screen.getAllByRole<HTMLInputElement>("checkbox").filter((c) => c.checked);
+    expect(checked).toHaveLength(2);
 
     // Leave D6 out: only C1 comes across.
     fireEvent.click(screen.getByRole("checkbox", { name: /D6 OTHER/ }));
@@ -107,7 +107,7 @@ describe("bringing presets in from a file", () => {
   it("lists what would change first, and points out a preset edited here since opening", async () => {
     /*
      * The file was exported before A2 was renamed here, so it still holds the old A2. Bringing it
-     * in would undo that edit: it's ticked like anything else that differs, and the row says why
+     * in would undo that edit: it's checked like anything else that differs, and the row says why
      * you might not want it.
      */
     const A2 = userPresetIndex(0, 2);
@@ -119,7 +119,7 @@ describe("bringing presets in from a file", () => {
     fireEvent.change(screen.getByLabelText("File to merge presets from"), {
       target: { files: [syx("from-ai.syx", encodeSysex(renamePreset(exported, D6, "OTHER")))] },
     });
-    await screen.findByText(/Tick the presets from/);
+    await screen.findByText(/Check the presets from/);
     const rows = within(screen.getByRole("list", { name: "Presets to merge" })).getAllByRole("listitem");
     expect(rows.slice(0, 2).map((r) => r.textContent?.match(/[A-D][1-6]/)?.[0])).toEqual(["A2", "D6"]);
     expect(rows[0]!.textContent).toMatch(/you've edited this one since opening/);
@@ -150,7 +150,7 @@ describe("bringing presets in from a file", () => {
 describe("merging presets from a saved configuration", () => {
   it("offers a saved configuration's presets for merging into the open one, as an edit", async () => {
     /*
-     * The same dialog as for a file, with a row of the list as the source: what differs is ticked,
+     * The same dialog as for a file, with a row of the list as the source: what differs is checked,
      * and what's merged is an unsaved edit of the open configuration, not a switch to the other one.
      */
     const factory = store().board.config;
@@ -167,7 +167,7 @@ describe("merging presets from a saved configuration", () => {
     const looperRow = within(list).getByText("looper").closest("li")!;
     fireEvent.click(within(looperRow).getByRole("button", { name: "Pick presets from this…" }));
 
-    expect(await screen.findByText(/Tick the presets from “looper” to merge/)).toBeTruthy();
+    expect(await screen.findByText(/Check the presets from “looper” to merge/)).toBeTruthy();
     expect(screen.getAllByRole<HTMLInputElement>("checkbox").filter((c) => c.checked)).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Merge 1 preset" }));
 
@@ -262,7 +262,7 @@ describe("downloading and loading every saved configuration as a zip", () => {
     expect(row("studio").textContent).toContain("new");
     expect(row("same").textContent).toContain("already saved, and identical");
     expect(row("broken").textContent).toContain("can't be read");
-    // A taken name starts unticked, keeping what's saved.
+    // A taken name starts unchecked, keeping what's saved.
     expect(within(row("gig")).getByRole("checkbox")).toHaveProperty("checked", false);
     expect(within(row("keep")).getByRole("checkbox")).toHaveProperty("checked", false);
     expect(within(row("studio")).getByRole("checkbox")).toHaveProperty("checked", true);

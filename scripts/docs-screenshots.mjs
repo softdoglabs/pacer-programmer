@@ -139,7 +139,7 @@ const scenes = {
     await p.shot("program-faceplate", { around: await p.rect('[aria-label^="Pacer faceplate"]'), pad: 14 });
   },
 
-  /** Switch 1 opened for programming: a CC toggle with its colours, and a second step. */
+  /** Switch 1 opened for programming: a CC toggle with its colors, and a second step. */
   async "switch-editor"(p) {
     await p.resize(1500);
     await p.app(`
@@ -177,9 +177,9 @@ const scenes = {
     // Unnumbered, for the guide; the key lives in the reference.
     await p.shot("switch-editor-plain", { around: await p.rect('[aria-label="Programming Stomp 1"]'), pad: 16 });
 
-    // The colour picker, opened on the first colour.
+    // The color picker, opened on the first color.
     await p.click('button[aria-label^="While CC 52 = 127"]');
-    await p.shot("colour-picker", { around: await p.rect('[role="dialog"]'), pad: 10 });
+    await p.shot("color-picker", { around: await p.rect('[role="dialog"]'), pad: 10 });
     await p.key("Escape");
   },
 
@@ -290,7 +290,7 @@ const scenes = {
 
   /**
    * Pick presets from a file… given the AI example's dump while the factory defaults are open: a whole file,
-   * of which the two presets that differ are ticked. Then merged, which has to change exactly
+   * of which the two presets that differ are checked. Then merged, which has to change exactly
    * those two.
    */
   async "import-presets"(p) {
@@ -437,14 +437,14 @@ const scenes = {
     await p.click('[role="dialog"] button', "Add route");
     await wait(800);
     // The way back: A already goes to PRGM1, so the dialog asks, and going back costs a preset.
-    // None is empty, as on every Pacer until one's cleared, so it's D6 and a tick to agree.
+    // None is empty, as on every Pacer until one's cleared, so it's D6 and a check to agree.
     await p.drag(await p.handle("LOOPR", "s-l"), await p.handle("PRGM2", "t-r"));
     await p.click('[role="dialog"] button[aria-haspopup]');
     await p.click('[role="option"]', "A — goes to PRGM1");
     await p.click('[role="dialog"] label', "Goes back to wherever LOOPR");
     await p.click('[role="dialog"] button', "Choose a preset");
     await p.click('[role="option"]', "D6 SEQNC");
-    await p.shot("route-clear", { around: await p.rect('[role="dialog"]'), pad: 8 }); // the reference's, unticked
+    await p.shot("route-clear", { around: await p.rect('[role="dialog"]'), pad: 8 }); // the reference's, unchecked
     await p.click('[role="dialog"] label', "Clear D6 SEQNC to make room");
     await p.shot("t2-return", { around: await p.rect('[role="dialog"]'), pad: 8 });
     await p.click('[role="dialog"] button', "Add route");

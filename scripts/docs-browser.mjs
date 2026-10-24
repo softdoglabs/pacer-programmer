@@ -31,7 +31,7 @@ const SCALE = 2;
 
 export const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Terminal colour codes, which Vite wraps its output in — port number included. */
+/** Terminal color codes, which Vite wraps its output in — port number included. */
 // eslint-disable-next-line no-control-regex
 const ANSI_COLOUR = /\x1b\[[0-9;]*m/g;
 
@@ -49,7 +49,7 @@ export function startVite() {
       reject(new Error("The dev server didn't start within 20s"));
     }, 20_000);
     vite.stdout.on("data", (chunk) => {
-      // Vite colours its output, port number included, so the escape codes come off first.
+      // Vite colors its output, port number included, so the escape codes come off first.
       if (String(chunk).replace(ANSI_COLOUR, "").includes(`localhost:${VITE_PORT}`)) {
         clearTimeout(timer);
         resolve(vite);
@@ -245,14 +245,14 @@ export class Page {
         [C.Stompswitch4, 51, 17], [C.Stompswitch5, 55, 21], [C.Stompswitch6, 49, 15],
         [C.StompswitchB, 52, 5],
       ];
-      for (const [id, cc, colour] of pads) {
+      for (const [id, cc, color] of pads) {
         c = e.setStepType(c, 13, id, 1, "switch", T.CcTrigger);
         c = e.updateStep(c, 13, id, 1, { data: [cc, 127, 0], channel: 0 });
-        c = e.updateStepLed(c, 13, id, 1, { activeColor: colour, inactiveColor: colour + 1 });
+        c = e.updateStepLed(c, 13, id, 1, { activeColor: color, inactiveColor: color + 1 });
       }
       for (const [from, to] of [[13, 1], [1, 13]]) {
         c = e.setJump(c, from, C.StompswitchA, 1, to);
-        // As the tutorial says: White for the colour. A Preset Select never shows its second.
+        // As the tutorial says: White for the color. A Preset Select never shows its second.
         c = e.updateStepLed(c, from, C.StompswitchA, 1, { activeColor: 23 });
       }
       if (${stage} >= 2) {
@@ -358,7 +358,7 @@ export class Page {
     await wait(350);
   }
 
-  /** The centre of one of a map state's connection dots (`s-r`, `t-l`…), found by the state's name. */
+  /** The center of one of a map state's connection dots (`s-r`, `t-l`…), found by the state's name. */
   async handle(name, id) {
     return this.eval(`(() => {
       const node = [...document.querySelectorAll(".react-flow__node")].find((n) => n.textContent.includes(${JSON.stringify(name)}));
@@ -421,7 +421,7 @@ export class Page {
           "inside-top-right": (b) => [b.x + b.width - 20, b.y + 20],
           "inside-right": (b) => [b.x + b.width - 22, b.y + b.height / 2],
           // On the control's own top-right corner, the way the app's badges sit on theirs: for
-          // controls packed in a row, where any side would also be beside a neighbour.
+          // controls packed in a row, where any side would also be beside a neighbor.
           corner: (b) => [b.x + b.width - 2, b.y + 2],
         };
         for (const c of ${JSON.stringify(callouts)}) {

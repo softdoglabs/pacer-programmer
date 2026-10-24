@@ -47,7 +47,7 @@ describe("sendPaced", () => {
     expect(finished).toBe(true);
   });
 
-  it("stops when cancelled, reporting how many were sent", async () => {
+  it("stops when canceled, reporting how many were sent", async () => {
     const { output, connection } = setup();
     const controller = new AbortController();
     const done = sendPaced(connection, MESSAGES, { outputId: "out", signal: controller.signal });

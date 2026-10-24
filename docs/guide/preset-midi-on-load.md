@@ -3,7 +3,7 @@
 Each preset can send up to sixteen messages the moment it loads, before you
 press anything. That's how you put your rig in the state the preset expects.
 For example, you might send a program change to load the matching patch on your
-modeller, or a few CCs to turn effects on or off.
+modeler, or a few CCs to turn effects on or off.
 
 You'll find them in Program mode, under the faceplate:
 
@@ -24,5 +24,5 @@ nothing is sent when you load a file.
 
 Load-time messages update the Pacer's memory like any other message, and the
 switches light to match. If a preset sends PC 5 on load, and switch 2 sends
-PC 5 on the same channel, switch 2 is showing its "on" colour as soon as you
+PC 5 on the same channel, switch 2 is showing its "on" color as soon as you
 arrive.

@@ -73,10 +73,10 @@ it to write a preset.
 you have open, where **Import config…** would open the file in its place. Pick
 a file and it lists the presets in it:
 
-![Merging presets: the two presets that differ are ticked, and the rest are listed as the same](../images/import-presets.png)
+![Merging presets: the two presets that differ are checked, and the rest are listed as the same](../images/import-presets.png)
 
-The presets that differ from what you have open come first, already ticked.
-If an AI changed two presets in a whole dump, those two are the ones ticked. Untick any you don't want and click **Merge**.
+The presets that differ from what you have open come first, already checked.
+If an AI changed two presets in a whole dump, those two are the ones checked. Uncheck any you don't want and click **Merge**.
 
 Each preset is written over the one in the same slot. If the file only sets
 part of a preset, the rest of that preset stays as it was, which is exactly
@@ -84,7 +84,7 @@ what the Pacer would do if you sent it the file. Global settings in the file
 are left out.
 
 A preset you've edited since opening the configuration is marked. The file may
-have an older version of it, so untick it if you'd rather keep your edit.
+have an older version of it, so uncheck it if you'd rather keep your edit.
 
 Merging presets is an edit like any other. You can undo it, it's unsaved
 until you save, and the presets it changed are the ones **Send to Pacer…**
@@ -128,8 +128,8 @@ defaults aren't included, since they're built in.
 
 **Load a .zip…** adds the snapshots in a zip to your list. Nothing you already
 have changes unless you say so. Where a name in the zip is already taken, its
-row has a tick box: leave it unticked to keep the one you have and skip the
-zip's, or tick it to replace yours with the zip's. With several taken names,
+row has a checkbox: leave it unchecked to keep the one you have and skip the
+zip's, or check it to replace yours with the zip's. With several taken names,
 **Replace all of them** and **Keep all the saved ones** set every box at
 once. A snapshot that's identical to the one you have is skipped without
 asking, and one that can't be read is listed with the reason.
@@ -193,7 +193,7 @@ presses in the simulator are dropped during that time rather than sent.
 **Cancel** stops a send part way through. Any presets already written stay
 written, and the result tells you which ones.
 
-**Send to Pacer…** stays greyed out until MIDI is allowed and the
+**Send to Pacer…** stays grayed out until MIDI is allowed and the
 Pacer's output port is chosen.
 
 The [preset chooser](the-faceplate.md#the-preset-chooser) marks each preset the

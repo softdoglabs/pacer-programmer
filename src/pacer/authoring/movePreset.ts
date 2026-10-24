@@ -16,8 +16,8 @@ import type { RouteResult } from "./change";
  * every Preset Select anywhere in the configuration that named the old slot now names the new one.
  *
  * Relative stepping is deliberately left alone. Next/previous names a direction, not a preset, so
- * there's nothing in it to repoint — the preset that steps to its neighbour now steps to whatever
- * its new neighbour is, which is what stepping means.
+ * there's nothing in it to repoint — the preset that steps to its neighbor now steps to whatever
+ * its new neighbor is, which is what stepping means.
  */
 export function movePreset(config: PacerConfig, from: number, to: number): RouteResult {
   if (!isUserPresetIndex(from) || !isUserPresetIndex(to)) {

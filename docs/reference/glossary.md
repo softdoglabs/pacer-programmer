@@ -27,7 +27,7 @@ See [Programming the Pacer › The Current slot](programming-the-pacer.md#the-cu
 `.syx` file.
 
 **Legend**: The printed text or icons above a switch's bar. On the Pacer
-every legend is a full-colour light.
+every legend is a full-color light.
 
 **Load-time MIDI**: Up to sixteen messages a preset sends whenever it's
 recalled. See [MIDI sent on load](program-mode.md#midi-sent-on-load).
@@ -49,7 +49,7 @@ send. That's normally your rig rather than the Pacer.
 
 **Snapshot**: A configuration saved in this browser.
 
-**Spare preset**: A preset that does nothing except step to its neighbours.
+**Spare preset**: A preset that does nothing except step to its neighbors.
 Clearing a preset makes one and names it `EMPTY`. New copies go there first.
 
 **State**: A place your Pacer can be, drawn as a box on the map. It's one or

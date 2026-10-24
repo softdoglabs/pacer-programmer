@@ -39,7 +39,7 @@ describe("spare slots", () => {
 
   it("treats a preset left with only its next/previous stepping as spare", () => {
     // What the hardware leaves when someone empties a preset from the front panel: C and D still
-    // walk to the neighbours, and nothing else happens.
+    // walk to the neighbors, and nothing else happens.
     const cleared = clearPreset(factory, A2);
     const stepping = {
       ...cleared,

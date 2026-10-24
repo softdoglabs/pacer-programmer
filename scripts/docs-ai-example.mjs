@@ -18,10 +18,10 @@
  * - fields are elm len value, with a 00 after every field but the last
  * - checksum = (128 − (sum of cmd…last field byte) mod 128) mod 128
  * - step n of a control: elements (n−1)×6+1 … +5 = channel, type, data 1–3, active
- * - light for step n: elements 0x40+(n−1)×4 … +3 = feedback, first colour, second colour, which light
+ * - light for step n: elements 0x40+(n−1)×4 … +3 = feedback, first color, second color, which light
  * - preset MIDI message n (obj 7E): elements (n−1)×6+1 … +4 = channel, type, data 1–3
  * - CC Trigger is 40, Preset Select 62 (target = idx + 2), Off 61; a preset's CC is 65
- * - colour for hue h (1–12): bright 2h − 1, dim 2h
+ * - color for hue h (1–12): bright 2h − 1, dim 2h
  */
 
 import { readFileSync, writeFileSync } from "node:fs";

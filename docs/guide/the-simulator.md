@@ -6,7 +6,7 @@ preset sends when it loads all behave as they would on the hardware (there are
 a few exceptions, listed [at the end](#what-it-cant-do)). It can also send
 that MIDI to your real gear.
 
-So you can program a switch, press it on screen, and hear your modeller, synth
+So you can program a switch, press it on screen, and hear your modeler, synth
 or DAW respond. You don't need a Pacer connected, nothing gets written to one,
 and if you get it wrong nothing is lost. Once it does what you want,
 [send it](saving-and-sending.md) to the Pacer.
@@ -14,7 +14,7 @@ and if you get it wrong nothing is lost. Once it does what you want,
 ## Connecting Your Gear
 
 The simulator sends from your computer, so your gear needs a MIDI connection to
-the computer. Many modellers, synths and controllers show up as a MIDI port
+the computer. Many modelers, synths and controllers show up as a MIDI port
 when you plug them in over USB. If yours only has DIN MIDI, cable a USB MIDI
 interface's MIDI Out to its MIDI In, the same way you'd cable the Pacer. A DAW on
 the same computer can listen on a virtual MIDI port (the IAC Driver on macOS,

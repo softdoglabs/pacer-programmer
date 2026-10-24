@@ -101,12 +101,12 @@ describe("pullFullDump", () => {
     await expect(pullFullDump(noSysex, { inputId: "in", outputId: "out" })).rejects.toThrow(/SysEx permission/);
   });
 
-  it("can be cancelled", async () => {
+  it("can be canceled", async () => {
     const { connection, input } = fakePacer("silent");
     const controller = new AbortController();
     const pulled = pullFullDump(connection, { inputId: "in", outputId: "out", signal: controller.signal });
     controller.abort();
-    await expect(pulled).rejects.toThrow("Cancelled");
+    await expect(pulled).rejects.toThrow("Canceled");
     expect(input.listenerCount).toBe(0);
   });
 });

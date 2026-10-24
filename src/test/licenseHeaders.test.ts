@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /*
- * Every source file says which licence it's under and whose it is, so a file copied out of the
+ * Every source file says which license it's under and whose it is, so a file copied out of the
  * repository still carries both. A new file is the one that gets forgotten, hence the test.
  */
 
@@ -21,7 +21,7 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
-describe("licence headers", () => {
+describe("license headers", () => {
   it("are on every source file and script", () => {
     const files = [
       ...sourceFiles("src"),

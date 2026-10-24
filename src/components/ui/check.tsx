@@ -4,8 +4,8 @@
 import { Checkbox } from "react-aria-components";
 import { cn } from "@/lib/utils";
 
-/** A tick-box with its label beside it (React Aria), big enough to hit on a tablet. */
-export function Tick({
+/** A checkbox with its label beside it (React Aria), big enough to hit on a tablet. */
+export function Check({
   isSelected,
   onChange,
   className,

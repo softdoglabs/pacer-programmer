@@ -24,7 +24,7 @@ file, and at <https://www.gnu.org/licenses/gpl-3.0.html>.
 
 The license covers copyright, not trademarks. It comes with one added term,
 which section 7(e) of the GPL allows: it grants no rights under trademark law
-to the Soft Dog Labs name or logos. The logos, colours and fonts you see on
+to the Soft Dog Labs name or logos. The logos, colors and fonts you see on
 this site and in the hosted app aren't in the repository, so a copy you build
 yourself has the "by Soft Dog Labs" credit but none of the look.
 

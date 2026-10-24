@@ -20,7 +20,7 @@ export default {
   // source below it (PageFooter.vue).
   Layout: () => h(DefaultTheme.Layout, null, { "doc-before": () => h(OpenAppPhone), "doc-after": () => h(PageFooter) }),
   setup() {
-    // The kit's colours follow the OS unless told otherwise, and the docs have a light/dark switch
+    // The kit's colors follow the OS unless told otherwise, and the docs have a light/dark switch
     // of their own, so tell the kit which one the switch chose. data-theme on <html> is how the kit
     // forces a whole page (its sdl-theme-* classes are for sections, and lose to its dark-OS rule on
     // the root). Harmless without the kit.

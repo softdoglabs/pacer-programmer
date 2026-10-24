@@ -178,7 +178,7 @@ describe("pulling from the Pacer", () => {
     expect(store().library.entries).toEqual([]);
   });
 
-  it("can be cancelled", async () => {
+  it("can be canceled", async () => {
     await connectFakePacer("silent");
     const pulled = store().pullFromPacer();
     await vi.advanceTimersByTimeAsync(1000); // past the identity query, into the dump

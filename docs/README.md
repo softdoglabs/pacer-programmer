@@ -51,7 +51,7 @@ part, see [Working with an AI](guide/working-with-ai.md).
 - [The Simulator](guide/the-simulator.md)
 - [Editing a Preset](guide/editing-a-preset.md)
 - [Switches and Steps](guide/switches-and-steps.md)
-- [Lights and Colours](guide/lights-and-colours.md)
+- [Lights and Colors](guide/lights-and-colors.md)
 - [MIDI Sent When a Preset Loads](guide/preset-midi-on-load.md)
 - [Saving and Sending](guide/saving-and-sending.md)
 - [Working with an AI](guide/working-with-ai.md)

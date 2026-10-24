@@ -38,11 +38,11 @@ rather have each press do the next thing in a list, set it to *Sequence*.
 examples, and every type and field is listed in
 [Program mode](../reference/program-mode.md#step-types).
 
-## 4. Choose Its Colours
+## 4. Choose Its Colors
 
-Under the step, pick which light it uses and its two colours. The labels tell
+Under the step, pick which light it uses and its two colors. The labels tell
 you when each one shows, for example *While CC 52 = 127* and *Otherwise*.
-[Lights and colours](lights-and-colours.md) has the details.
+[Lights and colors](lights-and-colors.md) has the details.
 
 ## 5. Try It
 

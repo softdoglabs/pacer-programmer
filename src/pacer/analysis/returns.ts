@@ -18,8 +18,8 @@ import { isPlainStepping, presetTransitions, type TransitionEdge, type Transitio
  * The presets that lead to `presetIndex` by name — what could have entered it.
  *
  * - **Plain stepping doesn't count.** Next/previous names a direction, not a preset. Every slot has
- *   neighbours, and C and D step on almost every preset on a real device, so counting it would make
- *   everything look entered from two places and no return could ever be recognised.
+ *   neighbors, and C and D step on almost every preset on a real device, so counting it would make
+ *   everything look entered from two places and no return could ever be recognized.
  * - **Neither does the Current slot**, for the same reason it isn't a state: it's the device's
  *   working copy of whichever preset is loaded, so its switches are a second copy of that preset's.
  *   Every real dump has one, and counting it gave everything the loaded preset leads to a phantom

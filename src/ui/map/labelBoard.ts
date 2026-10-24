@@ -16,10 +16,10 @@ import { createContext, useContext, useLayoutEffect, useSyncExternalStore } from
 
 type Point = { x: number; y: number };
 
-/** Where along an edge a badge may go, best first: the middle, then out towards either end. */
+/** Where along an edge a badge may go, best first: the middle, then out toward either end. */
 export const LABEL_SPOTS = [0.5, 0.38, 0.62, 0.28, 0.72, 0.2, 0.8, 0.13, 0.87] as const;
 
-/** How far apart two badges' centres have to be, in flow units: a badge is 24 across, plus a little air. */
+/** How far apart two badges' centers have to be, in flow units: a badge is 24 across, plus a little air. */
 const CLEARANCE = 28;
 
 interface Entry {

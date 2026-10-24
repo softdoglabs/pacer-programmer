@@ -82,7 +82,7 @@ export function pullFullDump(connection: MidiConnection, options: PullOptions): 
       finish({ bytes });
     };
 
-    const onAbort = () => finish({ error: new DumpError("Cancelled") });
+    const onAbort = () => finish({ error: new DumpError("Canceled") });
 
     const unsubscribe = connection.listen(inputId, (data) => {
       if (!isPacerDataMessage(data)) return;

@@ -248,7 +248,7 @@ export function PresetChooser({ trigger }: { trigger: React.ReactNode }) {
   );
 }
 
-/** The chooser as a labelled button, for places with room for one (the switch editor's header). */
+/** The chooser as a labeled button, for places with room for one (the switch editor's header). */
 export function PresetChooserButton() {
   const index = usePacerStore((s) => s.board.activePresetIndex);
   const name = usePacerStore((s) => s.board.config.presets[s.board.activePresetIndex]?.name);

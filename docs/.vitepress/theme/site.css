@@ -6,7 +6,7 @@
  *
  * The top bar's link to the app (config.ts, `nav`) as a button, so someone who lands on a page from
  * a search sees where the app itself is. VitePress gives nav links no class of their own, so it's
- * found by its address. The colours are VitePress's brand button's, which the kit sets when there's
+ * found by its address. The colors are VitePress's brand button's, which the kit sets when there's
  * one.
  */
 .VPNavBarMenu .VPNavBarMenuLink[href^="https://pacer-programmer.softdoglabs.com"] {

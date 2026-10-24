@@ -107,7 +107,7 @@ function returnsByPreset(machine: RecoveredMachine): Map<string, StepRef> {
  * A machine as something comparable: each state by the presets it is and where each of its routes
  * leads, slots passed through `slot`, with `leaveOut` dropped. Names are left out (they're labels;
  * a state's identity is what it does), and so is plain stepping: next/previous names a direction,
- * not a preset, so the neighbours of a moved preset step somewhere new and that's what stepping means.
+ * not a preset, so the neighbors of a moved preset step somewhere new and that's what stepping means.
  */
 function shape(machine: RecoveredMachine, leaveOut: ReadonlySet<number>, slot: (n: number) => number): string {
   const presetsOf = (id: string) =>

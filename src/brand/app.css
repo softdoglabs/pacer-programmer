@@ -2,11 +2,11 @@
 /* Copyright (C) 2026 Soft Dog Labs, LLC */
 
 /*
- * The brand kit's dark palette under the app's colours (src/index.css): its navy for the page,
- * panels and lines, and its text colours. Only loaded in a branded build, after the kit's own
- * colours (src/brand/vitePlugin.ts), so it names their variables but carries none of the brand.
+ * The brand kit's dark palette under the app's colors (src/index.css): its navy for the page,
+ * panels and lines, and its text colors. Only loaded in a branded build, after the kit's own
+ * colors (src/brand/vitePlugin.ts), so it names their variables but carries none of the brand.
  *
- * Teal stays, and so does the faceplate: teal is Nektar's colour, the Pacer's own, and the faceplate
+ * Teal stays, and so does the faceplate: teal is Nektar's color, the Pacer's own, and the faceplate
  * is drawn to look like the hardware. data-theme="dark" is set on the page by the plugin, and makes
  * this outrank index.css's :root without depending on stylesheet order.
  */

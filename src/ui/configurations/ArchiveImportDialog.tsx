@@ -4,7 +4,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ModalDialog } from "@/components/ui/dialog";
-import { Tick } from "@/components/ui/tick";
+import { Check } from "@/components/ui/check";
 import type { LibraryEntry } from "../../library/configLibrary";
 import type { ArchiveItem } from "../../library/libraryArchive";
 import { decodeSysex } from "../../pacer/protocol/decode";
@@ -16,7 +16,7 @@ import type { Guard } from "./EntryRow";
 /*
  * Bringing a zip of configurations (libraryArchive.ts) into the saved list. It adds to the list
  * rather than replacing it, so the only question is what to do where a name is already taken: each
- * of those has its own tick, unticked, which keeps the saved one and leaves the zip's out. Ticked,
+ * of those has its own check, unchecked, which keeps the saved one and leaves the zip's out. Checked,
  * the zip's is written over it. One that's identical to what's saved asks nothing.
  */
 
@@ -107,12 +107,12 @@ function Form({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [choice],
   );
-  // New ones start ticked to add; clashes start unticked, which keeps what's saved.
-  const [ticked, setTicked] = useState<ReadonlySet<ArchiveItem>>(
+  // New ones start checked to add; clashes start unchecked, which keeps what's saved.
+  const [checked, setChecked] = useState<ReadonlySet<ArchiveItem>>(
     () => new Set(rows.filter((r) => r.kind === "new").map((r) => r.item)),
   );
   const toggle = (item: ArchiveItem, on: boolean) =>
-    setTicked((t) => {
+    setChecked((t) => {
       const next = new Set(t);
       if (on) next.add(item);
       else next.delete(item);
@@ -120,8 +120,8 @@ function Form({
     });
 
   const clashes = rows.filter((r) => r.kind === "clash");
-  const adding = rows.filter((r) => r.kind === "new" && ticked.has(r.item));
-  const replacing = clashes.filter((r) => ticked.has(r.item));
+  const adding = rows.filter((r) => r.kind === "new" && checked.has(r.item));
+  const replacing = clashes.filter((r) => checked.has(r.item));
   const choices: ArchiveChoice[] = [
     ...adding.map((r) => ({ item: r.item })),
     ...replacing.map((r) => ({ item: r.item, replaceId: r.existing.id })),
@@ -143,7 +143,7 @@ function Form({
     <div className="space-y-3 text-sm">
       <p className="text-muted-foreground">
         {choice.fileName} holds {rows.length === 1 ? "1 configuration" : `${rows.length} configurations`}. They're added
-        to your saved ones; nothing already saved changes unless you tick it below.
+        to your saved ones; nothing already saved changes unless you check it below.
       </p>
 
       {clashes.length > 1 && (
@@ -152,14 +152,14 @@ function Form({
           <Button
             size="sm"
             variant="ghost"
-            onPress={() => setTicked((t) => new Set([...t, ...clashes.map((r) => r.item)]))}
+            onPress={() => setChecked((t) => new Set([...t, ...clashes.map((r) => r.item)]))}
           >
             Replace all of them
           </Button>
           <Button
             size="sm"
             variant="ghost"
-            onPress={() => setTicked((t) => new Set([...t].filter((i) => !clashes.some((r) => r.item === i))))}
+            onPress={() => setChecked((t) => new Set([...t].filter((i) => !clashes.some((r) => r.item === i))))}
           >
             Keep all the saved ones
           </Button>
@@ -169,7 +169,7 @@ function Form({
       <ul className="max-h-80 space-y-1.5 overflow-auto rounded-md border p-2" aria-label="Configurations in the zip">
         {rows.map((row) => (
           <li key={row.item.file}>
-            <ArchiveRow row={row} ticked={ticked.has(row.item)} onTick={(on) => toggle(row.item, on)} />
+            <ArchiveRow row={row} checked={checked.has(row.item)} onCheck={(on) => toggle(row.item, on)} />
           </li>
         ))}
       </ul>
@@ -193,30 +193,30 @@ function Form({
   );
 }
 
-function ArchiveRow({ row, ticked, onTick }: { row: Row; ticked: boolean; onTick: (on: boolean) => void }) {
+function ArchiveRow({ row, checked, onCheck }: { row: Row; checked: boolean; onCheck: (on: boolean) => void }) {
   const name = <span className="font-medium">{row.item.name}</span>;
   switch (row.kind) {
     case "new":
       return (
-        <Tick className="text-sm" isSelected={ticked} onChange={onTick}>
+        <Check className="text-sm" isSelected={checked} onChange={onCheck}>
           <span className="flex flex-wrap items-baseline gap-x-2">
             {name}
             <span className="text-xs text-muted-foreground">new</span>
           </span>
-        </Tick>
+        </Check>
       );
     case "clash":
       return (
-        <Tick className="text-sm" isSelected={ticked} onChange={onTick}>
+        <Check className="text-sm" isSelected={checked} onChange={onCheck}>
           <span className="flex flex-wrap items-baseline gap-x-2">
             {name}
             <span className="text-xs text-warning">
-              {ticked
+              {checked
                 ? `replaces the saved “${row.existing.name}”`
-                : `“${row.existing.name}” is already saved; tick to replace it`}
+                : `“${row.existing.name}” is already saved; check to replace it`}
             </span>
           </span>
-        </Tick>
+        </Check>
       );
     case "identical":
       return (

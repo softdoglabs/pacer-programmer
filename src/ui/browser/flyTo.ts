@@ -3,7 +3,7 @@
 
 /*
  * A closing panel shrinking into the button that reopens it, so you see where it went. A stand-in
- * the panel's size and colour is drawn over the page and animated, which leaves the dialog itself
+ * the panel's size and color is drawn over the page and animated, which leaves the dialog itself
  * to close the ordinary way. With reduced motion asked for, only the button's ring shows.
  */
 

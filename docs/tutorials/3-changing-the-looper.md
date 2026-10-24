@@ -24,7 +24,7 @@ would normally be:
 And the preset panel underneath names them: *D6 is one of 2 presets that
 behave alike, "LOOPR" on the map (C1, D6).*
 
-Now make a change. Tap switch **6** and set its colours to **10A Lavender**
+Now make a change. Tap switch **6** and set its colors to **10A Lavender**
 and **10B Dim Lavender**. Then choose C1, and you'll see its switch 6 is
 lavender too. The same goes for anything else you change, whether it's a CC, a
 step, the name, or the MIDI sent on load.

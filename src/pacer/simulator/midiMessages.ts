@@ -25,7 +25,7 @@ export function pitchBend(channel: number, value14: number): OutgoingMidiMessage
 
 /**
  * The 14-bit bend value the Pacer sends for one of its 7-bit settings. Pitch bend is the one
- * channel-voice message with 14 bits (LSB then MSB, 0-16383, centre 8192), while a step's range
+ * channel-voice message with 14 bits (LSB then MSB, 0-16383, center 8192), while a step's range
  * is stored in single SysEx bytes — so the firmware has to spread 0-127 across it.
  *
  * Confirmed on 1.01.12 by sweeping a pedal assigned Pitch Bend, full range: 735 messages, MSB

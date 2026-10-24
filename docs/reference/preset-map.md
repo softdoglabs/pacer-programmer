@@ -14,11 +14,11 @@ first. The [tutorials](../tutorials/README.md) build one step by step.
 |---|---|---|
 | 1 | Show | *Designed routes* leaves out plain next/previous stepping, which almost every preset has and which tells you nothing about your design. *Everything* draws it too, faintly. |
 | 2 | A state | A place your Pacer can be. It shows its name, with the preset it lives in underneath. The state you're on is highlighted. |
-| 3 | A route | A switch that moves you from one state to another, labelled with the switch's marking (`A`, `C`, `3`). Click it to change it. A dashed route is one of several places its switch can go, depending on how you got in, and `A↩` marks a way back. |
+| 3 | A route | A switch that moves you from one state to another, labeled with the switch's marking (`A`, `C`, `3`). Click it to change it. A dashed route is one of several places its switch can go, depending on how you got in, and `A↩` marks a way back. |
 | 4 | Several presets, one state | Presets that behave identically apart from where their switches lead are drawn as a single state. Hover to see which presets. |
 | 5 | ↩ returns | The state has a switch that goes back to wherever you entered it from, switch A in this case, drawn as the dashed routes back. The Pacer can't do that on its own. It takes one preset per way in, which is why LOOPR is two presets. Click it to change where A goes. A switch that goes back from some ways in and somewhere fixed from others says *by way in* instead. |
 | 6 | Pencil | Opens the state in [Program mode](program-mode.md), on the preset you're on if it's one of them. Double-clicking the state does the same. |
-| 7 | A preset nothing routes to | Every preset is a state, even if no switch jumps to it. The factory presets only step between neighbours, so with *Designed routes* they stand alone. |
+| 7 | A preset nothing routes to | Every preset is a state, even if no switch jumps to it. The factory presets only step between neighbors, so with *Designed routes* they stand alone. |
 
 The context bar above the map has the preset chooser, plus the same undo, Save
 and Send controls as [Program mode](program-mode.md), since changing a route is
@@ -54,7 +54,7 @@ it's rarely worth it on a 24-preset device, but if you build one by hand, the
 map draws it instead of giving up.
 
 Stepping doesn't count as a way in. Next and previous name a direction rather
-than a preset, so they never count towards entering a state, and they're left
+than a preset, so they never count toward entering a state, and they're left
 off the map unless you choose *Everything*.
 
 ## Clicking Around
@@ -102,7 +102,7 @@ Clicking a route opens it:
 - **Goes to** is the state it leads to. When the state has more than one way
   in, this becomes the [choice below](#where-a-switch-leads).
 - **Replace what the switch does** appears when you pick a switch that's busy.
-  If you tick it, the switch is emptied on every preset of the state, and the
+  If you check it, the switch is emptied on every preset of the state, and the
   route becomes the only thing it does. If you don't, the route is added as
   one more step, as long as the switch has a free one.
 - **Take the route away** stops the switch from jumping. Its other steps stay.
@@ -143,12 +143,12 @@ The dialog works out the cost before it writes anything. Each new copy gets a
 picker, **Copy of LOOPR for MAIN1** (the copy LOOPR needs for when it's entered from MAIN1), which offers empty
 presets first. If there aren't any, which is how a Pacer starts out, it lists
 the presets no route leads to or from under **In use — would be cleared**.
-Choose one of those and the dialog asks you to tick a box naming the preset
+Choose one of those and the dialog asks you to check a box naming the preset
 before it'll go ahead. The preset is cleared as part of the same edit, so one
 undo brings it back. A preset that's part of a route is never offered. To give
 one of those up, [clear it](program-mode.md#clear-preset) in Program mode.
 
-![The route dialog with no empty preset: D6 SEQNC is chosen, and a tick-box asks before clearing it](../images/route-clear.png)
+![The route dialog with no empty preset: D6 SEQNC is chosen, and a checkbox asks before clearing it](../images/route-clear.png)
 
 It goes the other way too. A change that means a state needs fewer copies, like
 switching *Goes back* to *Always goes to one state*, frees the copies nobody
@@ -166,8 +166,8 @@ The message tells you why. These are the common ones:
 | Message | Why | What to do |
 |---|---|---|
 | *A route can't lead to the state it leaves from.* | That's a reload. | Use Preset Select → Current in Program mode. |
-| *Step 1 on that switch already jumps somewhere…* | A press only takes the first jump. | Tick *Replace*, or pick another switch. |
-| *Every step on A is in use…* | There's nowhere to put the jump. | Tick *Replace*, or pick another switch. |
+| *Step 1 on that switch already jumps somewhere…* | A press only takes the first jump. | Check *Replace*, or pick another switch. |
+| *Every step on A is in use…* | There's nowhere to put the jump. | Check *Replace*, or pick another switch. |
 | *…already behaves like "LOOPR" apart from where it leads…* | Another preset is identical to the state's copies, so after the edit it would be read as one of them. | Give the state something of its own, or clear that preset. |
 | *LOOPR's switch A would come back meaning…* | The presets this edit would write wouldn't read back as the design you asked for. | Usually another switch, or a different choice, does it. |
 

@@ -116,7 +116,7 @@ export function PresetMap() {
     const drawnRoute = (t: Transition) => t.to.kind === "state" && (showing === "all" || !t.viaStepping);
     /*
      * States are placed by the designed routes alone, in both views. Plain stepping makes every
-     * preset entered from its neighbour, which has no beginning to rank from: unless the stepping
+     * preset entered from its neighbor, which has no beginning to rank from: unless the stepping
      * happened to close into a ring, dagre strung all 24 out in one row, wider than the map can
      * zoom out to show. Laid out without it, Everything only adds its faint edges to the same
      * picture, and switching views doesn't rearrange the map.
@@ -201,7 +201,7 @@ export function PresetMap() {
     );
     /*
      * Edges between the same two states would sit on one line: a pair leading both ways, or two
-     * switches leading the same way (A1's C wraps round to D6, so when D6 is a copy of the looper
+     * switches leading the same way (A1's C wraps around to D6, so when D6 is a copy of the looper
      * A1 reaches it by A and by C). Each is bowed its own distance, symmetric about the straight
      * line. The bow's "across" is the pair's, not the edge's (see `bowDirection`), so these offsets
      * share one frame whichever way each edge runs.
@@ -212,7 +212,7 @@ export function PresetMap() {
        * Which side of each node the route meets: the sides that face each other. A state mostly
        * above or below the other uses top and bottom, one mostly beside it the left and right, so
        * an edge leaves the near side and arrives at the far one rather than going out the front
-       * and round the houses. (Going by which way the layout reads instead looped every edge
+       * and the long way around. (Going by which way the layout reads instead looped every edge
        * between two states stacked in one column of the ranked part.)
        */
       const from = positions.get(e.source) ?? { x: 0, y: 0 };
@@ -270,7 +270,7 @@ export function PresetMap() {
           sourceShift: shifts.get(`${e.id}:s`) ?? 0,
           targetShift: shifts.get(`${e.id}:t`) ?? 0,
         } satisfies FlowEdgeData,
-        // Stated outright rather than left to the library's default, which is a dark grey that
+        // Stated outright rather than left to the library's default, which is a dark gray that
         // all but disappears on this background. Stepping stays quieter, but still readable.
         style: faded
           ? { strokeWidth: 1.25, stroke: "#8b8b96" }
@@ -307,9 +307,9 @@ export function PresetMap() {
           {showing === "designed"
             ? edges.length === 0
               ? // True of the factory set: its only routes are C and D stepping through the banks.
-                "Nothing here goes anywhere on purpose — every switch that changes preset just steps to a neighbour."
-              : "Switches that only step to the neighbouring preset are left out."
-            : "Stepping to a neighbour is drawn faintly."}
+                "Nothing here goes anywhere on purpose — every switch that changes preset just steps to a neighbor."
+              : "Switches that only step to the neighboring preset are left out."
+            : "Stepping to a neighbor is drawn faintly."}
         </span>
       </div>
       {notes.length > 0 && (

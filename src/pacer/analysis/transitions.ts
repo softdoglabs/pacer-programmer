@@ -154,7 +154,7 @@ function edgesForControl(from: number, controlId: number, control: SwitchControl
 
 /**
  * Plain stepping: relative next/previous carrying nothing else. It names a direction rather than a
- * preset, so it says nothing about which state a press was meant to reach — it's the neighbour walk
+ * preset, so it says nothing about which state a press was meant to reach — it's the neighbor walk
  * most presets carry on C and D, and it's worth telling apart from a designed route.
  */
 export function isPlainStepping(config: PacerConfig, edge: TransitionEdge): boolean {

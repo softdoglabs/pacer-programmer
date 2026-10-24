@@ -4,7 +4,7 @@ Pacer Programmer's code and documentation are licensed under the GNU General
 Public License, version 3 (see [LICENSE](LICENSE)). That license covers
 copyright. It doesn't cover trademarks.
 
-"Soft Dog Labs" and the Soft Dog Labs logos, colours and fonts are trademarks
+"Soft Dog Labs" and the Soft Dog Labs logos, colors and fonts are trademarks
 and brand assets of Soft Dog Labs, LLC. The assets aren't in this repository,
 and nothing here licenses them. As section 7(e) of the GPL allows, this
 project's license is given with one added term: it grants no rights under
@@ -13,7 +13,7 @@ trademark law to use the Soft Dog Labs name, logos or other marks.
 Every build credits its maker with "by Soft Dog Labs" and a link to
 softdoglabs.com, in the app's header and the docs' footer. That's an author's
 credit, like the copyright notices, and it's part of the code. The branded
-build at pacer-programmer.softdoglabs.com adds the logo, icons, colours and
+build at pacer-programmer.softdoglabs.com adds the logo, icons, colors and
 fonts from files kept elsewhere.
 
 For a copy or a fork, that means:

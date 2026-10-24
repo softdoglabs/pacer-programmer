@@ -28,11 +28,11 @@ completeness, since the app doesn't simulate the Pacer's setup menus.
 |---|---|---|
 | 1 | Top light | The text legend ("Solo"). Front row only. |
 | 2 | Middle light | The icon legend. On the back row, this is the printed legend ("Track", the transport icons and so on). |
-| 3 | Bar | The colour bar under the legends. |
+| 3 | Bar | The color bar under the legends. |
 | 4 | Switch | Click or tap to press it, and hold to keep it pressed. From the keyboard, Tab to it and press Space or Enter. |
 | 5 | Hint | What a press will do (see above). |
 
-Every light is full-colour, legends included. A switch shows one step's colour
+Every light is full-color, legends included. A switch shows one step's color
 at a time (the step it will fire next), on whichever light that step uses. In
 the picture, switch 1's step sends Program Change 0, and the bar is bright
 orange because the program on that channel is 0. In other words, the switch is
@@ -42,16 +42,16 @@ orange because the program on that channel is 0. In other words, the switch is
 
 | You see | Meaning |
 |---|---|
-| A bar or legend in a bright colour | The step that fires next is "on". Its CC holds the value it sends, say, or its note is sounding, or its program is the current one. |
-| The same colour, dim | That step is "off". |
-| Dark | Nothing to show. The step's colour is Off, or it's a next/previous switch (those stay dark), or there's nothing on the switch. |
+| A bar or legend in a bright color | The step that fires next is "on". Its CC holds the value it sends, say, or its note is sounding, or its program is the current one. |
+| The same color, dim | That step is "off". |
+| Dark | Nothing to show. The step's color is Off, or it's a next/previous switch (those stay dark), or there's nothing on the switch. |
 | Light blue bar on [Preset] | You're on one of your own presets. |
 | Light blue bar on A or B | You're in the firmware's Track (A) or Transport (B) preset. |
 | Flashing | Preset select is waiting for you (see below). |
-| A legend lit in its printed colour | The switch is assigned the function that legend shows: the Track legend while A selects Track, the arrows while C and D step. |
+| A legend lit in its printed color | The switch is assigned the function that legend shows: the Track legend while A selects Track, the arrows while C and D step. |
 
-You set the colours for each step in Program mode. The exact rules (which
-colour shows when, and what "Default" means for each message type) are in
+You set the colors for each step in Program mode. The exact rules (which
+color shows when, and what "Default" means for each message type) are in
 [Programming the Pacer › Lights](programming-the-pacer.md#lights).
 
 ### Pressing

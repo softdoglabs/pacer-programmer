@@ -127,7 +127,7 @@ describe("preset transitions", () => {
   it("indexes the factory dump both ways", () => {
     const graph = presetTransitions(factory);
     // Factory C and D step through the presets on every preset, so each one leads to its
-    // neighbours and is reachable from them.
+    // neighbors and is reachable from them.
     const outOfA1 = graph.from[A1] ?? [];
     expect(outOfA1.map((e) => e.target)).toEqual(
       expect.arrayContaining([

@@ -33,7 +33,7 @@ import { switchSpecForControl } from "../hardware";
  *   needs a preset per context, a context being the copy that entered it, so a state entered from
  *   inside another state's copies multiplies in turn (nested returns). Contexts that would lead to
  *   exactly the same places share one preset (a partial return), worked out the way a DFA is
- *   minimised: start from one class per state and split until every copy in a class leads to the
+ *   minimized: start from one class per state and split until every copy in a class leads to the
  *   same classes.
  * - **Keeping what's there.** Each copy is matched to an existing preset of its state that the
  *   same context already enters, so an edit rewrites as little as it can. Copies with nothing to
@@ -281,7 +281,7 @@ export function realize(
 
 /**
  * Whether the configuration now means what `after` says, or what it got wrong. Compared by meaning:
- * where each switch leads from each way in that exists, normalised the way the recovery reads it.
+ * where each switch leads from each way in that exists, normalized the way the recovery reads it.
  */
 function whatChanged(
   config: PacerConfig,

@@ -34,7 +34,7 @@ export type ButtonSize = keyof typeof SIZES;
 /**
  * Every button's look, in one place: what a Button is drawn with, and what LinkButton borrows so a
  * link that looks like a button looks like exactly the same button. Shape and spacing come only
- * from here; a caller's className is for layout and colour (a tone), never another shape.
+ * from here; a caller's className is for layout and color (a tone), never another shape.
  */
 export function buttonClass(variant: ButtonVariant = "default", size: ButtonSize = "default", className?: string) {
   return cn(

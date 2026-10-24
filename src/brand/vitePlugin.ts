@@ -46,7 +46,7 @@ const KIT_FILES = {
    */
   appIcon: "svg/dark/softdog-app-icon-dark.svg",
   appIcon512: "png/app-icon-sizes/softdog-app-icon-dark-512.png",
-  /** Colour tokens (light and dark) and the two web fonts. */
+  /** Color tokens (light and dark) and the two web fonts. */
   colors: "colors/softdog-colors.css",
   fonts: "fonts/web/softdog-fonts.css",
 } as const;
@@ -82,8 +82,8 @@ export function iconLinks(kit: BrandKit | null, base: string): Record<string, st
  * a start URL, a display mode and icons. MDN lists 192 and 512 px PNGs as what Chromium needs, but
  * desktop Chrome takes an SVG declared at any size (checked with its own installability report),
  * so the icon is the kit's drawing, with its 512 px PNG beside it for anywhere that won't take an
- * SVG. The neutral build has only its SVG. The colours are the page's own, so the window opens the
- * colour the app is.
+ * SVG. The neutral build has only its SVG. The colors are the page's own, so the window opens the
+ * color the app is.
  */
 export function webAppManifest(kit: BrandKit | null): string {
   const icons = kit
@@ -161,14 +161,14 @@ function cssImports(files: string[]): string {
   return files.map((file) => `@import ${JSON.stringify(file)};`).join("\n") + "\n";
 }
 
-/** The source of `virtual:brand-app.css`: the kit's colours, then `themeCss` mapping them. */
+/** The source of `virtual:brand-app.css`: the kit's colors, then `themeCss` mapping them. */
 export function brandAppCss(kit: BrandKit | null, themeCss: string): string {
   return kit ? cssImports([kit.colors, themeCss]) : "";
 }
 
 /**
  * The app's branding (vite.config.ts): the lockup, the icons, and the kit's dark palette under the
- * app's own colours (app.css). The app is dark only, so the page says so to the kit, whose tokens
+ * app's own colors (app.css). The app is dark only, so the page says so to the kit, whose tokens
  * otherwise follow the OS.
  */
 export function brandPlugin(dir = process.env[BRAND_ENV]): Plugin {
@@ -208,7 +208,7 @@ export function brandPlugin(dir = process.env[BRAND_ENV]): Plugin {
   };
 }
 
-/** The source of `virtual:brand-docs.css`: the kit's fonts and colours, then `themeCss` mapping them. */
+/** The source of `virtual:brand-docs.css`: the kit's fonts and colors, then `themeCss` mapping them. */
 export function brandDocsCss(kit: BrandKit | null, themeCss: string): string {
   return kit ? cssImports([kit.fonts, kit.colors, themeCss]) : "";
 }

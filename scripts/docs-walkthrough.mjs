@@ -114,14 +114,14 @@ class Reader {
     );
   }
 
-  labelled(label) {
+  labeled(label) {
     return this.click(
       `window.__find.label("button, [role=button], [role=radio]", ${JSON.stringify(label)})`,
       `"${label}"`,
     );
   }
 
-  /** Picks `option` in the select labelled `label`. */
+  /** Picks `option` in the select labeled `label`. */
   async choose(label, option, root = "document") {
     await this.click(
       `window.__find.field(${JSON.stringify(label)}, ${root})?.querySelector("button")`,
@@ -130,7 +130,7 @@ class Reader {
     await this.click(`window.__find.byText("[role=option]", ${JSON.stringify(option)})`, `"${option}" in "${label}"`);
   }
 
-  /** Picks `option` in the toggle group labelled `label`. */
+  /** Picks `option` in the toggle group labeled `label`. */
   toggle(label, option) {
     return this.click(
       `window.__find.byText("button", ${JSON.stringify(option)}, { root: window.__find.label("[role=radiogroup], [role=group], div", ${JSON.stringify(label)}) })`,
@@ -138,7 +138,7 @@ class Reader {
     );
   }
 
-  /** Types `value` into the number field labelled `label`, replacing what's there. */
+  /** Types `value` into the number field labeled `label`, replacing what's there. */
   async number(label, value, root = "document") {
     await this.click(
       `window.__find.field(${JSON.stringify(label)}, ${root})?.querySelector("input")`,
@@ -201,9 +201,9 @@ class Reader {
     return this.click(`window.__find.label("button", ${JSON.stringify(`Switch ${marking}:`)})`, `switch ${marking}`);
   }
 
-  /** Picks a colour in the colour picker opened from the button labelled `label`. */
-  async colour(label, name) {
-    await this.click(`window.__find.label("button", ${JSON.stringify(label + ":")})`, `the "${label}" colour`);
+  /** Picks a color in the color picker opened from the button labeled `label`. */
+  async color(label, name) {
+    await this.click(`window.__find.label("button", ${JSON.stringify(label + ":")})`, `the "${label}" color`);
     const dim = name.includes(" Dim ");
     await this.click(
       `window.__find.byText("button", ${JSON.stringify(dim ? "Dim" : "Bright")}, { root: document.querySelector("[role=dialog]") })`,
@@ -293,7 +293,7 @@ async function tutorial1(r) {
   await r.button("Clear preset…");
   await r.button("Clear it");
   await r.expect(`s.board.config.presets[13].name.trim()`, "EMPTY", "C1's name after clearing");
-  await r.labelled("Rename preset");
+  await r.labeled("Rename preset");
   await r.type("LOOPR");
   await r.key("Enter");
   await r.expect(`s.board.config.presets[13].name.trim()`, "LOOPR", "C1's name");
@@ -301,7 +301,7 @@ async function tutorial1(r) {
   r.at("Put the Looper on the Switches");
   await r.faceplateSwitch("1");
   for (const [marking, cc, on, off] of LOOPER) {
-    if (marking !== "1") await r.labelled(`Program ${marking === "B" ? "Stomp B" : `Stomp ${marking}`}`);
+    if (marking !== "1") await r.labeled(`Program ${marking === "B" ? "Stomp B" : `Stomp ${marking}`}`);
     await r.choose("Step 1 type", "CC Trigger");
     await r.number("CC#", cc);
     // "Press 127, Release 0, leave the channel on Global" — check rather than set, since the text
@@ -314,11 +314,11 @@ async function tutorial1(r) {
     if (step.data[1] !== 127 || step.data[2] !== 0)
       r.fail(`switch ${marking}: Press/Release are ${step.data[1]}/${step.data[2]}, not 127/0`);
     if (step.channel !== 0) r.fail(`switch ${marking}: the channel is ${step.channel}, not Global`);
-    await r.colour(`While CC ${cc} = 127`, on);
-    await r.colour("Otherwise", off);
+    await r.color(`While CC ${cc} = 127`, on);
+    await r.color("Otherwise", off);
     if (marking === "1") {
       r.at("Press the live switch on the right");
-      await r.labelled("Try 1:");
+      await r.labeled("Try 1:");
       await r.expectText("CC#53 = 127", "CC 53 = 127 in the log");
       await r.expectText("CC#53 = 0", "CC 53 = 0 in the log");
       r.at("Now do the rest");
@@ -326,10 +326,10 @@ async function tutorial1(r) {
   }
 
   r.at("The Way Back");
-  await r.labelled("Program Stomp A");
+  await r.labeled("Program Stomp A");
   await r.choose("Step 1 type", "Preset Select");
   await r.choose("Jump to", "A1");
-  await r.colour("Color", "12A White");
+  await r.color("Color", "12A White");
 
   r.at("The Way In");
   await r.click(`window.__find.label("button", "Preset: C1")`, "the breadcrumb's preset chooser");
@@ -344,10 +344,10 @@ async function tutorial1(r) {
     "A1's switch A before changing it (Preset Select to Track)",
   );
   await r.choose("Jump to", "C1");
-  await r.colour("Color", "12A White");
+  await r.color("Color", "12A White");
 
   r.at("Try It");
-  await r.labelled("Back to faceplate");
+  await r.labeled("Back to faceplate");
   await r.toggle("Mode", "Simulate");
   await r.faceplateSwitch("A");
   await r.expect(`s.board.activePresetIndex`, 13, "the preset after pressing A on A1");
@@ -389,7 +389,7 @@ async function tutorial2(r) {
   await r.choose("On switch", "A — selects the Track preset", `document.querySelector("[role=dialog]")`);
   await r.click(
     `window.__find.byText("[role=dialog] label", "Replace what A does", { prefix: true })`,
-    "the Replace tick-box",
+    "the Replace checkbox",
   );
   await r.button("Add route");
   await wait(600);
@@ -411,12 +411,12 @@ async function tutorial2(r) {
   );
   await r.expectText("No empty presets left. Choose one to clear.");
   await r.choose("Copy of LOOPR for PRGM2", "D6 SEQNC", `document.querySelector("[role=dialog]")`);
-  // Chosen isn't agreed: the button waits for the tick.
+  // Chosen isn't agreed: the button waits for the check.
   const waiting = await r.p.eval(`window.__find.byText("[role=dialog] button", "Add route")?.disabled`);
-  if (waiting !== true) r.fail("expected Add route to wait until clearing D6 is ticked");
+  if (waiting !== true) r.fail("expected Add route to wait until clearing D6 is checked");
   await r.click(
     `window.__find.byText("[role=dialog] label", "Clear D6 SEQNC to make room", { prefix: true })`,
-    "the Clear D6 tick-box",
+    "the Clear D6 checkbox",
   );
   await r.button("Add route");
   await wait(600);
@@ -456,8 +456,8 @@ async function tutorial3(r) {
   if (display?.toLowerCase() !== "x2") r.fail(`expected the display to read x2, got ${display}`);
   await r.expectText("D6 is one of 2 presets that behave alike", "the preset panel's note");
   await r.faceplateSwitch("6");
-  await r.colour("While CC 49 = 127", "10A Lavender");
-  await r.colour("Otherwise", "10B Dim Lavender");
+  await r.color("While CC 49 = 127", "10A Lavender");
+  await r.color("Otherwise", "10B Dim Lavender");
   await r.click(`window.__find.label("button", "Preset: D6")`, "the breadcrumb's preset chooser");
   await r.click(
     `window.__find.all("[role=option]").find((e) => (e.getAttribute("aria-label") ?? "").startsWith("C1 "))`,
@@ -466,9 +466,9 @@ async function tutorial3(r) {
   await r.expect(
     `(() => { const l = s.board.config.presets[13].controls[d.constants.ControlId.Stompswitch6].led[1]; return [l.activeColor, l.inactiveColor]; })()`,
     [19, 20],
-    "C1's switch 6 colours",
+    "C1's switch 6 colors",
   );
-  await r.labelled("Back to faceplate");
+  await r.labeled("Back to faceplate");
 
   r.at("See the Copies");
   await r.click(
@@ -483,13 +483,13 @@ async function tutorial3(r) {
   await r.preset("D6");
   await r.toggle("Changes", "D6 only");
   await r.faceplateSwitch("6");
-  await r.colour("While CC 49 = 127", "2A Red");
-  await r.labelled("Back to faceplate");
+  await r.color("While CC 49 = 127", "2A Red");
+  await r.labeled("Back to faceplate");
   const looperBoxes = await r.state(
     `d.analysis.machineOf(s.board.config).states.filter((st) => st.name?.trim() === "LOOPR").length`,
   );
   if (looperBoxes !== 2) r.fail(`expected two LOOPR states after editing D6 alone, got ${looperBoxes}`);
-  await r.labelled("Undo");
+  await r.labeled("Undo");
   const back = await r.state(
     `d.analysis.machineOf(s.board.config).states.filter((st) => st.name?.trim() === "LOOPR").length`,
   );
@@ -543,7 +543,7 @@ async function tutorial4(r) {
     await r.p.cdp.send("DOM.setFileInputFiles", { nodeId, files: [join(ROOT, "fixtures", fixture)] });
     await wait(600);
   };
-  const ticked = () =>
+  const checked = () =>
     r.p.eval(
       `[...document.querySelectorAll('ul[aria-label="Presets to merge"] li')].filter((li) => li.querySelector("input").checked).map((li) => li.textContent.match(/[A-D][1-6]/)[0])`,
     );
@@ -552,7 +552,7 @@ async function tutorial4(r) {
   // "The assistant might hand back only the messages it changed": the same list, just those two.
   await pick("File to import", "ai-looper-presets.syx");
   await r.expectText("holds 2 of the Pacer's 24 presets");
-  if (JSON.stringify(await ticked()) !== '["A1","C1"]') r.fail("expected A1 and C1 ticked for the partial file");
+  if (JSON.stringify(await checked()) !== '["A1","C1"]') r.fail("expected A1 and C1 checked for the partial file");
   await r.button("Merge 2 presets");
   await wait(400);
   await r.expect(changed, [1, 13], "the presets the partial file changed");
@@ -561,10 +561,10 @@ async function tutorial4(r) {
   await r.p.app(`d.store.getState().undo();`);
   await r.expect(changed, [], "the presets changed after undo");
 
-  // The whole dump: 24 presets listed, the two that differ first and ticked.
+  // The whole dump: 24 presets listed, the two that differ first and checked.
   await pick("File to merge presets from", "ai-looper.syx");
-  await r.expectText("Tick the presets from ai-looper.syx to merge");
-  if (JSON.stringify(await ticked()) !== '["A1","C1"]') r.fail("expected A1 and C1 ticked for the whole dump");
+  await r.expectText("Check the presets from ai-looper.syx to merge");
+  if (JSON.stringify(await checked()) !== '["A1","C1"]') r.fail("expected A1 and C1 checked for the whole dump");
   await r.button("Merge 2 presets");
   await wait(400);
   await r.expect(changed, [1, 13], "the presets the dump changed");

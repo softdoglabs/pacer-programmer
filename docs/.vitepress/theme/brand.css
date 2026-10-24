@@ -3,7 +3,7 @@
 
 /*
  * The brand kit's tokens, mapped onto VitePress's theme variables. Only loaded in a branded build,
- * after the kit's own colours and fonts (src/brand/vitePlugin.ts), so it names their variables but
+ * after the kit's own colors and fonts (src/brand/vitePlugin.ts), so it names their variables but
  * carries none of the brand itself.
  */
 

@@ -198,7 +198,7 @@ function readStates(
         continue;
       }
       /*
-       * Copies of a state sit in different slots, so their neighbour walks lead to different
+       * Copies of a state sit in different slots, so their neighbor walks lead to different
        * presets — B6 from one, D4 from another. That's where a copy happens to live, not something
        * the state does, so there's nothing to draw and nothing wrong.
        */

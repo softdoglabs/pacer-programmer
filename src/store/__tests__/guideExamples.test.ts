@@ -47,17 +47,17 @@ const dimGreen = ledColorCode("green", "dim");
 
 /** A configuration with the given switches on the given presets, named so the slots are real. */
 function configWith(
-  presets: Record<number, Record<number, { steps: Step[]; mode?: ControlMode; colours?: [number, number][] }>>,
+  presets: Record<number, Record<number, { steps: Step[]; mode?: ControlMode; colors?: [number, number][] }>>,
 ) {
   const config: PacerConfig = createEmptyPacerConfig();
   for (const [index, controls] of Object.entries(presets)) {
     const preset = getOrCreatePreset(config, Number(index));
     preset.name = `P${index}`.padEnd(5);
-    for (const [id, { steps, mode, colours }] of Object.entries(controls)) {
+    for (const [id, { steps, mode, colors }] of Object.entries(controls)) {
       const control = getOrCreateControl(preset, Number(id));
       if (mode !== undefined) control.controlMode = mode;
       steps.forEach((s, i) => (control.steps[i + 1] = s));
-      colours?.forEach(
+      colors?.forEach(
         ([on, off], i) => (control.led[i + 1] = { midiFeedback: 0, activeColor: on, inactiveColor: off, position: 0 }),
       );
     }
@@ -134,7 +134,7 @@ describe("Switches and Steps", () => {
     ]);
   });
 
-  it("Sequence: 'The light follows along: it shows the colours of whichever step fires next'", () => {
+  it("Sequence: 'The light follows along: it shows the colors of whichever step fires next'", () => {
     const steps = [step(T.ProgramAndBank, [1, 0, 0]), step(T.ProgramAndBank, [2, 0, 0])];
     store().loadConfig(
       configWith({
@@ -142,7 +142,7 @@ describe("Switches and Steps", () => {
           [C.Stompswitch1]: {
             steps,
             mode: ControlMode.Sequence,
-            colours: [
+            colors: [
               [red, dimRed],
               [green, dimGreen],
             ],
@@ -157,7 +157,7 @@ describe("Switches and Steps", () => {
   });
 
   it("Toggles share their state: 'Press one, and the other's next press sends the opposite value, and both lights agree'", () => {
-    const toggle = { steps: [step(T.CcToggle, [20, 127, 0])], colours: [[green, red]] as [number, number][] };
+    const toggle = { steps: [step(T.CcToggle, [20, 127, 0])], colors: [[green, red]] as [number, number][] };
     store().loadConfig(configWith({ [A1]: { [C.Stompswitch1]: toggle, [C.Stompswitch2]: toggle } }), "t");
     expect(tap(C.Stompswitch1)).toEqual(["CH1 CC#20 = 127"]);
     expect([hueOf("sw1"), hueOf("sw2")]).toEqual(["bright green", "bright green"]);
@@ -188,15 +188,15 @@ describe("Switches and Steps", () => {
   });
 });
 
-describe("Lights and Colours", () => {
-  it("'In All at once mode that's always step 1 … The other steps' colours never show'", () => {
+describe("Lights and Colors", () => {
+  it("'In All at once mode that's always step 1 … The other steps' colors never show'", () => {
     const steps = [step(T.ProgramAndBank, [1, 0, 0]), step(T.ProgramAndBank, [2, 0, 0])];
     store().loadConfig(
       configWith({
         [A1]: {
           [C.Stompswitch1]: {
             steps,
-            colours: [
+            colors: [
               [red, dimRed],
               [green, dimGreen],
             ],
@@ -214,7 +214,7 @@ describe("Lights and Colours", () => {
     store().loadConfig(
       configWith({
         [A1]: {
-          [C.Stompswitch1]: { steps: [step(T.CcToggle, [21, 127, 0])], colours: [[green, red]] },
+          [C.Stompswitch1]: { steps: [step(T.CcToggle, [21, 127, 0])], colors: [[green, red]] },
           [C.StompswitchA]: { steps: [jump(A2)] },
         },
         [A2]: { [C.StompswitchA]: { steps: [jump(A1)] } },
@@ -230,12 +230,12 @@ describe("Lights and Colours", () => {
     expect(hueOf("sw1")).toBe("bright green");
   });
 
-  it("Preset Select to one of your presets shows its first colour always; Preset Inc/Dec stays dark", () => {
+  it("Preset Select to one of your presets shows its first color always; Preset Inc/Dec stays dark", () => {
     store().loadConfig(
       configWith({
         [A1]: {
-          [C.StompswitchA]: { steps: [jump(A2)], colours: [[green, red]] },
-          [C.StompswitchC]: { steps: [step(T.PresetIncDec, [1, 0, 0])], colours: [[green, red]] },
+          [C.StompswitchA]: { steps: [jump(A2)], colors: [[green, red]] },
+          [C.StompswitchC]: { steps: [step(T.PresetIncDec, [1, 0, 0])], colors: [[green, red]] },
         },
       }),
       "t",
@@ -244,8 +244,8 @@ describe("Lights and Colours", () => {
     expect(bar("swC")?.brightness).toBe("off");
   });
 
-  it("'Default uses the step type's own colour: orange for programs … bright when on and dim when off'", () => {
-    const pc = { steps: [step(T.ProgramAndBank, [7, 0, 0])], colours: [[0x7f, 0x7f]] as [number, number][] };
+  it("'Default uses the step type's own color: orange for programs … bright when on and dim when off'", () => {
+    const pc = { steps: [step(T.ProgramAndBank, [7, 0, 0])], colors: [[0x7f, 0x7f]] as [number, number][] };
     store().loadConfig(configWith({ [A1]: { [C.Stompswitch1]: pc } }), "t");
     expect(hueOf("sw1")).toBe("dim orange");
     tap(C.Stompswitch1);
@@ -257,7 +257,7 @@ describe("MIDI Sent When a Preset Loads", () => {
   function withLoadMidi() {
     const config = configWith({
       [A1]: { [C.StompswitchA]: { steps: [jump(A2)] } },
-      [A2]: { [C.Stompswitch2]: { steps: [step(T.ProgramAndBank, [5, 0, 0])], colours: [[green, red]] } },
+      [A2]: { [C.Stompswitch2]: { steps: [step(T.ProgramAndBank, [5, 0, 0])], colors: [[green, red]] } },
     });
     config.presets[A2]!.midiSettings[1] = { channel: 1, msgType: 0x45, data: [5, 0, 0] };
     return config;
@@ -269,7 +269,7 @@ describe("MIDI Sent When a Preset Loads", () => {
     expect(tap(C.StompswitchA)).toEqual(["CH1 Program Change 5"]);
   });
 
-  it("'If a preset sends PC 5 on load, and switch 2 sends PC 5 on the same channel, switch 2 is showing its \"on\" colour as soon as you arrive'", () => {
+  it("'If a preset sends PC 5 on load, and switch 2 sends PC 5 on the same channel, switch 2 is showing its \"on\" color as soon as you arrive'", () => {
     store().loadConfig(withLoadMidi(), "t");
     tap(C.StompswitchA);
     expect(store().board.activePresetIndex).toBe(A2);
@@ -280,7 +280,7 @@ describe("MIDI Sent When a Preset Loads", () => {
 describe("The Simulator", () => {
   it("'Reset MIDI state starts over from nothing'", () => {
     store().loadConfig(
-      configWith({ [A1]: { [C.Stompswitch1]: { steps: [step(T.CcToggle, [22, 127, 0])], colours: [[green, red]] } } }),
+      configWith({ [A1]: { [C.Stompswitch1]: { steps: [step(T.CcToggle, [22, 127, 0])], colors: [[green, red]] } } }),
       "t",
     );
     tap(C.Stompswitch1);

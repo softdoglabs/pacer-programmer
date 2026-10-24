@@ -218,8 +218,8 @@ Each stompswitch has a light setting per step. Step *n*'s four elements start at
 | Element | Field | Values |
 |---|---|---|
 | base + 0 | MIDI feedback | `00` = off, `01` = on (see [Lights](#lights)) |
-| base + 1 | First colour | A colour code; see [Colour codes](#colour-codes) |
-| base + 2 | Second colour | A colour code |
+| base + 1 | First color | A color code; see [Color codes](#color-codes) |
+| base + 2 | Second color | A color code |
 | base + 3 | Which light | `00`/`01` = the bar, `02` = the middle light, `03` = the top light |
 
 Footswitches and expression pedals have no lights and no light messages.
@@ -313,26 +313,26 @@ Stompswitches (1–6 and A–D) have lights; footswitches and pedals don't.
 
 | Switch | Top light | Middle light | Bar |
 |---|---|---|---|
-| 1–6 (front row) | Text legend | Icon legend | Colour bar |
-| A–D (back row) | – | Printed legend | Colour bar |
+| 1–6 (front row) | Text legend | Icon legend | Color bar |
+| A–D (back row) | – | Printed legend | Color bar |
 
-Every light is full-colour, legends included. A step's *which light* field
+Every light is full-color, legends included. A step's *which light* field
 (`00`/`01` the bar, `02` the middle light, `03` the top light) picks where its
-colour shows; `03` does nothing on A–D. Confirmed on hardware.
+color shows; `03` does nothing on A–D. Confirmed on hardware.
 
 ### One Light at a Time: The Step That Fires Next
 
-**A switch lights one step's colour at a time: the step that will fire
+**A switch lights one step's color at a time: the step that will fire
 next.** In All-at-once mode that's always step 1. Every step fires, but a
 second step's light setting never shows. In Sequence mode it follows
 the sequence. Confirmed on hardware.
 
-### Which of the Two Colours Shows
+### Which of the Two Colors Shows
 
-The first colour shows while the step is "on", the second otherwise. What
+The first color shows while the step is "on", the second otherwise. What
 "on" means depends on the type:
 
-| Type | Shows the first colour while… |
+| Type | Shows the first color while… |
 |---|---|
 | CC Trigger, CC Toggle | the controller holds the step's Data 2 (Value on press / Value 1) |
 | Note, Note Toggle | the note is sounding |
@@ -344,19 +344,19 @@ The first colour shows while the step is "on", the second otherwise. What
 
 "Holds" refers to the values the Pacer remembers sending, which survive
 preset changes. So a switch that sent Program 5 on one preset still shows its
-first colour after you come back, if nothing changed the program meanwhile.
+first color after you come back, if nothing changed the program meanwhile.
 
 ### MIDI Feedback
 
 With MIDI feedback on (`01`), the light follows the step's CC **received over
 USB MIDI** instead of what the switch sends: CC = Data 2 shows the first
-colour, anything else the second. The switch's own presses stop moving the
+color, anything else the second. The switch's own presses stop moving the
 light. It only works for CC steps, and only over USB, because the Pacer's one
 DIN socket is MIDI out. Confirmed on hardware.
 
-### Colour Codes
+### Color Codes
 
-| Code | Colour | | Code | Colour |
+| Code | Color | | Code | Color |
 |---|---|---|---|---|
 | `00` | Off | | `7F` | Default (see below) |
 | `01` | Pink | | `02` | Dim pink |
@@ -377,10 +377,10 @@ In general, for hue number *h* (1–12 in the order above), bright is
 looks yellow and "yellow" looks lime), but the codes are what the device
 uses.
 
-**Default (`7F`)** means the message type's own colour: the bright version
+**Default (`7F`)** means the message type's own color: the bright version
 when the step is on, the dim version when it's off.
 
-| Type | Default colour |
+| Type | Default color |
 |---|---|
 | Step Select, Step Inc/Dec | Pink |
 | Preset Select, Preset Inc/Dec | Red |
@@ -487,7 +487,7 @@ Whether you're a person with a hex editor or an AI with a script:
 3. **Never delete a field to clear it. Set it to Off instead.** The device keeps
    whatever a message doesn't address. To empty a step, write its message
    with type `61` (and Active `00`, except for step 1). To empty a light, write
-   colours `00`.
+   colors `00`.
 4. **Keep fixed groups whole:** a step's six fields, a light's four, a preset
    message's five, each in its own message, in element order, with a `00`
    after every field but the last.
@@ -553,7 +553,7 @@ F0 00 01 77 7F  01 01 01 0D
 F0 00 01 77 7F  01 01 01 0D  07 01 00 00  08 01 61 00  09 01 00 00  0A 01 00 00  0B 01 00 00  0C 01 00  50 F7
 ```
 
-**Stompswitch 1, step 1's light**, with no MIDI feedback and Default colours,
+**Stompswitch 1, step 1's light**, with no MIDI feedback and Default colors,
 on the bar:
 
 ```

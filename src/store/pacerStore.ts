@@ -337,7 +337,7 @@ export const usePacerStore = create<PacerStore>((set, get) => {
     jumpToPreset: (index) => {
       // A direct jump always lands on a user preset, leaving any special preset. Choosing it here
       // isn't something the hardware can do in one action, but what the preset then sends on load
-      // is the hardware's own behaviour, so it fires.
+      // is the hardware's own behavior, so it fires.
       resetDeviceActor();
       set({ swallowedReleases: [] });
       recallPreset(index, "Preset chooser", `Jumped to ${presetIndexToLabel(index)} (app shortcut)`, "app");

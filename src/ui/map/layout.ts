@@ -75,7 +75,7 @@ export function layoutStates(nodes: LayoutInput[]): LayoutNode[] {
   for (const node of connected) for (const next of leads.get(node.id)!) graph.setEdge(node.id, next);
   dagre.layout(graph);
 
-  // dagre positions a node by its centre; React Flow places by the top-left corner.
+  // dagre positions a node by its center; React Flow places by the top-left corner.
   const placed = connected.map((node) => {
     const at = graph.node(node.id) as { x: number; y: number } | undefined;
     return {

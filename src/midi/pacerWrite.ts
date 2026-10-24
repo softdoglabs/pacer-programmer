@@ -67,7 +67,7 @@ export async function sendPaced(
 
   try {
     for (; sent < total; sent++) {
-      if (signal?.aborted) throw new SendError(`Cancelled after ${sent} of ${total} messages`, sent);
+      if (signal?.aborted) throw new SendError(`Canceled after ${sent} of ${total} messages`, sent);
       const result = connection.send(outputId, messages[sent]!);
       if (!result.ok) throw new SendError(`Couldn't send to the Pacer: ${result.reason}`, sent);
       onProgress?.({ sent: sent + 1, total });

@@ -20,7 +20,7 @@ import type { PacerConfig, Preset, SwitchControl } from "../protocol/types";
  * **What makes a preset spare is that nothing in it does anything**, not what it's called. A name
  * is five characters on a 14-segment display: handy for spotting a slot you've freed, on the device
  * as well as here, and no basis at all for overwriting somebody's work. So clearing names it
- * "EMPTY" as a label, and every judgement is made on the contents.
+ * "EMPTY" as a label, and every judgment is made on the contents.
  *
  * Clearing sets what's there to Off rather than removing it. A dump holds all six steps of every
  * control and all sixteen preset messages — the unused ones are Off already — so writing Off over

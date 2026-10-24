@@ -112,7 +112,7 @@
 }
 /*
  * For controls packed tight inside a container — a segmented group's buttons sit in 3px of
- * padding — an outward ring spills past the container onto its neighbours, so draw it inside.
+ * padding — an outward ring spills past the container onto its neighbors, so draw it inside.
  */
 .ring-focus-inset:focus-visible,
 .ring-focus-inset[data-focus-visible] {
@@ -228,7 +228,7 @@
  * the faceplate scales with the width available to it, so it would visibly resize when switching
  * to a mode whose extra content happens to overflow (Program adds a band and the preset panel).
  *
- * It has to be a scroll container of its own: Chrome honours `scrollbar-gutter` here, but not on
+ * It has to be a scroll container of its own: Chrome honors `scrollbar-gutter` here, but not on
  * the viewport, where the page used to scroll.
  */
 .app-scroll {

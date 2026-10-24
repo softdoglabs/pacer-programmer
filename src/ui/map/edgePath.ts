@@ -14,7 +14,7 @@ import { Position } from "@xyflow/react";
  * its own point (`spreadEnds`), and the curve starts and ends there (`edgeGeometry`).
  */
 
-/** Gap between neighbouring ends on one side of a node, in flow units. */
+/** Gap between neighboring ends on one side of a node, in flow units. */
 export const END_SPACING = 14;
 /**
  * How much of a side the ends may spread over, so they stay on the node: its left and right sides
@@ -117,7 +117,7 @@ export interface EndRequest {
 }
 
 /**
- * Spaces out the ends that share a side of a node, centred on the handle, in the order of where
+ * Spaces out the ends that share a side of a node, centered on the handle, in the order of where
  * their edges go. A lone end stays on the handle.
  */
 export function spreadEnds(ends: readonly EndRequest[]): Map<string, number> {

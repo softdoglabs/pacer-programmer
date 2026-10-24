@@ -104,7 +104,7 @@ describe("presets that are really one state", () => {
   it("doesn't group presets that differ in anything but where they lead", () => {
     const a = at(0, 1);
     const b = at(0, 2);
-    // Same switch, same kind of step, different CC number: different behaviour, two states.
+    // Same switch, same kind of step, different CC number: different behavior, two states.
     const different = build([
       step(a, ControlId.Stompswitch1, 1, SwitchMessageType.CcToggle, [52, 127, 0]),
       step(b, ControlId.Stompswitch1, 1, SwitchMessageType.CcToggle, [53, 127, 0]),

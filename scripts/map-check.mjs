@@ -73,7 +73,7 @@ const MEASURE = `(() => {
   return { labels, paths, nodes, vp: { x: vp.x, y: vp.y, r: vp.right, b: vp.bottom }, t };
 })()`;
 
-function analyse(m, name) {
+function analyze(m, name) {
   const problems = [];
   const dashed = m.paths.filter((p) => p.dashed).length;
   if (name in DASHED && dashed !== DASHED[name]) problems.push(`${dashed} dashed edges, expected ${DASHED[name]}`);
@@ -118,7 +118,7 @@ await withApp(async (p) => {
         await wait(900);
       }
       const m = await p.eval(MEASURE);
-      const problems = analyse(m, name);
+      const problems = analyze(m, name);
       console.log(`${name} / ${view}: ${problems.length ? "\n    " + problems.join("\n    ") : "ok"}`);
       if (problems.length) {
         const file = join(
@@ -142,7 +142,7 @@ await withApp(async (p) => {
   `);
   await wait(900);
   const after = await p.eval(MEASURE);
-  const lost = analyse(after).filter((x) => x.includes("outside"));
+  const lost = analyze(after).filter((x) => x.includes("outside"));
   console.log(`after an edit: ${lost.length ? lost.join("; ") : "ok"}`);
   if (lost.length) failures.push("after an edit");
 });

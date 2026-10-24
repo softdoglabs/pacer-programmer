@@ -474,9 +474,9 @@ describe("routing between states", () => {
     expect(moved.transitions.some((t) => t.to.kind === "return")).toBe(true);
   });
 
-  it("moves a preset on a real device, where its neighbours step to it", () => {
+  it("moves a preset on a real device, where its neighbors step to it", () => {
     /*
-     * Every factory preset's C and D step to its neighbours, and a move deliberately leaves that
+     * Every factory preset's C and D step to its neighbors, and a move deliberately leaves that
      * alone — next/previous names a direction, not a preset. The check that the design survived has
      * to leave it alone too, or no preset on a real device could ever be moved.
      */

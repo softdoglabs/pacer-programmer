@@ -152,7 +152,7 @@ describe("edges between the same two states", () => {
   });
 
   it("bow apart when two switches lead the same way", () => {
-    // A1's A and its C (wrapping round to D6, a copy of the looper) both reach LOOPR.
+    // A1's A and its C (wrapping around to D6, a copy of the looper) both reach LOOPR.
     const offsets = bowOffsets(
       [
         { id: "A", source: "PRGM1", target: "LOOPR" },

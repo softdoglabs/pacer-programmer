@@ -6,7 +6,7 @@ import { Label, Radio, RadioGroup } from "react-aria-components";
 import { Button } from "@/components/ui/button";
 import { ModalDialog } from "@/components/ui/dialog";
 import { Select, type SelectGroup } from "@/components/ui/select";
-import { Tick } from "@/components/ui/tick";
+import { Check } from "@/components/ui/check";
 import {
   editRoute,
   entrantStates,
@@ -59,7 +59,7 @@ const FIRMWARE_TARGET = {
 function describe(use: SwitchUse, nameOf: (id: string) => string): string {
   if (use.route?.to.kind === "return") return "goes back to where it was entered from";
   if (use.route?.to.kind === "byEntry") return "depends on the way in";
-  if (use.route?.viaStepping) return "steps to the neighbouring preset";
+  if (use.route?.viaStepping) return "steps to the neighboring preset";
   if (use.route?.toStateId) return `goes to ${nameOf(use.route.toStateId)}`;
   // Before "free": the factory set puts Track on A and Transport on B of every preset, and those
   // aren't states of this configuration, so nothing about them shows on the map.
@@ -428,12 +428,12 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
             </p>
           )}
           {toClear.length > 0 && (
-            <Tick isSelected={clearingAgreed} onChange={(on) => setAgreedToClear(on ? toClear.join(",") : "")}>
+            <Check isSelected={clearingAgreed} onChange={(on) => setAgreedToClear(on ? toClear.join(",") : "")}>
               <span className="text-destructive">
                 Clear {toClear.map(slotLabel).join(" and ")} to make room — everything on{" "}
                 {toClear.length === 1 ? "it" : "them"} is lost. Undo brings {toClear.length === 1 ? "it" : "them"} back.
               </span>
-            </Tick>
+            </Check>
           )}
         </div>
       )}
@@ -457,7 +457,7 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
                 : `Every step on ${marking(use.controlId)} is in use, so there's nowhere to put a route.`}
             </p>
           )}
-          <Tick
+          <Check
             isSelected={replacing}
             onChange={(on) => {
               setReplace(on);
@@ -468,7 +468,7 @@ function RouteForm({ intent, onClose }: { intent: RouteIntent; onClose: () => vo
               Replace what {marking(use.controlId)} does ({describe(use, nameOf)}) — the route becomes all it does, on{" "}
               {members.length > 1 ? `all ${members.length} presets` : "this preset"}.
             </span>
-          </Tick>
+          </Check>
         </div>
       )}
       {error && <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">{error}</p>}

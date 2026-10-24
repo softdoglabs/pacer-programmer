@@ -54,7 +54,7 @@ describe("the brand kit", () => {
     );
   });
 
-  it("gives the app its lockup, icons and colours, and the docs the kit's fonts and colours, each before the mapping", () => {
+  it("gives the app its lockup, icons and colors, and the docs the kit's fonts and colors, each before the mapping", () => {
     const dir = kitWith(KIT);
     const kit = readBrandKit(dir)!;
     expect(brandModule(kit)).toContain(`import lockupUrl from ${JSON.stringify(`${kit.lockupOnDark}?url`)};`);

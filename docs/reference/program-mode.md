@@ -38,16 +38,16 @@ When you open a control, its editor replaces the faceplate:
 | 5 | Fires | The control mode, which decides what one press does with the steps (see [below](#control-modes)). |
 | 6 | Step type | What this step sends or does. |
 | 7 | Channel | The MIDI channel it sends on. *Global* uses the configuration's own channel. It only appears for types that send channel messages. |
-| 8 | Data | The type's own values, labelled for that type: a CC number and its values, a program and bank, a note and velocity, and so on. |
-| 9 | Light | Which of the switch's lights this step colours. |
+| 8 | Data | The type's own values, labeled for that type: a CC number and its values, a program and bank, a note and velocity, and so on. |
+| 9 | Light | Which of the switch's lights this step colors. |
 | 10 | Lit by | Whether the light follows the switch or incoming MIDI (see [below](#lit-by-incoming-midi)). |
-| 11 | Colours | The two colours the light can show, each labelled with when it shows. |
+| 11 | Colors | The two colors the light can show, each labeled with when it shows. |
 | 12 | Remove step | Turns the step off. This is only on steps 2–6, since step 1 always exists. |
 | 13 | + Add step | Turns on the next free step. A control has six, and the button is disabled once they're all in use. |
 
-In the picture, step 2 shows a note where its colours would be: *Not shown: a
+In the picture, step 2 shows a note where its colors would be: *Not shown: a
 switch lights one step at a time, and in All-at-once mode that's the first
-step.* Each card tells you whether its colours will ever be seen, and when.
+step.* Each card tells you whether its colors will ever be seen, and when.
 Step 1 has the **lights the switch** badge.
 
 ### Control Modes
@@ -85,7 +85,7 @@ wire.
 | Type | Data | A press… |
 |---|---|---|
 | Preset Select | **Jump to**: a user preset A1–D6, or the firmware's Track or Transport preset | Loads that preset. |
-| Preset Inc/Dec | **Direction**: next or previous | Steps to the neighbouring preset, wrapping from D6 to A1. |
+| Preset Inc/Dec | **Direction**: next or previous | Steps to the neighboring preset, wrapping from D6 to A1. |
 | Relay | Mode, Relay | Switches one of the four relay outputs. |
 | Step Select / Step Inc/Dec | Data 1–3 | Chooses which step another switch in External step mode fires. |
 
@@ -98,9 +98,9 @@ moves.
 The byte layout of every type is in
 [Programming the Pacer › Step message types](programming-the-pacer.md#step-message-types).
 
-### Lights and Colours
+### Lights and Colors
 
-A switch shows the colours of one step at a time, the one that will fire next.
+A switch shows the colors of one step at a time, the one that will fire next.
 In All-at-once mode that's always step 1, and in Sequence mode it follows the
 sequence.
 
@@ -108,15 +108,15 @@ sequence.
 that switch actually has. The front row has a *Bar*, an *Icon legend* and a
 *Text legend*, while the back row has a *Bar* and its printed legend.
 
-The two colours are labelled by what makes each one show, because that
+The two colors are labeled by what makes each one show, because that
 depends on the type:
 
-| Type | First colour shows… | Second colour shows… |
+| Type | First color shows… | Second color shows… |
 |---|---|---|
 | CC Toggle, CC Trigger | While CC *n* holds *Press 1* (or *Press*) | Otherwise |
 | Note, Note Toggle | While the note is on | Otherwise |
 | Program + Bank | While this program is active on the channel | Otherwise |
-| Preset Select (to a user preset) | Always (the second colour isn't used) | |
+| Preset Select (to a user preset) | Always (the second color isn't used) | |
 | Preset Select (to Track or Transport) | While that DAW preset is active, in light blue | Dark otherwise |
 | Preset Inc/Dec | Never, since the light stays dark | |
 | Anything else | While the switch is held ("On color") | Otherwise ("Off color") |
@@ -125,17 +125,17 @@ depends on the type:
 switch on any preset. So two switches that toggle the same CC share their
 state, and their lights agree.
 
-Click a colour to open the picker:
+Click a color to open the picker:
 
-![The colour picker](../images/colour-picker.png)
+![The color picker](../images/color-picker.png)
 
 Each of the twelve hues comes in a bright and a dim version. **Default** uses
-the type's own colour (orange for programs, blue for CCs, green for notes, red
+the type's own color (orange for programs, blue for CCs, green for notes, red
 for preset changes and so on), bright when on and dim when off. **Off** keeps
 the light dark.
 
-The full colour table is in
-[Programming the Pacer › Colour codes](programming-the-pacer.md#colour-codes).
+The full color table is in
+[Programming the Pacer › Color codes](programming-the-pacer.md#color-codes).
 
 ### Lit by Incoming MIDI
 
@@ -148,7 +148,7 @@ It only works on CC steps. On anything else it has no effect, and the editor
 tells you so. Since the Pacer has no MIDI In jack, the CC has to come back
 over USB from something that echoes it. And because the app has no MIDI input,
 the simulator shows what the Pacer shows before anything answers, which is the
-second colour.
+second color.
 
 ### Edits That Reach Further Than You'd Think
 
@@ -205,7 +205,7 @@ what will go, and warns you if any other preset still jumps here.
 An empty preset is a spare slot. When the [preset map](preset-map.md) needs a
 new preset for a state that comes back (one copy for each place it's entered
 from), it offers the spare slots first. A preset only counts as spare if it
-does nothing except step to its neighbours.
+does nothing except step to its neighbors.
 
 Like every other edit, clearing can be undone. Undo only changes the app's
 copy, though, so if you've already sent the cleared preset, send again.
@@ -239,7 +239,7 @@ And the preset panel names them:
 
 ![The note naming the state's presets](../images/edit-scope-note.png)
 
-Everything you edit follows that choice: steps, colours, control modes, the
+Everything you edit follows that choice: steps, colors, control modes, the
 name and the load-time MIDI. Clear preset is an obvious exception, since it
 only ever clears the preset in front of you. The less obvious one is where a
 Preset Select leads. That's always edited on the preset in front of you,

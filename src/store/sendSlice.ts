@@ -176,10 +176,10 @@ export function createSendSlice(
         });
       } catch (err) {
         /*
-         * Cancelling the read-back isn't a failed send. By then the writes have landed and the
+         * Canceling the read-back isn't a failed send. By then the writes have landed and the
          * baseline has moved, so reporting an error invites sending again what already arrived.
          */
-        if (err instanceof DumpError && err.message === "Cancelled") {
+        if (err instanceof DumpError && err.message === "Canceled") {
           set({ send: { status: "done", presets, verified: false, current } });
           return;
         }

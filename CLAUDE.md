@@ -333,7 +333,7 @@ answer. Nothing outside the analysis layer calls it — they ask `machineOf`
 
 **Two states are the same when they differ in nothing but where their
 navigation leads** — the rule the recovery groups on, and therefore the
-rule the model is held to. A state's *identity is its behaviour*, not its
+rule the model is held to. A state's *identity is its behavior*, not its
 name: two states may share a name as long as they do something different,
 which matters on a five-character display. Names that repeat are still
 qualified by their starting slot when ids are needed as keys, but that's
@@ -352,7 +352,7 @@ time.
 **Plain stepping isn't an entrance.** Next/previous names a direction, not
 a preset, so it says nothing about which state a press meant to reach, and
 it doesn't count as entering one for the purpose of spotting a return. It
-can't: every slot has neighbours and C/D step on nearly every preset, so
+can't: every slot has neighbors and C/D step on nearly every preset, so
 counting it would mean no state on a real device could ever be seen to
 return. It's the same distinction the map's "hide default stepping" filter
 draws.
@@ -361,14 +361,14 @@ draws.
 whichever preset is loaded, so its switches are a second copy of that
 preset's, and every dump from real hardware has one. Counting it gave
 everything the loaded preset leads to a phantom second way in, which is
-precisely what stops a return being recognised — on the owner's device it
+precisely what stops a return being recognized — on the owner's device it
 hid the return of the one hand-built looper there is. Found by running the
 map on that dump, not by reading the code. It doesn't vote on a state's
 name either: it lags behind the slot it copies until the next send, so
 renaming the loaded preset used to leave its state with two names and
 therefore none.
 
-**Copies step to their own neighbours, and that isn't a disagreement.**
+**Copies step to their own neighbors, and that isn't a disagreement.**
 Two presets of the same state sit in different slots, so C and D lead to
 different places from each — B6 from one, D4 from another. That's where a
 copy happens to live rather than something the state does, so the slot is
@@ -482,7 +482,7 @@ What it refuses, and why:
     also lists presets *in use* that the machine doesn't use
     (`clearablePresets` in `plan.ts`: a state by itself, nothing leads to it
     by name, no designed route of its own), under their own heading. Choosing
-    one needs a tick-box naming the preset before the button enables; it's
+    one needs a checkbox naming the preset before the button enables; it's
     cleared and the route written as one undo step (`editRoute`'s `clearing`
     option, which refuses any preset `clearablePresets` wouldn't offer).
     `realize` is unchanged and still refuses a preset with something in it.
@@ -749,16 +749,16 @@ with `editing` and `analysis` alongside, both depending on `protocol` only.
 The simulator UI (`src/App.tsx`, `src/ui/`, `src/store/pacerStore.ts`) is
 built on Tailwind v4 + React Aria Components (dark-only theme, `@/` path
 alias). Small Tailwind-styled wrappers over RAC live in
-`src/components/ui/` (Button, LinkButton, Tabs, Select, Tick, plus a static
+`src/components/ui/` (Button, LinkButton, Tabs, Select, Check, plus a static
 Badge). There's no hover-only UI, for tablets.
 - **Every button, and every link that looks like one, is drawn by `buttonClass`**
   (`components/ui/button.tsx`): `Button`, and `LinkButton` (RAC's `Link`, which
   sets the same hovered/pressed/focus-visible states) for Docs and GitHub. Pick a
   `variant` and `size`; add one there if nothing fits (`subtle` is the header's
-  muted ghost). A caller's className is for layout and a colour tone (the
+  muted ghost). A caller's className is for layout and a color tone (the
   install button's amber), **never a shape or its own hover**. Owner's rule,
   after the install button shipped `rounded-full` while Docs and GitHub carried
-  hand-copied `<a>` classes: three neighbours, three looks.
+  hand-copied `<a>` classes: three neighbors, three looks.
 - **The faceplate** (`src/ui/panel/Faceplate.tsx`) contains no per-switch
   or per-mode logic. It lays out `PACER_HARDWARE` and paints
   `computePanelState` through the generic `SwitchView`, which renders any
@@ -782,7 +782,7 @@ Badge). There's no hover-only UI, for tablets.
     Outlines are painted after everything else in the stacking context.
   - `.ring-focus-inset` draws it inside the control, for ones packed tight
     in a container: a segmented group's buttons sit in 3px of padding, so
-    an outward ring spills onto its neighbours.
+    an outward ring spills onto its neighbors.
 - **Tooltips go through `Titled`** (`components/ui/titled.tsx`). React
   Aria filters unknown props out of the DOM, so `title` set on any of its
   components never reaches the element; a `display: contents` wrapper
@@ -1004,7 +1004,7 @@ Badge). There's no hover-only UI, for tablets.
   available to it, so a scrollbar appearing used to narrow it: switching
   to Program mode, which adds a band and the preset panel, made the
   hardware visibly resize. The gutter has to live on a scroll container of
-  its own — Chrome honours `scrollbar-gutter` there but not on the
+  its own — Chrome honors `scrollbar-gutter` there but not on the
   viewport, where the page used to scroll.
   - The faceplate spans the full width as the
   overview, since it's wide and is what you point at. Programming is a
@@ -1127,7 +1127,7 @@ Badge). There's no hover-only UI, for tablets.
     picker per needed copy, "Copy of LOOPR for MAIN1",
     offering empty presets first and then ones it may clear (see "What it
     refuses"), and the presets it frees.
-  - **Replacing what a switch does** is a tick-box in the same dialog, since
+  - **Replacing what a switch does** is a checkbox in the same dialog, since
     on a real device nearly every switch is busy. It says what it would
     clear ("Replace what A does (selects the Track preset)") and applies to
     every preset the state is.
@@ -1186,7 +1186,7 @@ Badge). There's no hover-only UI, for tablets.
     other presets through the ranking pushes it off screen. A ring (every
     state connected, none a beginning) is laid out as banks throughout.
     - **Laid out by the designed routes only, in both views.** Next/previous
-      stepping makes every preset entered from its neighbour; unless that
+      stepping makes every preset entered from its neighbor; unless that
       closed into a ring, dagre strung all 24 out in one row, wider than
       the map can zoom out to. Everything now just adds faint edges to the
       same picture, and switching views doesn't rearrange anything.
@@ -1280,8 +1280,8 @@ Badge). There's no hover-only UI, for tablets.
     stored, so any SysEx tool can use them) plus `library.json` for what a
     `.syx` can't hold (name, source, dates, device). "Load a .zip…"
     (`ArchiveImportDialog`) **adds to the list, never replaces it**: new ones
-    ticked, a taken name (case-insensitive) gets its own tick to replace the
-    saved one, unticked by default (owner's call: per-name choice), identical
+    checked, a taken name (case-insensitive) gets its own check to replace the
+    saved one, unchecked by default (owner's call: per-name choice), identical
     ones skipped, unreadable ones listed. Replacing the open configuration
     reopens it, through the unsaved-edits guard. A zip of `.syx` files without
     the index loads too, named after the files. Storage running out stops it
@@ -1319,11 +1319,11 @@ Badge). There's no hover-only UI, for tablets.
     defaults included, which is how to put back one factory preset). It
     names the row as the source, like "from a file" beside it: "Pick presets
     to merge…" read as merging into that row (owner's catch).
-  - **The dialog ticks the presets that would actually change**
+  - **The dialog checks the presets that would actually change**
     (`presetsMergeWouldChange`) and lists them first, so a whole dump an AI
     changed two presets of offers those two without anyone naming them. It
     can't know which the AI *meant* to change — there's no base to compare
-    with — so a preset edited here since opening also differs and is ticked;
+    with — so a preset edited here since opening also differs and is checked;
     the row says so, since that's the one case where bringing a preset in
     loses work.
   - The `import-presets` screenshot scene runs it in the real app on
@@ -1340,14 +1340,14 @@ Badge). There's no hover-only UI, for tablets.
   Channel Aftertouch) interpolate between the step's own min and max.
   - **Pitch Bend is 14-bit, the stored range is 7-bit.** A step's min and
     max are single SysEx bytes (0-127), but pitch bend carries two data
-    bytes (LSB then MSB, 0-16383, centre 8192), so the firmware has to
+    bytes (LSB then MSB, 0-16383, center 8192), so the firmware has to
     spread one across the other. Measured on 1.01.12 by sweeping a pedal
     assigned Pitch Bend: the 7-bit value becomes the **MSB with a zero
     LSB**, except at full scale, where LSB 127 goes out too so the top is
     exactly 16383 rather than 16256. 735 messages, MSB covering 0-127, no
     exceptions. `bendFrom7Bit` in `simulator/midiMessages.ts`.
   - The app used to put the 7-bit value straight into the 14-bit field, so
-    a full sweep moved under 1% of the range, all of it below centre. The
+    a full sweep moved under 1% of the range, all of it below center. The
     test that covered it used `[0, 0, 16383]` — a step no dump could
     hold — which is why it passed. The
   UI renders them as sliders. A press or release still means toe or heel,
@@ -1389,7 +1389,7 @@ and nothing a search engine sees twice.
 - **They're also built as a website** (`pnpm docs:build`, VitePress,
   `docs/.vitepress/config.ts`) for `softdoglabs.com/docs/pacer-programmer/`,
   into `build/docs-site/docs/pacer-programmer/`. The Markdown stays written
-  for GitHub; the config adapts it rather than the other way round:
+  for GitHub; the config adapts it rather than the other way around:
   - `README.md` pages become each folder's index (`rewrites`). That renames
     files but not links, so a markdown-it rule repoints `…/README.md` links.
   - Heading anchors are slugged GitHub's way (`githubSlug`). VitePress's own
@@ -1439,7 +1439,7 @@ and nothing a search engine sees twice.
     two in step. So **when a tutorial changes, change the walkthrough with
     it** (and vice versa). It catches the UI drifting from the docs; it can't
     catch the docs drifting from it. The data the tutorials state lives in
-    four places that must agree: tutorial 1's switch/CC/colour table, the
+    four places that must agree: tutorial 1's switch/CC/color table, the
     walkthrough's `LOOPER`, `loadLooperTutorial` in `docs-browser.mjs`
     (which the screenshots are built from), and `docs-ai-example.mjs`. The
     labels the text tells you to click are typed into the walkthrough, and
@@ -1688,12 +1688,12 @@ which allows declining trademark rights. Not reviewed by a lawyer yet.
   - The app also gets the navy app icon as favicon and home-screen icon, and
     the kit's dark navy palette under its own tokens (`src/brand/app.css`, via
     `virtual:brand-app.css`): page, panels, lines, text, and the preset map's
-    canvas. **Teal stays** (Nektar's colour, the Pacer's own; owner's call),
+    canvas. **Teal stays** (Nektar's color, the Pacer's own; owner's call),
     and so does the faceplate's hardware look. The plugin sets
     `data-theme="dark"` on the page, which both picks the kit's dark tokens
     and lets the mapping outrank `index.css` regardless of order.
   - The docs get both lockups (light and dark), the icons, and the kit's
-    colour tokens and fonts, mapped onto VitePress's variables by
+    color tokens and fonts, mapped onto VitePress's variables by
     `docs/.vitepress/theme/brand.css` (`virtual:brand-docs.css`, empty when
     neutral). The display face is all caps, so it's only the page titles.
   - The kit's tokens follow the OS unless `data-theme` on `<html>` says
@@ -1835,7 +1835,7 @@ preset chooser, then the analysis views.
   writing Global settings, and the
   Global-config field semantics (currently preserved opaquely, not
   decoded). Preset writes over Web MIDI are confirmed (see Send to Pacer).
-- Licensing: `francoisgeorgy/pacer-editor` is GPLv3, the same licence
+- Licensing: `francoisgeorgy/pacer-editor` is GPLv3, the same license
   this project has chosen, so compatibility is no longer a concern. We
   still describe the protocol from our own verified facts rather than
   porting its source — that's what makes `docs/reference/programming-the-

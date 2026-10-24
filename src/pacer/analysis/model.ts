@@ -47,7 +47,7 @@ export interface MachineTransition {
   stepNumber: number;
   to: MachineTarget;
   /**
-   * This is a Preset Inc/Dec that does nothing but move to the neighbouring preset. Every factory
+   * This is a Preset Inc/Dec that does nothing but move to the neighboring preset. Every factory
    * preset has two, so a map that draws them all is mostly furniture — see `ui/map`.
    */
   viaStepping?: boolean;

@@ -283,9 +283,9 @@ export function createConfigurationsSlice(
               },
         });
       } catch (err) {
-        const cancelled = err instanceof DumpError && err.message === "Cancelled";
+        const canceled = err instanceof DumpError && err.message === "Canceled";
         set({
-          pull: cancelled
+          pull: canceled
             ? { status: "idle", received: 0, expected: EXPECTED_FULL_DUMP_MESSAGES }
             : { status: "error", received: 0, expected: EXPECTED_FULL_DUMP_MESSAGES, error: errorMessage(err) },
         });

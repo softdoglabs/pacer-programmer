@@ -27,9 +27,9 @@ grouped by where you'll see them.
 
 | You see | Meaning | Try |
 |---|---|---|
-| **Send to Pacer…** is greyed out | No MIDI, no SysEx, or no Pacer output port. | Hover it for which. |
+| **Send to Pacer…** is grayed out | No MIDI, no SysEx, or no Pacer output port. | Hover it for which. |
 | *The Pacer's read-back doesn't match…* | After sending, the Pacer's copy of some presets differs. | Send those presets again. If it keeps happening, report it with the snapshot. |
-| *…Presets may be partly written; send them again to be sure.* | The send stopped part way (cancelled, or the port went away). | Send again. |
+| *…Presets may be partly written; send them again to be sure.* | The send stopped part way (canceled, or the port went away). | Send again. |
 | *Couldn't tell which preset the Pacer has loaded…* | The presets were written, but the Pacer may still be running the old version of the loaded one. | Select that preset again on the Pacer. |
 | *(not sent) the Pacer is being written to…* in the log | The simulator's output is the Pacer, and a send is running. | Wait for the send; presses resume after it. |
 
@@ -59,10 +59,10 @@ find out on the next load.
 | You see | Meaning | Try |
 |---|---|---|
 | *A route can't lead to the state it leaves from…* | That's a reload. | Use a Preset Select step to *Current*, in Program mode. |
-| *Step N on that switch already jumps somewhere…* | A press only takes the first jump, so a later one never fires. | Tick **Replace**, or choose another switch. |
-| *Every step on X is in use…* | No room for a jump. | Tick **Replace**, or choose another switch. |
-| *X already selects the Track preset…* | Switch A or B is the firmware's Track/Transport selector, which would be the first jump. | Tick **Replace**, or choose another switch. |
-| *No empty presets left. Choose one to clear.* | The route needs a new copy and every slot has something in it. | Choose a preset under **In use — would be cleared** and tick the box that confirms clearing it. Or choose a cheaper answer: a different switch for each way back costs nothing. |
+| *Step N on that switch already jumps somewhere…* | A press only takes the first jump, so a later one never fires. | Check **Replace**, or choose another switch. |
+| *Every step on X is in use…* | No room for a jump. | Check **Replace**, or choose another switch. |
+| *X already selects the Track preset…* | Switch A or B is the firmware's Track/Transport selector, which would be the first jump. | Check **Replace**, or choose another switch. |
+| *No empty presets left. Choose one to clear.* | The route needs a new copy and every slot has something in it. | Choose a preset under **In use — would be cleared** and check the box that confirms clearing it. Or choose a cheaper answer: a different switch for each way back costs nothing. |
 | *No empty presets left, and every other preset is part of a route…* | The only presets a copy may clear are ones no route leads to or from, and there aren't any. | [Clear a preset](program-mode.md#clear-preset) yourself, after rerouting what leads to it. |
 | *D6 is one of the presets this machine uses…* | That preset is already part of the design. | Choose another slot. |
 | *…already behaves like "X" apart from where it leads…* | Another preset is identical to X's copies, so after the edit it would be read as one of them. | Give X something of its own to do, or clear that preset. |

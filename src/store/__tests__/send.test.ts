@@ -172,14 +172,14 @@ describe("sending to the Pacer", () => {
     expect(changedPresets(store().sendBaseline, store().board.config)).toEqual([]);
   });
 
-  it("can be cancelled mid-send", async () => {
+  it("can be canceled mid-send", async () => {
     const { output } = await connectFakePacer();
     const done = store().sendToPacer([A1, C1]);
     await vi.advanceTimersByTimeAsync(300); // past the loaded-preset query, a few messages in
     store().cancelSend();
     await vi.runAllTimersAsync();
     await done;
-    expect(store().send).toMatchObject({ status: "error", error: expect.stringMatching(/Cancelled.*partly written/) });
+    expect(store().send).toMatchObject({ status: "error", error: expect.stringMatching(/Canceled.*partly written/) });
     expect(output.sent.filter((m) => m[5] === 0x01).length).toBeLessThan(50); // of 378
   });
 });

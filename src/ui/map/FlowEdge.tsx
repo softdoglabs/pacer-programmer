@@ -8,7 +8,7 @@ import { LABEL_SPOTS, useLabelSpot } from "./labelBoard";
 /*
  * An edge that can be pushed aside without losing its bearings.
  *
- * Two presets that step to each other produce a line each way, and between neighbours those lines
+ * Two presets that step to each other produce a line each way, and between neighbors those lines
  * are the same vertical: whichever draws second hides the other outright and puts its label on
  * top, so the map appears to be missing half its edges. Each half is bowed the opposite way here.
  *

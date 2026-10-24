@@ -10,7 +10,7 @@ import type { PacerConfig, Preset, Step } from "../protocol/types";
  * The Pacer can't remember anything, so "the looper is running, and I came from preset A1" has to
  * be a preset of its own — and the same state entered from twelve places costs twelve near-
  * identical presets, differing only in where they go back to. That's the duplication this project
- * exists to undo: recognising those twelve as one state is what lets them be authored once.
+ * exists to undo: recognizing those twelve as one state is what lets them be authored once.
  *
  * The rule: two presets are the same state when everything about them matches except *where their
  * navigation leads*. Navigation steps are compared by shape, not target — a switch that is a
@@ -40,9 +40,9 @@ function normalizeStep(step: Step): unknown {
 
 /**
  * Everything about a preset that isn't its name or its destinations, in a fixed order so two
- * presets with the same behaviour produce the same string whatever order their fields arrived in.
+ * presets with the same behavior produce the same string whatever order their fields arrived in.
  */
-function behaviourKey(preset: Preset): string {
+function behaviorKey(preset: Preset): string {
   const controls = SWITCH_CONTROL_IDS.map((id) => {
     const control = preset.controls[id];
     if (!control) return null;
@@ -50,7 +50,7 @@ function behaviourKey(preset: Preset): string {
     for (let n = 1; n <= STEPS_PER_CONTROL; n++) {
       const step = control.steps[n];
       steps.push(step ? normalizeStep(step) : null);
-      // The LED belongs to the behaviour: two presets that light a switch differently are not
+      // The LED belongs to the behavior: two presets that light a switch differently are not
       // the same state, even if they send the same thing.
       steps.push(control.led[n] ?? null);
     }
@@ -72,7 +72,7 @@ export function presetStates(config: PacerConfig): PresetState[] {
   const byKey = new Map<string, number[]>();
   for (const preset of Object.values(config.presets)) {
     if (!preset) continue;
-    const key = behaviourKey(preset);
+    const key = behaviorKey(preset);
     (byKey.get(key) ?? byKey.set(key, []).get(key)!).push(preset.index);
   }
 

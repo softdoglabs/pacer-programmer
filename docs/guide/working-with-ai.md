@@ -70,7 +70,7 @@ Look up the Quad Cortex's MIDI CC chart for its looper (Looper X). Put the
 looper's functions (record/overdub, play/stop, undo/redo and the rest) on
 stompswitches 1-6 and B, one per switch, as momentary CC messages (CC Trigger:
 127 on press, 0 on release) on the global channel. Give each switch its own
-colour, bright when pressed and dim otherwise.
+color, bright when pressed and dim otherwise.
 
 When C1 loads, it should send whatever CCs put the Quad Cortex into its
 looper view; when A1 loads, it should send what takes it back out.
@@ -92,7 +92,7 @@ presets share it.
 
    If you'd rather keep working in the configuration you have open, use
    **Pick presets from a file…** instead. It lists the presets in the file
-   with the ones that differ already ticked, and merges just those, as an
+   with the ones that differ already checked, and merges just those, as an
    edit you can undo. It also takes a file that only has the changed presets in it,
    so you can ask the AI for just those. See
    [Merging presets into the open configuration](../reference/devices-and-files.md#merging-presets-into-the-open-configuration).
@@ -102,14 +102,14 @@ presets share it.
    it. Press every switch the AI touched and listen. The
    [output log](../reference/simulate-mode.md#the-output-log) shows each
    message, so you can check it against your gear's MIDI chart.
-4. Look at the lights. Does each switch's colour actually tell you the state
+4. Look at the lights. Does each switch's color actually tell you the state
    of the thing it controls?
 5. Look at the [preset map](../reference/preset-map.md). Does every route go
    where it should, and does every way in have a way out?
 
 ## 4. Fix and Repeat
 
-Small fixes are quickest in the app itself. Change a CC, a colour or a target
+Small fixes are quickest in the app itself. Change a CC, a color or a target
 in Program mode and try it again right away. For bigger changes, tell the AI
 what's wrong ("switch 3 sends CC 51 but the looper needs CC 52", or "the light
 on switch 1 stays red after recording"), then save, export the current

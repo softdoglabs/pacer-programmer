@@ -15,7 +15,7 @@
  * - `markerUnits="userSpaceOnUse"` keeps the head one size. The default scales with stroke width,
  *   so faded stepping edges would get smaller heads than designed ones, which reads as a second
  *   meaning nobody intended.
- * - `context-stroke` takes the colour from whichever edge references it, so one marker serves the
+ * - `context-stroke` takes the color from whichever edge references it, so one marker serves the
  *   faded and the solid edges alike.
  */
 export const MAP_ARROW = "map-arrow";

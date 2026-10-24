@@ -34,7 +34,7 @@ import {
  * It refuses rather than half-compiling: a design over budget, a returning state nothing enters, a
  * body containing a navigation step, or one that wouldn't read back (`whatWontSurvive`).
  *
- * A state that never returns needs one copy however many places enter it: its behaviour doesn't
+ * A state that never returns needs one copy however many places enter it: its behavior doesn't
  * depend on where you came from. A state that returns needs one copy per distinct continuation,
  * and a state entered *from* such a copy multiplies in turn — which is how a design that reads as
  * three states can cost more slots than the device has.
@@ -305,7 +305,7 @@ export function whatWontSurvive(machine: StateMachine, config: PacerConfig, slot
   /*
    * What each authored transition means once compiled: where it leads from each way in that
    * actually exists. A table row for a state that never enters this one has nothing to compile to,
-   * so it isn't part of the meaning. Normalised the way the recovery reads: every way in going back
+   * so it isn't part of the meaning. Normalized the way the recovery reads: every way in going back
    * is a return, every way in going to one state is a jump — and a state of one copy can only ever
    * be a jump, since one preset has one destination.
    */

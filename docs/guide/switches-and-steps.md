@@ -41,7 +41,7 @@ Inactive steps are skipped. A step whose type is *Off* still takes its turn
 and just sends nothing, which is a handy way to get a press that does nothing
 in the middle of a sequence.
 
-The light follows along: it shows the colours of whichever step fires next.
+The light follows along: it shows the colors of whichever step fires next.
 
 ### External Step
 

@@ -16,7 +16,7 @@ This picks up where [tutorial 1](1-a-looper-preset.md) left off.
 1. Switch to **Preset map**.
 2. Drag from the dot on the right edge of **PRGM2** to **LOOPR**, and let go.
    The route dialog opens.
-3. For **On switch**, choose **A — selects the Track preset**, and tick
+3. For **On switch**, choose **A — selects the Track preset**, and check
    **Replace what A does**. That way A2's switch A stops selecting Track and
    only goes to the looper.
 
@@ -42,13 +42,13 @@ to A2. It needs no copy at all. But we want A to do it, so:
 4. For **Copy of LOOPR for PRGM2**, choose **D6 SEQNC**.
    It's listed under **In use — would be cleared**, along with every other
    preset that no route leads to or from.
-5. Tick **Clear D6 SEQNC to make room**. Everything on D6 goes, so the dialog
+5. Check **Clear D6 SEQNC to make room**. Everything on D6 goes, so the dialog
    won't do it until you've said so.
 
 ![The route dialog: A already goes to PRGM1, so it asks; going back costs a copy, which takes D6](../images/t2-return.png)
 
 If you'd already cleared a preset in **Program**, it would be offered first,
-under **Empty**, and there'd be nothing to tick.
+under **Empty**, and there'd be nothing to check.
 
 Click **Add route**. Clicking the existing A route from LOOPR to PRGM1 gets
 you the same choice, if that's how you'd rather get there.
@@ -57,7 +57,7 @@ you the same choice, if that's how you'd rather get there.
 
 ![PRGM1 and PRGM2 both lead to LOOPR, which returns](../images/t2-map.png)
 
-LOOPR is still a single box, labelled **2 presets · one state**, and it's
+LOOPR is still a single box, labeled **2 presets · one state**, and it's
 marked **↩ A returns**, which means its switch A takes you back to wherever you
 came from. The dashed lines back to PRGM1 and PRGM2 are that same switch: one
 switch that goes to either, depending on how you got in. Click LOOPR to see

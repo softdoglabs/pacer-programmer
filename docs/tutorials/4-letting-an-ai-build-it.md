@@ -2,7 +2,7 @@
 
 In tutorial 1 we programmed nine switches by hand. For one looper that's
 fine. For a whole board, with every preset sending the right patch changes and
-every effect on its own switch with matching colours, it's an evening's work.
+every effect on its own switch with matching colors, it's an evening's work.
 An AI assistant can do that part from your gear's MIDI chart, and this app is
 where you check what it did.
 
@@ -13,16 +13,16 @@ where you check what it did.
    It points the AI at the format reference.
 3. Merge the presets it changed. In the device drawer, click **Pick presets
    from a file…** and pick the file it gave you. The presets that differ from what
-   you have open are listed first and already ticked, which here means A1 and
+   you have open are listed first and already checked, which here means A1 and
    C1. Click **Merge 2 presets**.
 
-   ![Merging presets: A1 and C1 are ticked, and the other 22 are the same as the open ones](../images/import-presets.png)
+   ![Merging presets: A1 and C1 are checked, and the other 22 are the same as the open ones](../images/import-presets.png)
 
    Your configuration is still the one you had open, with those two presets
-   changed, and one undo takes them back out. Nothing you didn't tick is
+   changed, and one undo takes them back out. Nothing you didn't check is
    touched. If you edited a preset while the AI was working, a whole dump
    still has its old version, so it's listed as differing too, with a note.
-   Untick it to keep your edit.
+   Uncheck it to keep your edit.
 
    The assistant might hand back only the messages it changed and not the
    whole dump. That's fine, and it's a much smaller file. Pick it with

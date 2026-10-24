@@ -23,7 +23,7 @@ describe("laying out a machine", () => {
   });
 
   it("lays a ring out as banks, since there's no beginning to read it from", () => {
-    // The factory set: every preset steps to its neighbours, so nothing is an entry and layering
+    // The factory set: every preset steps to its neighbors, so nothing is an entry and layering
     // by depth would string all 24 across the screen.
     const ring = Array.from({ length: 24 }, (_, i) => node(`p${i}`, [`p${(i + 1) % 24}`]));
     const placed = layoutStates(ring);

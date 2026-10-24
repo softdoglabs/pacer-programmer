@@ -86,7 +86,7 @@ export function editRoute(
   const turnOff = (c: { controlId: number; stepNumber: number }) => {
     for (const m of members) {
       /*
-       * Off and inactive, not merely inactive: an inactive step still counts towards what a preset
+       * Off and inactive, not merely inactive: an inactive step still counts toward what a preset
        * is, so a leftover Preset Select would keep two otherwise identical copies apart.
        */
       edited = setStepType(edited, m, c.controlId, c.stepNumber, "switch", SwitchMessageType.Off);

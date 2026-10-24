@@ -10,7 +10,7 @@ import { EditBadge } from "../panel/EditBadge";
  *
  * React Flow's stock node has one source handle and one target handle, so with the layout running
  * left to right a route that goes back — every return, and every pair of states that lead to each
- * other — has to leave the right-hand side and come all the way round to the left. It arrives at a
+ * other — has to leave the right-hand side and come all the way around to the left. It arrives at a
  * slant with its head half under the node, and the curve pokes out past both. Each side carries
  * both a source and a target here, stacked in the same spot, and the edge picks the pair facing
  * the way it travels (see `PresetMap`), so a back edge simply runs back.

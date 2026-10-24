@@ -14,7 +14,7 @@ Start from the factory defaults: open the
 2. Click the badge on the lower half of the display and choose **C1**.
 3. Under the faceplate, click **Clear preset…** and confirm. C1 is now called
    `EMPTY`, and none of its switches do anything, including C and D, which
-   used to step to the neighbouring presets. That's fine for a looper: switch
+   used to step to the neighboring presets. That's fine for a looper: switch
    A will be the way out.
 4. Tap the small pencil next to `EMPTY` on the display, type `LOOPR`, and
    press Enter.
@@ -27,7 +27,7 @@ Tap switch **1**. In the editor:
    another when you let go, which is what a looper's buttons expect.
 2. Set **CC#** to `53`, **Press** to `127` and **Release** to `0`. Leave the
    channel on *Global*.
-3. For the colours, pick **2A Red** for *While CC 53 = 127* and **2B Dim Red**
+3. For the colors, pick **2A Red** for *While CC 53 = 127* and **2B Dim Red**
    for *Otherwise*. The switch will sit at dim red and light up bright while
    you hold it down.
 
@@ -38,7 +38,7 @@ CC 53 = 0.
 
 Now do the rest, using the switch picker at the top to move between them:
 
-| Switch | CC | Colours |
+| Switch | CC | Colors |
 |---|---|---|
 | 1 | 53 | 2A Red / 2B Dim Red |
 | 2 | 54 | 7A Green / 7B Dim Green |
@@ -55,14 +55,14 @@ whichever switch you'd want under your foot.
 ## The Way Back
 
 Tap switch **A**. Set its step to **Preset Select**, set **Jump to** to `A1`,
-and set its colour to **12A White**. Now pressing A on LOOPR takes you back to
+and set its color to **12A White**. Now pressing A on LOOPR takes you back to
 A1.
 
 ## The Way In
 
 Choose **A1** (the breadcrumb at the top of the editor is the same chooser) and
 tap its switch **A**. In the factory set it's already a Preset Select, pointing
-at the firmware's Track preset. Change **Jump to** to `C1`, and set its colour
+at the firmware's Track preset. Change **Jump to** to `C1`, and set its color
 to **12A White**:
 
 ![A1's switch A, now jumping to C1](../images/t1-a1-switch-a.png)
@@ -70,7 +70,7 @@ to **12A White**:
 ## Try It
 
 Close the editor and switch to **Simulate**. On A1, press **A**. The display
-reads `LOOPR`, and the looper's switches glow in their colours.
+reads `LOOPR`, and the looper's switches glow in their colors.
 
 ![LOOPR in the simulator](../images/t1-loopr-faceplate.png)
 

@@ -48,7 +48,7 @@ Like the Pacer, the simulator remembers the last value it sent on every
 controller, note and program, per channel. That memory decides two things.
 It decides what a toggle sends next: a CC Toggle sends its second value if the
 controller already holds its first, no matter which switch sent it. And it
-decides what colour each switch shows, bright when "on" and dim when "off".
+decides what color each switch shows, bright when "on" and dim when "off".
 
 The memory survives changing preset, just as it does on the hardware, so a
 program you selected on A1 is still lit when you come back to A1.
@@ -74,7 +74,7 @@ load a file.
 
 - Every step type, on press and release, in All at once and Sequence modes.
   (External step mode is listed [below](#what-isnt-simulated).)
-- The lights: which light, which colour, and bright or dim, following the same
+- The lights: which light, which color, and bright or dim, following the same
   rules the hardware does (see
   [Programming the Pacer › Lights](programming-the-pacer.md#lights)).
 - Preset Select and Preset Inc/Dec, including wrapping from D6 back to A1.

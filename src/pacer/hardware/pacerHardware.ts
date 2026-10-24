@@ -18,7 +18,7 @@ const OWNER_PRESET_LED: Evidence = {
 };
 const SOS_BAR: Evidence = {
   kind: "confirmed",
-  source: "Sound on Sound review ('12-colour RGB LED bar', dim/bright levels); factory COLOR preset",
+  source: "Sound on Sound review ('12-color RGB LED bar', dim/bright levels); factory COLOR preset",
 };
 const MMC_MIDDLE: Evidence = {
   kind: "confirmed",

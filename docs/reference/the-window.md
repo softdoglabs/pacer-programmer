@@ -32,10 +32,10 @@ the modes, the switch you were editing, and the device drawer.
 
 | It shows | Meaning |
 |---|---|
-| Connect MIDI | The browser hasn't been asked for MIDI access yet. Click it, and the browser asks whether to allow MIDI (and SysEx, which the Pacer needs). |
+| Connect MIDI | The browser hasn't been asked for MIDI access yet. Click it, and the browser asks whether to allow MIDI. |
 | Pacer connected | MIDI access is granted and a Pacer is on USB. Click it to see its ports and firmware in the device drawer. |
 | No Pacer found | MIDI access is granted but no Pacer is plugged in, or its ports aren't chosen. Click it to choose them. |
-| Web MIDI isn't available in this browser | Use a browser that supports Web MIDI with SysEx. |
+| No MIDI in this browser | The browser has no Web MIDI. Click it to see what still works, and how to get MIDI (on a computer, [Google Chrome](https://www.google.com/chrome/) has it). See [Browsers and Installing](../guide/browsers-and-installing.md). |
 | MIDI access denied | The browser refused. **Retry** asks again, though you may need to allow MIDI in the site settings first. |
 
 ![The header with a Pacer connected](../images/header-connected.png)
@@ -54,7 +54,9 @@ processor, synth or DAW. The default, *Don't send*, keeps everything on
 screen. Until you've granted MIDI access, a **Connect MIDI** button sits in
 its place.
 
-If the browser granted MIDI without SysEx, you'll see **SysEx off**. MMC
+If the browser allowed MIDI but not SysEx, the part of MIDI the Pacer's own
+messages use, you'll see **SysEx off**. Browsers don't ask about it separately,
+so this is rare. MMC
 messages (which are SysEx) won't be sent, and the Pacer can't be read or
 written.
 

@@ -7,10 +7,10 @@ grouped by where you'll see them.
 
 | You see | Meaning | Try |
 |---|---|---|
-| No MIDI in this browser | The browser has no Web MIDI. | Click it for what still works, and use a browser that supports Web MIDI with SysEx to talk to the Pacer. See [Browsers and Installing](../guide/browsers-and-installing.md). |
+| No MIDI in this browser | The browser has no Web MIDI. | Click it for what still works, and use a browser that supports Web MIDI, such as [Google Chrome](https://www.google.com/chrome/) on a computer, to talk to the Pacer. See [Browsers and Installing](../guide/browsers-and-installing.md). |
 | Saved configurations are gone | The browser deleted the site's data: Safari does after seven days unused, and so does any private window when it closes. | Install the app, and keep a zip from **Download all (.zip)**. See [Browsers and Installing](../guide/browsers-and-installing.md#keeping-what-you-save). |
-| MIDI access denied | The browser, or you, refused. | Allow MIDI (and SysEx) in the site's settings, then **Retry**. |
-| SysEx off | MIDI was granted without SysEx. | Re-allow with SysEx. Without it the Pacer can't be read or written, and MMC steps aren't sent. |
+| MIDI access denied | The browser, or you, refused. | Allow MIDI in the site's settings, then **Retry**. |
+| SysEx off | MIDI was allowed, but not SysEx, the part of MIDI the Pacer's own messages use. | Allow MIDI again in the site's settings, then reload. Without it the Pacer can't be read or written, and MMC steps aren't sent. |
 | No Pacer found | No port with "Pacer" in its name, or the ports aren't chosen. | Check the USB cable, then pick the ports in the [device drawer](devices-and-files.md#the-device-drawer). |
 | *The Pacer didn't answer a MIDI Device Inquiry…* | It's connected but didn't say who it is. | Harmless: only the firmware line is missing. **Ask again** retries. |
 
@@ -18,8 +18,8 @@ grouped by where you'll see them.
 
 | You see | Meaning | Try |
 |---|---|---|
-| *No reply from the Pacer…* | The dump request got no answer. | Is the Pacer on and on USB? Are both ports the Pacer's? Is SysEx granted? |
-| *Pulling needs the SysEx permission…* | MIDI without SysEx. | Re-allow MIDI with SysEx. |
+| *No reply from the Pacer…* | The dump request got no answer. | Is the Pacer on and on USB? Are both ports the Pacer's? Is MIDI allowed for this site? |
+| *Pulling needs the SysEx permission…* | MIDI was allowed without SysEx. | Allow MIDI again in the site's settings, then reload. |
 | *Wait for the send to the Pacer to finish.* | You pulled during a send. | A dump request too soon after writing can corrupt a preset on the Pacer, so the app waits. Pull again after the send. |
 | *Browser storage is full…* | Browser storage is used up (about 25 dumps). | Export and delete old snapshots. |
 
@@ -78,5 +78,5 @@ find out on the next load.
 |---|---|
 | *(warning) multiple preset-navigation actions fired by one press; using the first* | Two steps on one press both change preset. The Pacer takes the first. |
 | *(warning) StepSelect/StepIncDec targeting isn't simulated yet…* | External step select isn't followed across switches. |
-| *(warning) N of M message(s) not sent to …* | The MIDI output refused them. Usually the port went away, or SysEx isn't granted for MMC. |
+| *(warning) N of M message(s) not sent to …* | The MIDI output refused them. Usually the port went away, or, for MMC, MIDI was allowed without SysEx. |
 | *(warning) step N: channel byte … is out of range* | A step's channel isn't 0–16. The file was probably hand-edited. |

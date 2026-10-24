@@ -77,7 +77,7 @@ The type picker groups them by what they do.
 | Note | Note, Velocity | Sounds the note while you hold the switch. |
 | Note Toggle | Note, Velocity | Starts the note, and the next press stops it. |
 | NRPN Coarse / Fine | Value, NRPN LSB, NRPN MSB | Sends an NRPN value. |
-| MMC | Device, Command | Sends a MIDI Machine Control command (stop, play, record and so on). MMC is SysEx, so it needs SysEx permission to reach your gear. |
+| MMC | Device, Command | Sends a MIDI Machine Control command (stop, play, record and so on). MMC is SysEx, which the app asks for along with MIDI, so it doesn't reach your gear if the browser allowed MIDI without it. |
 
 **Pacer actions.** These act on the Pacer itself and send nothing on the MIDI
 wire.

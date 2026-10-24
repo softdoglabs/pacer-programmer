@@ -22,8 +22,7 @@ loopMIDI on Windows).
 
 Then:
 
-1. Click **Connect MIDI** in the header, and allow MIDI (and SysEx) when the
-   browser asks.
+1. Click **Connect MIDI** in the header, and allow MIDI when the browser asks.
 2. In Simulate, choose your gear as the **Simulated MIDI output**.
 
    ![Simulate's context bar, sending to a Quad Cortex](../images/context-simulate.png)

@@ -65,6 +65,8 @@ export interface MidiView {
   error?: string;
 }
 
+export type BrowserNoticeReason = "start" | "midi" | "button";
+
 export interface PacerStore extends ConfigurationsSlice, EditingSlice, SendSlice {
   /**
    * The loaded config and the current *user* preset. While a firmware special preset (preset
@@ -94,6 +96,13 @@ export interface PacerStore extends ConfigurationsSlice, EditingSlice, SendSlice
   /** Whether the device & configurations drawer is showing (see `ui/DeviceDrawer`). */
   deviceDrawerOpen: boolean;
   setDeviceDrawerOpen: (open: boolean) => void;
+  /**
+   * The browser notice (ui/browser/BrowserNotice), and what opened it: the app starting in a
+   * browser it has something to say about, something that needs MIDI where there isn't any, or its
+   * header button. Not part of the session: loading a configuration doesn't close it.
+   */
+  browserNotice?: BrowserNoticeReason;
+  setBrowserNotice: (reason: BrowserNoticeReason | undefined) => void;
   press: (controlId: number) => void;
   release: (controlId: number) => void;
   /** An expression pedal swept to a position (0 = heel down, 1 = toe down). */
@@ -338,6 +347,9 @@ export const usePacerStore = create<PacerStore>((set, get) => {
 
     setDeviceDrawerOpen: (deviceDrawerOpen) => set({ deviceDrawerOpen }),
 
+    browserNotice: undefined,
+    setBrowserNotice: (browserNotice) => set({ browserNotice }),
+
     loadConfig: (config, source, initialPresetIndex = FIRST_USER_PRESET_INDEX) => {
       // A new configuration means a new simulator session: the firmware mode machine and all
       // per-session state are rebuilt, never patched.
@@ -366,7 +378,8 @@ export const usePacerStore = create<PacerStore>((set, get) => {
       const result = await connectMidi(requester ?? browserMidiRequester());
       switch (result.kind) {
         case "unsupported":
-          set((s) => ({ midi: { ...s.midi, status: "unsupported" } }));
+          // Asked for by something that needs MIDI: say why there isn't any, where it was asked.
+          set((s) => ({ midi: { ...s.midi, status: "unsupported" }, browserNotice: "midi" }));
           return;
         case "denied":
           set((s) => ({ midi: { ...s.midi, status: "denied", error: result.message } }));

@@ -13,6 +13,9 @@ import { ContextBar } from "./ui/ContextBar";
 import { ConfigurationButton, DeviceDrawer } from "./ui/DeviceDrawer";
 import { DocsLink } from "./ui/DocsLink";
 import { SourceLink } from "./ui/SourceLink";
+import { BrowserButton } from "./ui/browser/BrowserButton";
+import { BrowserNotice } from "./ui/browser/BrowserNotice";
+import { InstallToast } from "./ui/browser/InstallToast";
 import { SwitchEditorView } from "./ui/editor/SwitchEditorView";
 import { FirmwareModeNote } from "./ui/FirmwareModeNote";
 import { MessageLog } from "./ui/MessageLog";
@@ -47,6 +50,7 @@ export function App() {
         {/* MIDI access is one grant for the whole app, so it's asked for here, not per mode. */}
         {/* The device slot: asks for MIDI access, then shows whether the Pacer is there. */}
         <div className="order-2 ml-auto flex flex-wrap items-center gap-2 xl:order-none">
+          <BrowserButton />
           <DocsLink />
           <SourceLink />
           <MidiAccessControl />
@@ -54,6 +58,8 @@ export function App() {
       </header>
       <ContextBar />
       <DeviceDrawer />
+      <BrowserNotice />
+      <InstallToast />
 
       <div className="app-scroll flex-1">
         <main className="mx-auto flex w-full max-w-[var(--page-max)] flex-col gap-4 p-4">

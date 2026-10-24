@@ -134,6 +134,11 @@ export class Page {
     await this.cdp.send("Runtime.enable");
     await this.cdp.send("Page.enable");
     await this.resize(HEIGHT);
+    // Chrome offers to install the app, which pops up a card in the corner of every picture. Start
+    // as someone who said Not now to it; the header's install button stays, as it does for them.
+    await this.cdp.send("Page.addScriptToEvaluateOnNewDocument", {
+      source: `try { localStorage.setItem("pacer-programmer.installToast.declined", "1"); } catch {}`,
+    });
     await this.cdp.send("Page.navigate", { url: `http://localhost:${VITE_PORT}/` });
     await wait(2500);
     // The app's own modules, from the dev server: the same instances the page is running.

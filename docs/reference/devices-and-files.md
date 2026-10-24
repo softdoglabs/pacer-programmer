@@ -31,6 +31,7 @@ to open the drawer:
 | 6 | Factory defaults | The Pacer's factory configuration, built into the app. It's always there and can't be changed, so edits to it are saved as a new snapshot. You can export it like any other. |
 | 7 | The open configuration | Highlighted. Click any other row to open that configuration instead. The pencil beside a snapshot's name renames it (or press F2 on the name). |
 | 8 | Pick presets from this…, Export, Delete | **Pick presets from this…** merges presets you choose from that configuration into the open one (every row but the open one has it). **Export** downloads it as a `.syx` file. The trash can deletes a snapshot, and asks you to click again to confirm. The factory defaults can't be deleted or renamed. |
+| 9 | Download all (.zip), Load a .zip… | Every saved snapshot in one zip file, and back again. See [Backing up every snapshot](#backing-up-every-snapshot). |
 
 Until you've granted MIDI access, the drawer shows a **Connect MIDI** button
 where the ports would be.
@@ -75,8 +76,7 @@ a file and it lists the presets in it:
 ![Merging presets: the two presets that differ are ticked, and the rest are listed as the same](../images/import-presets.png)
 
 The presets that differ from what you have open come first, already ticked.
-With a whole dump that an AI changed two presets of, those two are the ones
-ticked. Untick any you don't want and click **Merge**.
+If an AI changed two presets in a whole dump, those two are the ones ticked. Untick any you don't want and click **Merge**.
 
 Each preset is written over the one in the same slot. If the file only sets
 part of a preset, the rest of that preset stays as it was, which is exactly
@@ -138,7 +138,8 @@ Replacing the configuration you have open reopens it from the zip, so if you
 have unsaved edits you're asked first.
 
 This is also how you move your snapshots to another browser or computer, or
-into the app once you've installed it. A zip of
+into the app once you've installed it (see
+[Browsers and Installing](../guide/browsers-and-installing.md)). A zip of
 `.syx` files made some other way loads too, with each snapshot named after its
 file.
 

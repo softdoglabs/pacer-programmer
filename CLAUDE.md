@@ -1267,6 +1267,18 @@ no hover-only UI, for tablets.
   - Raw bytes rather than the JSON mirror: they're canonical and lossless,
     and about 3x smaller, which matters because localStorage allows about
     5 MB (~25 dumps).
+  - **The whole library as one zip** (`library/libraryArchive.ts`, fflate):
+    "Download all (.zip)" is a plain `.syx` per snapshot (the bytes as
+    stored, so any SysEx tool can use them) plus `library.json` for what a
+    `.syx` can't hold (name, source, dates, device). "Load a .zip…"
+    (`ArchiveImportDialog`) **adds to the list, never replaces it**: new ones
+    ticked, a taken name (case-insensitive) gets its own tick to replace the
+    saved one, unticked by default (owner's call: per-name choice), identical
+    ones skipped, unreadable ones listed. Replacing the open configuration
+    reopens it, through the unsaved-edits guard. A zip of `.syx` files without
+    the index loads too, named after the files. Storage running out stops it
+    and lists the rest. It's also the way into an installed app on Apple's
+    platforms (see Browsers and installing).
   - Edits are saved as new snapshots or over the open one (see Save
     above); sending to the device is separate (see Send to Pacer).
 - **Merging presets into the open configuration** (`editing/mergePresets.ts`,
@@ -1462,9 +1474,94 @@ pnpm dev
 
 Opens the Vite dev server. MIDI needs a browser with Web MIDI and SysEx; the
 docs and the app say just that and **don't name browsers**, since any list
-would be incomplete and go stale. The simulator works with no hardware
-attached; connecting a real Pacer over USB enables live send/receive against
-the device.
+would be incomplete and go stale. **Safari is the exception** (owner's call,
+2026-10-23): it's the one browser whose rules are known for certain, and both
+of them bite (below). And the notice (and the docs) suggest **Google Chrome**
+to any browser without Web MIDI (owner's call, 2026-10-23): to Safari on a Mac
+as fixing both at once, to the rest for the MIDI. Never on iPhone or iPad, where
+Chrome is Safari's engine and fixes neither. The simulator works with no hardware attached;
+connecting a real Pacer over USB enables live send/receive against the device.
+
+### Browsers and installing (`src/platform/`, `ui/browser/`)
+
+Checked against MDN's compatibility data and its storage eviction page,
+2026-10-23 (owner: MDN is the reference for browser support).
+- **Two things matter, and the app says them when it starts** (`BrowserNotice`):
+  no Web MIDI (detected by the API being there, never by name: Safari has never
+  had it, and on iPhone and iPad no browser does, since all of them are
+  Safari's engine), and **storage that expires**: Safari's tracking prevention
+  deletes everything a site stored from script after seven days of Safari use
+  without the site, which is the whole library. On iPhone and iPad it applies
+  in every browser. Installed apps are exempt. Other browsers only evict under
+  storage pressure, or when the user clears data (private windows,
+  clear-on-exit, privacy browsers); nothing to detect, so the docs cover them.
+- `platform/browser.ts` is pure (`browserSituation(facts)`, `noticeTopics`);
+  `platform/currentBrowser.ts` reads the real browser. **Tests replace the
+  latter** (`src/test/setup.ts`, `src/test/fakeBrowser.ts`): desktop Chrome with
+  Web MIDI unless a test calls `setTestBrowser(browserFacts("safariMac"))` and so
+  on, with real user agents for each kind told apart (an iPad asking for
+  desktop sites says it's a Mac; `maxTouchPoints` gives it away).
+- **Short, because a long one isn't read** (owner's call): the title is the
+  threat ("Safari will delete your saved configurations"), each problem is one
+  sentence in an amber alert (losing your work first, unless it was opened by
+  asking for MIDI; the deletion warning keeps its install steps right after it
+  either way, and the Chrome line follows both), the fix is two numbered steps
+  (the install step with a picture, then open it), and the explanations wait
+  under a closed
+  Details, in plain words for someone non-technical. The Mac's picture is a real
+  screenshot of Safari's File menu (the owner's, macOS 27 / Safari 27, cropped
+  and ringed in the app's teal: `src/assets/browser/safari-add-to-dock.png`, and
+  in the docs as `docs/images/safari-add-to-dock.png`); the iPhone's is still a
+  drawing in the app's palette until there's a real one. There's no way for a
+  page to open Safari's install itself, hence the pictures.
+- **When it opens**: on start, if it has something to say that wasn't on screen
+  when it was last closed (`noticeTopics`, remembered in localStorage, so an
+  installed Safari app, with only "midi" left, says that once more); and
+  whenever something asks for MIDI where there isn't any (`connectMidi` coming
+  back unsupported sets `browserNotice: "midi"`). After that, Connect MIDI
+  reads **No MIDI in this browser** and opens it.
+- **Closing it flies it into its header button** (`flyTo.ts`: a stand-in the
+  dialog's size animated with WAAPI, then a ring on the button; ring only with
+  reduced motion). The button (`BrowserButton`) is there whenever the notice has
+  something to say or installing is on offer, and absent otherwise: amber when
+  storage expires. It's conditional rendering (`installOffered`), not CSS.
+  - **In a Chromium browser the install button is always there until it's
+    installed** (owner's call), whether or not `beforeinstallprompt` has fired:
+    the browser fires it once, when it decides, and never in a tab of an app
+    that's already installed. Without the event, the notice says where the
+    browser's own Install is. An earlier version waited for the event, so the
+    button never showed on the dev server (no manifest then) and could miss it
+    elsewhere.
+  - **When the event does fire, a quiet offer pops up in the corner**
+    (`InstallToast`): Install, or Not now, which is remembered and flies the
+    card into the button. Not shown while the notice has something to say, since
+    the notice offers installing itself. The docs' screenshot browser starts as
+    someone who said Not now (`docs-browser.mjs`), so it isn't in the pictures;
+    the header button is.
+- **Installing**: a manifest from the brand plugin (`webAppManifest`, served by
+  the dev server too, so it installs like the site), with the
+  kit's SVG app icon and its 512 px PNG, or the neutral SVG. MDN says Chromium
+  wants 192 and 512 px PNGs, but desktop Chrome's own installability report
+  accepts an SVG alone, so the kit needed no new sizes; the 512 is there for
+  anywhere that won't take an SVG (Android is untested). Safari's Add to Dock
+  uses the SVG too (owner-confirmed). No service worker: MDN says Chromium doesn't need one to
+  install, and one would be the first thing that could serve a stale app.
+  Chromium's `beforeinstallprompt` is kept from startup (`installPrompt.ts`)
+  for the notice's Install button; Safari on a Mac gets File › Add to Dock
+  (17+), iPhone and iPad get Share › Add to Home Screen (any browser, iOS
+  16.4+); desktop Firefox can't install and Firefox on Android only makes a
+  browser shortcut, so neither is offered.
+  - **On Apple's platforms the installed app has storage of its own and
+    starts empty**; the notice only says so under Details. **Nothing about
+    moving configurations in the notice**, no zips, no import/export (owner's
+    call: too confusing, and people find it); the docs carry the details.
+    Chromium's installed app shares the browser's storage.
+  - Installed, the app asks for persistent storage (`navigator.storage.persist`),
+    which Chromium and Safari decide silently; Firefox, which would prompt,
+    can't install.
+- Not verified on real Safari or an iPhone yet: the notice was checked in
+  headless Chrome with Safari's and Chrome-on-iPhone's user agents and Web MIDI
+  removed.
 
 ### Deploying
 

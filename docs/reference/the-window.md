@@ -6,7 +6,7 @@
 |---|---|---|
 | 1 | Configuration | The name of the configuration that's open. Click it to open the [device drawer](devices-and-files.md), where you pull from your Pacer, import or export a `.syx`, and open saved snapshots. |
 | 2 | Mode bar | Switches between [Simulate](simulate-mode.md), [Program](program-mode.md) and the [Preset map](preset-map.md). |
-| 3 | Docs | Opens these docs in a new tab, so you can follow along beside the app. |
+| 3 | Install, Docs, GitHub | The download icon installs the app. If your browser can't talk MIDI or might delete what you save, it explains that instead. It's only there when there's something to install or to tell you; see [Browsers and Installing](../guide/browsers-and-installing.md). **Docs** opens these docs in a new tab, so you can follow along beside the app, and the GitHub mark opens the app's source. |
 | 4 | Device slot | Asks the browser for MIDI access. Once you've granted it, this shows whether your Pacer is there (see below). |
 | 5 | Context bar | The controls for the current mode, so it changes when the mode does (see below). |
 | 6 | Faceplate | The on-screen Pacer. In Simulate you play it, and in Program you tap a control to program it. See [The faceplate](the-faceplate.md). |

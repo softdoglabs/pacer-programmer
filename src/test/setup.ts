@@ -11,3 +11,12 @@ import { vi } from "vitest";
 vi.mock("../../fixtures/factory-presets.syx?inline", () => ({
   default: `data:application/octet-stream;base64,${readFileSync("fixtures/factory-presets.syx").toString("base64")}`,
 }));
+
+/*
+ * The browser the app's checks see (platform/currentBrowser.ts): desktop Chrome with Web MIDI by
+ * default, so no notice opens by itself; a test picks another with `setTestBrowser`.
+ */
+vi.mock("../platform/currentBrowser", async () => {
+  const { testBrowserFacts } = await import("./fakeBrowser");
+  return { currentBrowserFacts: testBrowserFacts };
+});

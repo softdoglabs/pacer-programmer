@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Soft Dog Labs, LLC
 
 import { BookOpen } from "lucide-react";
-import { Titled } from "@/components/ui/titled";
+import { LinkButton } from "@/components/ui/button";
 import { DOCS_URL } from "@/docsSite";
 
 /*
@@ -14,16 +14,16 @@ import { DOCS_URL } from "@/docsSite";
 /** A link to the docs, opening beside the app so you can follow along while you work. */
 export function DocsLink() {
   return (
-    <Titled title="How to use Pacer Programmer: guides, tutorials and the reference">
-      <a
-        href={DOCS_URL}
-        target="_blank"
-        rel="noopener"
-        className="flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm text-muted-foreground ring-focus outline-none hover:bg-accent hover:text-foreground"
-      >
-        <BookOpen aria-hidden className="size-4" />
-        Docs
-      </a>
-    </Titled>
+    <LinkButton
+      variant="subtle"
+      size="sm"
+      href={DOCS_URL}
+      target="_blank"
+      rel="noopener"
+      title="How to use Pacer Programmer: guides, tutorials and the reference"
+    >
+      <BookOpen aria-hidden className="size-4" />
+      Docs
+    </LinkButton>
   );
 }

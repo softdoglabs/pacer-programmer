@@ -749,8 +749,16 @@ with `editing` and `analysis` alongside, both depending on `protocol` only.
 The simulator UI (`src/App.tsx`, `src/ui/`, `src/store/pacerStore.ts`) is
 built on Tailwind v4 + React Aria Components (dark-only theme, `@/` path
 alias). Small Tailwind-styled wrappers over RAC live in
-`src/components/ui/` (Button, Tabs, Select, Tick, plus a static Badge). There's
-no hover-only UI, for tablets.
+`src/components/ui/` (Button, LinkButton, Tabs, Select, Tick, plus a static
+Badge). There's no hover-only UI, for tablets.
+- **Every button, and every link that looks like one, is drawn by `buttonClass`**
+  (`components/ui/button.tsx`): `Button`, and `LinkButton` (RAC's `Link`, which
+  sets the same hovered/pressed/focus-visible states) for Docs and GitHub. Pick a
+  `variant` and `size`; add one there if nothing fits (`subtle` is the header's
+  muted ghost). A caller's className is for layout and a colour tone (the
+  install button's amber), **never a shape or its own hover**. Owner's rule,
+  after the install button shipped `rounded-full` while Docs and GitHub carried
+  hand-copied `<a>` classes: three neighbours, three looks.
 - **The faceplate** (`src/ui/panel/Faceplate.tsx`) contains no per-switch
   or per-mode logic. It lays out `PACER_HARDWARE` and paints
   `computePanelState` through the generic `SwitchView`, which renders any
